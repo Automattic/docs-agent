@@ -1,0 +1,50 @@
+name: Docs Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_repo:
+        description: GitHub repository to generate docs for, in OWNER/REPO format.
+        required: true
+      flow_kind:
+        description: Which docs flow to run.
+        type: choice
+        options:
+          - technical-docs-flow
+          - user-docs-flow
+        default: technical-docs-flow
+      prompt:
+        description: Override the default prompt (optional).
+        required: false
+      openai_model:
+        description: OpenAI model to use.
+        required: false
+        default: gpt-5.5
+
+jobs:
+  run-docs-agent:
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@main
+    with:
+      bundle_path: bundles/docs-agent
+      agent_slug: docs-agent
+      pipeline_slug: ${{ inputs.flow_kind == 'technical-docs-flow' && 'technical-docs-pipeline' || 'user-docs-pipeline' }}
+      flow_slug: ${{ inputs.flow_kind }}
+      target_repo: ${{ inputs.target_repo }}
+      prompt: >-
+        ${{
+          inputs.prompt != '' &&
+          inputs.prompt ||
+          (
+            inputs.flow_kind == 'technical-docs-flow' &&
+            'Generate or update technical, developer-facing documentation from the target repository source code. The docs should help developers work on, use, and extend the codebase from one coherent documentation surface. Audit coverage for public APIs, internal processes, module connections, extension points, lifecycle, data contracts, auth/permissions, errors and failure modes, examples, operational workflows, compatibility boundaries, and software philosophy. Return no_changes only when existing docs are accurate, complete enough, and easy to navigate across that rubric. Open a documentation pull request only if changes are needed.' ||
+            'Generate or update non-technical, user-facing documentation from the target repository source code. Focus on what users can do, getting started, common tasks, configuration, and troubleshooting. Open a documentation pull request only if changes are needed.'
+          )
+        }}
+      model: ${{ inputs.openai_model }}
+      validation_dependencies: Automattic/agents-api@main,Extra-Chill/data-machine@main,Extra-Chill/data-machine-code@main,WordPress/ai-provider-for-openai@main
+      success_requires_pr: false
+      app_token_repos: ${{ inputs.target_repo }}
+      engine_data_outputs: '{"docs_pr_url":"metadata.engine_data.docs_agent.pr_url"}'
+      transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
+      bundle_validator_spec: tests/docs-agent.validate-bundle-spec.json
+    secrets: inherit
