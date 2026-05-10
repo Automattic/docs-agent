@@ -72,7 +72,7 @@ foreach ( $spec['expected_flows'] ?? array() as $flow_slug ) {
 
 	$flow_prompt = strtolower( (string) ( $step['prompt_queue'][0]['prompt'] ?? '' ) );
 	if ( str_contains( $flow_slug, 'bootstrap' ) ) {
-		$required_phrases = array( 'source inventory', 'clean documentation surface', 'reader', 'separate', 'digestible', 'hierarchy mirrors', 'parent/child relationships', 'cross-links', 'committed documentation scope', 'write every linked documentation page', 'links resolve to committed files', 'reconcile the written docs against the source inventory', 'future coverage with the reason', 'create_or_update_github_file before create_github_pull_request' );
+		$required_phrases = array( 'source inventory', 'clean documentation surface', 'reader', 'committed scope that fits the run budget', 'future coverage section as plain text', 'separate', 'digestible', 'hierarchy mirrors', 'parent/child relationships', 'cross-links', 'committed documentation scope', 'write topic pages first', 'index last', 'write every linked documentation page', 'links resolve to committed files', 'reconcile the written docs against the source inventory', 'future coverage with the reason', 'create_or_update_github_file before create_github_pull_request' );
 		$required_phrases = array_merge( $required_phrases, str_starts_with( $flow_slug, 'technical-' ) ? array( 'reference-level details', 'representative payloads or examples' ) : array( 'practical details', 'configuration examples' ) );
 		foreach ( $required_phrases as $phrase ) {
 			$assert( str_contains( $flow_prompt, $phrase ), "Bootstrap flow {$flow_slug} missing phrase: {$phrase}" );
