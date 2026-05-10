@@ -3,10 +3,16 @@
 ## Operating Model
 
 - Reusable bundle source: `Automattic/docs-agent`.
-- Consumer repositories provide target repo, event context, writable path scope, and credentials through the Homeboy Extensions Data Machine agent runner.
+- The primitive is source-code-derived documentation generation.
+- Consumer repositories provide target repo, selected docs workflow, event context, writable path scope, and credentials through the Homeboy Extensions Data Machine agent runner.
 - Documentation updates must stay inside the runner-enforced writable path scope.
 - No-op success is valid when documentation is already aligned.
 - One focused pull request is the review boundary when changes are needed.
+
+## Supported Workflows
+
+- `technical`: developer-facing documentation from source code.
+- `user`: non-technical user-facing documentation from source code.
 
 ## Default Writable Scope
 

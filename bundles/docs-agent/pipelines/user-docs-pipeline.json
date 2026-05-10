@@ -1,0 +1,17 @@
+{
+  "name": "User Documentation",
+  "schema_version": 1,
+  "slug": "user-docs-pipeline",
+  "steps": [
+    {
+      "step_config": {
+        "execution_order": 0,
+        "label": "Generate user-facing documentation from source code",
+        "step_type": "ai",
+        "system_prompt": "Generate non-technical, user-facing documentation from the target repository source code. Inspect source files, UI strings, commands, configuration, tests, examples, and existing documentation. Explain what users can do, how to get started, how to complete common tasks, and how to troubleshoot without exposing internal implementation details unless they affect user behavior. If the existing documentation already covers the source accurately for users, finish without opening a pull request. If documentation is missing or stale, write focused user docs through create_or_update_github_file, then open one reviewable pull request."
+      },
+      "step_position": 0,
+      "step_type": "ai"
+    }
+  ]
+}

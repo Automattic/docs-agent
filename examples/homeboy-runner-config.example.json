@@ -1,7 +1,7 @@
 {
   "component_id": "docs-agent-ci-driver",
   "component_path": "/path/to/consumer/component",
-  "workload_id": "docs-agent-maintenance",
+  "workload_id": "technical-docs-generation",
   "workload_label": "Run Docs Agent",
   "validation_dependencies": [
     "/path/to/agents-api",
@@ -14,8 +14,8 @@
   "bundle_ref": "main",
   "bundle_path_in_repo": "bundles/docs-agent",
   "agent_slug": "docs-agent",
-  "pipeline_slug": "docs-agent-pipeline",
-  "flow_slug": "docs-maintenance-flow",
+  "pipeline_slug": "technical-docs-pipeline",
+  "flow_slug": "technical-docs-flow",
   "provider": "openai",
   "model": "gpt-5.5",
   "provider_register_function": "WordPress\\OpenAiAiProvider\\register_provider",
@@ -28,7 +28,7 @@
   "allowed_repos": ["OWNER/REPO"],
   "success_requires_pr": false,
   "max_turns": 12,
-  "prompt": "Inspect the repository docs context and open a documentation PR only if needed.",
+  "prompt": "Generate or update technical, developer-facing documentation from the repository source code. Open a documentation PR only if needed.",
   "step_budget": 16,
   "time_budget_ms": 600000,
   "transcript_dir": "/wordpress/wp-content/plugins/docs-agent-ci-driver/artifacts/docs-agent",

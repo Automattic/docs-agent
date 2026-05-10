@@ -1,10 +1,10 @@
 {
   "max_items": [],
-  "name": "Docs Maintenance",
-  "pipeline_slug": "docs-agent-pipeline",
+  "name": "Technical Documentation",
+  "pipeline_slug": "technical-docs-pipeline",
   "schedule": "manual",
   "schema_version": 1,
-  "slug": "docs-maintenance-flow",
+  "slug": "technical-docs-flow",
   "steps": [
     {
       "enabled_tools": [
@@ -25,7 +25,7 @@
       "prompt_queue": [
         {
           "added_at": "2026-05-10T00:00:00Z",
-          "prompt": "Inspect the target repository documentation context. Open a documentation pull request only if the docs need a focused update."
+          "prompt": "Generate or update technical, developer-facing documentation from the target repository source code. Focus on APIs, architecture, extension points, lifecycle, data contracts, and development workflows. Open a documentation pull request only if changes are needed."
         }
       ],
       "queue_mode": "static",

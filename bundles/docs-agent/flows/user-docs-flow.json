@@ -1,0 +1,36 @@
+{
+  "max_items": [],
+  "name": "User Documentation",
+  "pipeline_slug": "user-docs-pipeline",
+  "schedule": "manual",
+  "schema_version": 1,
+  "slug": "user-docs-flow",
+  "steps": [
+    {
+      "enabled_tools": [
+        "list_github_issues",
+        "get_github_issue",
+        "list_github_pulls",
+        "get_github_pull",
+        "get_github_pull_files",
+        "get_github_pull_review_context",
+        "github_pr_documentation_impact",
+        "list_github_tree",
+        "get_github_file",
+        "create_or_update_github_file",
+        "create_github_pull_request",
+        "comment_github_pull_request"
+      ],
+      "handler_configs": {},
+      "prompt_queue": [
+        {
+          "added_at": "2026-05-10T00:00:00Z",
+          "prompt": "Generate or update non-technical, user-facing documentation from the target repository source code. Focus on what users can do, getting started, common tasks, configuration, and troubleshooting. Open a documentation pull request only if changes are needed."
+        }
+      ],
+      "queue_mode": "static",
+      "step_position": 0,
+      "step_type": "ai"
+    }
+  ]
+}

@@ -30,30 +30,50 @@ $assert = static function ( bool $condition, string $message ): void {
 
 $bundle_dir = $root . '/bundles/docs-agent';
 $manifest   = $read_json( $bundle_dir . '/manifest.json' );
-$pipeline   = $read_json( $bundle_dir . '/pipelines/docs-agent-pipeline.json' );
-$flow       = $read_json( $bundle_dir . '/flows/docs-maintenance-flow.json' );
 $example    = $read_json( $root . '/examples/homeboy-runner-config.example.json' );
 
 $assert( 'docs-agent' === ( $manifest['bundle_slug'] ?? '' ), 'Manifest bundle_slug must be docs-agent.' );
 $assert( 'docs-agent' === ( $manifest['agent']['slug'] ?? '' ), 'Manifest agent slug must be docs-agent.' );
-$assert( in_array( 'docs-agent-pipeline', $manifest['included']['pipelines'] ?? array(), true ), 'Manifest must include docs-agent-pipeline.' );
-$assert( in_array( 'docs-maintenance-flow', $manifest['included']['flows'] ?? array(), true ), 'Manifest must include docs-maintenance-flow.' );
+$expected_pipelines = array( 'technical-docs-pipeline', 'user-docs-pipeline' );
+$expected_flows     = array( 'technical-docs-flow', 'user-docs-flow' );
+
+foreach ( $expected_pipelines as $pipeline_slug ) {
+    $assert( in_array( $pipeline_slug, $manifest['included']['pipelines'] ?? array(), true ), "Manifest must include {$pipeline_slug}." );
+}
+
+foreach ( $expected_flows as $flow_slug ) {
+    $assert( in_array( $flow_slug, $manifest['included']['flows'] ?? array(), true ), "Manifest must include {$flow_slug}." );
+}
 
 foreach ( array( 'MEMORY.md', 'SOUL.md' ) as $memory_file ) {
     $assert( is_file( $bundle_dir . '/memory/agent/' . $memory_file ), "Missing memory file: {$memory_file}" );
 }
 
-$assert( 'docs-agent-pipeline' === ( $pipeline['slug'] ?? '' ), 'Pipeline slug mismatch.' );
-$assert( 'docs-maintenance-flow' === ( $flow['slug'] ?? '' ), 'Flow slug mismatch.' );
-$assert( 'docs-agent-pipeline' === ( $flow['pipeline_slug'] ?? '' ), 'Flow must point at docs-agent-pipeline.' );
+$workflow_pairs = array(
+    'technical' => array( 'pipeline' => 'technical-docs-pipeline', 'flow' => 'technical-docs-flow' ),
+    'user'      => array( 'pipeline' => 'user-docs-pipeline', 'flow' => 'user-docs-flow' ),
+);
 
-$tools = $flow['steps'][0]['enabled_tools'] ?? array();
-foreach ( array( 'get_github_file', 'create_or_update_github_file', 'create_github_pull_request' ) as $required_tool ) {
-    $assert( in_array( $required_tool, $tools, true ), "Flow missing required tool: {$required_tool}" );
+foreach ( $workflow_pairs as $workflow => $pair ) {
+    $pipeline = $read_json( $bundle_dir . '/pipelines/' . $pair['pipeline'] . '.json' );
+    $flow     = $read_json( $bundle_dir . '/flows/' . $pair['flow'] . '.json' );
+
+    $assert( $pair['pipeline'] === ( $pipeline['slug'] ?? '' ), "{$workflow} pipeline slug mismatch." );
+    $assert( $pair['flow'] === ( $flow['slug'] ?? '' ), "{$workflow} flow slug mismatch." );
+    $assert( $pair['pipeline'] === ( $flow['pipeline_slug'] ?? '' ), "{$workflow} flow must point at {$pair['pipeline']}." );
+    $assert( str_contains( (string) ( $pipeline['steps'][0]['step_config']['system_prompt'] ?? '' ), 'source code' ), "{$workflow} pipeline must generate docs from source code." );
+
+    $tools = $flow['steps'][0]['enabled_tools'] ?? array();
+    foreach ( array( 'get_github_file', 'create_or_update_github_file', 'create_github_pull_request' ) as $required_tool ) {
+        $assert( in_array( $required_tool, $tools, true ), "{$workflow} flow missing required tool: {$required_tool}" );
+    }
+
+    $assert( empty( $flow['steps'][0]['completion_assertions'] ?? array() ), "{$workflow} flow must allow no-op success without required PR tools." );
 }
 
-$assert( empty( $flow['steps'][0]['completion_assertions'] ?? array() ), 'Flow must allow no-op success without required PR tools.' );
 $assert( false === ( $example['success_requires_pr'] ?? true ), 'Example runner config must allow no_changes success.' );
+$assert( 'technical-docs-pipeline' === ( $example['pipeline_slug'] ?? '' ), 'Example config must select the technical pipeline.' );
+$assert( 'technical-docs-flow' === ( $example['flow_slug'] ?? '' ), 'Example config must select the technical flow.' );
 
 $recorders = $example['tool_recorders'] ?? array();
 $file_recorder = null;
