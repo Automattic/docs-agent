@@ -1,0 +1,42 @@
+{
+  "bundle_dir": "../bundles/docs-agent",
+  "bundle_slug": "docs-agent",
+  "agent_slug": "docs-agent",
+  "expected_pipelines": ["technical-docs-pipeline", "user-docs-pipeline"],
+  "expected_flows": ["technical-docs-flow", "user-docs-flow"],
+  "memory_files": ["SOUL.md", "MEMORY.md"],
+  "flow_assertions": {
+    "technical-docs-flow": {
+      "pipeline_slug": "technical-docs-pipeline",
+      "ai_step_required_tools": [
+        "get_github_file",
+        "create_or_update_github_file",
+        "create_github_pull_request"
+      ],
+      "completion_assertions_empty": true
+    },
+    "user-docs-flow": {
+      "pipeline_slug": "user-docs-pipeline",
+      "ai_step_required_tools": [
+        "get_github_file",
+        "create_or_update_github_file",
+        "create_github_pull_request"
+      ],
+      "completion_assertions_empty": true
+    }
+  },
+  "pipeline_assertions": {
+    "technical-docs-pipeline": {
+      "system_prompt_must_contain": "source code"
+    },
+    "user-docs-pipeline": {
+      "system_prompt_must_contain": "source code"
+    }
+  },
+  "example_runner_config": "../examples/homeboy-runner-config.example.json",
+  "example_assertions": {
+    "success_requires_pr": false,
+    "pipeline_slug": "technical-docs-pipeline",
+    "flow_slug": "technical-docs-flow"
+  }
+}
