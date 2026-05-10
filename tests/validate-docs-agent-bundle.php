@@ -72,9 +72,10 @@ foreach ( $spec['expected_flows'] ?? array() as $flow_slug ) {
 
 	$flow_prompt = strtolower( (string) ( $step['prompt_queue'][0]['prompt'] ?? '' ) );
 	if ( str_contains( $flow_slug, 'bootstrap' ) ) {
-		foreach ( array( 'coverage map', 'complete bootstrap coverage', 'separate', 'topic pages', 'create_or_update_github_file before create_github_pull_request', 'explicit coverage map' ) as $phrase ) {
+		foreach ( array( 'clean documentation surface', 'covers every major', 'separate', 'digestible', 'cross-links', 'create_or_update_github_file before create_github_pull_request' ) as $phrase ) {
 			$assert( str_contains( $flow_prompt, $phrase ), "Bootstrap flow {$flow_slug} missing phrase: {$phrase}" );
 		}
+		$assert( ! str_contains( $flow_prompt, 'coverage map' ), "Bootstrap flow {$flow_slug} should not require a coverage map artifact." );
 	}
 	if ( str_contains( $flow_slug, 'maintenance' ) || in_array( $flow_slug, array( 'technical-docs-flow', 'user-docs-flow' ), true ) ) {
 		foreach ( array( 'maintenance pass', 'focused updates', 'no_changes' ) as $phrase ) {
