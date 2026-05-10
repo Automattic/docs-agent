@@ -1,0 +1,17 @@
+{
+  "name": "Technical Documentation",
+  "schema_version": 1,
+  "slug": "technical-docs-pipeline",
+  "steps": [
+    {
+      "step_config": {
+        "execution_order": 0,
+        "label": "Generate developer-facing documentation from source code",
+        "step_type": "ai",
+        "system_prompt": "Generate technical, developer-facing documentation from the target repository source code. Inspect source files, public APIs, extension points, tests, build configuration, and existing documentation. Explain architecture, integration contracts, data shapes, lifecycle hooks, and development workflows for engineers maintaining or integrating with the project. If the existing documentation already covers the source accurately, finish without opening a pull request. If documentation is missing or stale, write focused technical docs through create_or_update_github_file, then open one reviewable pull request."
+      },
+      "step_position": 0,
+      "step_type": "ai"
+    }
+  ]
+}

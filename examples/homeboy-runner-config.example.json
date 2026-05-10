@@ -1,0 +1,69 @@
+{
+  "component_id": "docs-agent-ci-driver",
+  "component_path": "/path/to/consumer/component",
+  "workload_id": "technical-docs-generation",
+  "workload_label": "Run Docs Agent",
+  "validation_dependencies": [
+    "/path/to/agents-api",
+    "/path/to/data-machine",
+    "/path/to/data-machine-code",
+    "/path/to/ai-provider-for-openai"
+  ],
+  "playground_wordpress_version": "7.0",
+  "bundle_repo": "https://github.com/Automattic/docs-agent.git",
+  "bundle_ref": "main",
+  "bundle_path_in_repo": "bundles/docs-agent",
+  "agent_slug": "docs-agent",
+  "pipeline_slug": "technical-docs-pipeline",
+  "flow_slug": "technical-docs-flow",
+  "provider": "openai",
+  "model": "gpt-5.5",
+  "provider_register_function": "WordPress\\OpenAiAiProvider\\register_provider",
+  "provider_credentials": {
+    "connectors_ai_openai_api_key": "OPENAI_API_KEY"
+  },
+  "github_token_env": "GITHUB_TOKEN",
+  "github_profile_id": "docs-agent-ci",
+  "target_repo": "OWNER/REPO",
+  "allowed_repos": ["OWNER/REPO"],
+  "success_requires_pr": false,
+  "max_turns": 12,
+  "prompt": "Generate or update technical, developer-facing documentation from the repository source code. Open a documentation PR only if needed.",
+  "step_budget": 16,
+  "time_budget_ms": 600000,
+  "transcript_dir": "/wordpress/wp-content/plugins/docs-agent-ci-driver/artifacts/docs-agent",
+  "required_abilities": [
+    "datamachine/import-agent",
+    "datamachine/run-flow",
+    "datamachine/drain-job",
+    "datamachine/create-or-update-github-file"
+  ],
+  "tool_recorders": [
+    {
+      "tool": "create_or_update_github_file",
+      "forced_parameters": {
+        "allowed_file_paths": ["README.md", "docs/**"]
+      },
+      "record": {
+        "engine_key": "docs_agent",
+        "tool_results_key": "github_tool_results"
+      }
+    },
+    {
+      "tool": "create_github_pull_request",
+      "record": {
+        "engine_key": "docs_agent",
+        "tool_results_key": "github_tool_results",
+        "event": {
+          "key": "pr",
+          "type": "pull_request",
+          "only_if_success": true
+        }
+      }
+    }
+  ],
+  "bench_env": {
+    "GITHUB_TOKEN": "${GITHUB_TOKEN}",
+    "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+  }
+}

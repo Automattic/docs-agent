@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "bundle_slug": "docs-agent",
+  "bundle_version": "0.1.0",
+  "source_ref": "Automattic/docs-agent",
+  "source_revision": "initial-bundle",
+  "exported_at": "2026-05-10T00:00:00Z",
+  "exported_by": "Franklin",
+  "agent": {
+    "slug": "docs-agent",
+    "label": "Docs Agent",
+    "description": "Reusable source-code documentation agent for GitHub repositories.",
+    "agent_config": {
+      "default_provider": "openai",
+      "default_model": "gpt-5.5",
+      "max_turns": 12,
+      "daily_memory": {
+        "enabled": false,
+        "recent_days": 0
+      }
+    }
+  },
+  "run_artifacts": {
+    "completion_assertions": {
+      "egress": ["pr-body"]
+    },
+    "transcript_summary": {
+      "egress": ["artifact"]
+    }
+  },
+  "included": {
+    "memory": ["MEMORY.md", "SOUL.md"],
+    "pipelines": ["technical-docs-pipeline", "user-docs-pipeline"],
+    "flows": ["technical-docs-flow", "user-docs-flow"],
+    "prompts": [],
+    "rubrics": [],
+    "tool_policies": [],
+    "auth_refs": [],
+    "seed_queues": [],
+    "handler_auth": "refs"
+  }
+}
