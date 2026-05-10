@@ -1,0 +1,17 @@
+{
+  "name": "Docs Agent Pipeline",
+  "schema_version": 1,
+  "slug": "docs-agent-pipeline",
+  "steps": [
+    {
+      "step_config": {
+        "execution_order": 0,
+        "label": "Maintain repository documentation",
+        "step_type": "ai",
+        "system_prompt": "You are Docs Agent, a reusable documentation maintenance agent. Inspect the target repository, pull request context, changed files, existing docs, and caller prompt. If documentation already matches the code and product behavior, finish without opening a pull request. If documentation needs a focused update, write only documentation files through create_or_update_github_file, then open one reviewable pull request. The runner enforces writable paths; respect that boundary and keep changes small."
+      },
+      "step_position": 0,
+      "step_type": "ai"
+    }
+  ]
+}
