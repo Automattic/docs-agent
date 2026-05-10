@@ -55,15 +55,24 @@ $workflow_pairs = array(
 );
 
 foreach ( $workflow_pairs as $workflow => $pair ) {
-    $pipeline = $read_json( $bundle_dir . '/pipelines/' . $pair['pipeline'] . '.json' );
-    $flow     = $read_json( $bundle_dir . '/flows/' . $pair['flow'] . '.json' );
+	$pipeline = $read_json( $bundle_dir . '/pipelines/' . $pair['pipeline'] . '.json' );
+	$flow     = $read_json( $bundle_dir . '/flows/' . $pair['flow'] . '.json' );
+	$system_prompt = (string) ( $pipeline['steps'][0]['step_config']['system_prompt'] ?? '' );
+	$flow_prompt   = (string) ( $flow['steps'][0]['prompt_queue'][0]['prompt'] ?? '' );
 
-    $assert( $pair['pipeline'] === ( $pipeline['slug'] ?? '' ), "{$workflow} pipeline slug mismatch." );
-    $assert( $pair['flow'] === ( $flow['slug'] ?? '' ), "{$workflow} flow slug mismatch." );
-    $assert( $pair['pipeline'] === ( $flow['pipeline_slug'] ?? '' ), "{$workflow} flow must point at {$pair['pipeline']}." );
-    $assert( str_contains( (string) ( $pipeline['steps'][0]['step_config']['system_prompt'] ?? '' ), 'source code' ), "{$workflow} pipeline must generate docs from source code." );
+	$assert( $pair['pipeline'] === ( $pipeline['slug'] ?? '' ), "{$workflow} pipeline slug mismatch." );
+	$assert( $pair['flow'] === ( $flow['slug'] ?? '' ), "{$workflow} flow slug mismatch." );
+	$assert( $pair['pipeline'] === ( $flow['pipeline_slug'] ?? '' ), "{$workflow} flow must point at {$pair['pipeline']}." );
+	$assert( str_contains( $system_prompt, 'source code' ), "{$workflow} pipeline must generate docs from source code." );
 
-    $tools = $flow['steps'][0]['enabled_tools'] ?? array();
+	if ( 'technical' === $workflow ) {
+		$rubric_text = strtolower( $system_prompt . ' ' . $flow_prompt );
+		foreach ( array( 'public APIs', 'internal processes', 'architecture', 'data contracts', 'examples', 'software philosophy', 'no_changes' ) as $rubric_phrase ) {
+			$assert( str_contains( $rubric_text, strtolower( $rubric_phrase ) ), "technical workflow must include rubric phrase: {$rubric_phrase}" );
+		}
+	}
+
+	$tools = $flow['steps'][0]['enabled_tools'] ?? array();
     foreach ( array( 'get_github_file', 'create_or_update_github_file', 'create_github_pull_request' ) as $required_tool ) {
         $assert( in_array( $required_tool, $tools, true ), "{$workflow} flow missing required tool: {$required_tool}" );
     }

@@ -31,6 +31,22 @@ The runner should treat both outcomes as successful:
 - `pr_opened`: docs changes were needed and a pull request was opened.
 - `no_changes`: docs are already aligned and no pull request was needed.
 
+## Technical Documentation Standard
+
+The technical workflow should optimize for a clean, navigable documentation surface that helps developers work on, use, and extend the target codebase. It should not treat the presence of a README as sufficient by itself.
+
+Before returning `no_changes`, the agent should audit whether existing docs cover:
+
+- Public APIs, exported interfaces, commands, abilities, hooks, filters, events, and configuration.
+- Internal processes, lifecycle, scheduling, queues, workflows, state transitions, and failure handling.
+- Architecture boundaries, module relationships, data flow, and how the important pieces connect.
+- Data contracts, value objects, storage, persistence, auth, permissions, and compatibility boundaries.
+- Build, test, release, local development, and operational workflows.
+- Practical examples for common integration, contribution, and extension paths.
+- Software philosophy, ownership boundaries, constraints, and design principles that guide contributors.
+
+When coverage is missing, stale, fragmented, or too shallow for a developer to confidently maintain or extend the project, the technical workflow should update docs and open one reviewable pull request.
+
 ## Validation
 
 ```bash
