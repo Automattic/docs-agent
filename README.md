@@ -17,7 +17,7 @@ Consumers should pass the generic runner a config equivalent to `examples/homebo
 
 Important fields:
 
-- `bundle_repo`: `https://github.com/Extra-Chill/docs-agent.git`
+- `bundle_repo`: `https://github.com/Automattic/docs-agent.git`
 - `bundle_ref`: a branch, tag, or SHA from this repo
 - `bundle_path_in_repo`: `bundles/docs-agent`
 - `success_requires_pr`: `false`

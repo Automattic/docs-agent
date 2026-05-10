@@ -2,7 +2,7 @@
   "schema_version": 1,
   "bundle_slug": "docs-agent",
   "bundle_version": "0.1.0",
-  "source_ref": "Extra-Chill/docs-agent",
+  "source_ref": "Automattic/docs-agent",
   "source_revision": "initial-bundle",
   "exported_at": "2026-05-10T00:00:00Z",
   "exported_by": "Franklin",

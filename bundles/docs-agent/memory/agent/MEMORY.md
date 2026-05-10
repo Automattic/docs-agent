@@ -2,7 +2,7 @@
 
 ## Operating Model
 
-- Reusable bundle source: `Extra-Chill/docs-agent`.
+- Reusable bundle source: `Automattic/docs-agent`.
 - Consumer repositories provide target repo, event context, writable path scope, and credentials through the Homeboy Extensions Data Machine agent runner.
 - Documentation updates must stay inside the runner-enforced writable path scope.
 - No-op success is valid when documentation is already aligned.
