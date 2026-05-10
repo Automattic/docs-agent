@@ -25,7 +25,7 @@
       "prompt_queue": [
         {
           "added_at": "2026-05-10T00:00:00Z",
-          "prompt": "Maintenance pass for technical, developer-facing living documentation. Review the repository source code, tests, existing docs, recent issues, and recent pull requests for stale, missing, fragmented, or misleading developer documentation. Prefer focused updates that keep existing docs aligned with current code behavior across public APIs, internal processes, module connections, extension points, lifecycle, data contracts, auth/permissions, errors and failure modes, examples, operational workflows, compatibility boundaries, and software philosophy. Return no_changes only when existing docs are accurate, sufficiently broad for the changed or inspected areas, and easy to navigate. Open one documentation pull request only if changes are needed."
+          "prompt": "Maintenance pass for technical, developer-facing living documentation. Review the repository source code, tests, existing docs, recent issues, and recent pull requests for documentation gaps, drift, fragmentation, and unclear developer guidance. Prefer focused updates that keep existing docs aligned with current code behavior across public APIs, internal processes, module connections, extension points, lifecycle, data contracts, auth/permissions, errors and failure modes, examples, operational workflows, compatibility boundaries, and software philosophy. Use no_changes when existing docs are accurate, sufficiently broad for the changed or inspected areas, and easy to navigate. When changes are needed, open one documentation pull request."
         }
       ],
       "queue_mode": "static",
