@@ -2,7 +2,7 @@
 
 Reusable Data Machine source-code documentation agent bundle.
 
-`docs-agent` lets Automatticians run documentation automation against a GitHub repository without building a bespoke agent for that repository. The target repo can be a WordPress plugin, package, service, app, CLI, or other codebase. The automation is repo-agnostic as long as the runner can read the target GitHub repo, write to the configured documentation paths, and open a pull request.
+`docs-agent` lets teams run documentation automation against a GitHub repository without building a bespoke agent for that repository. The target repo can be a WordPress plugin, package, service, app, CLI, or other codebase. The automation is repo-agnostic as long as the runner can read the target GitHub repo, write to the configured documentation paths, and open a pull request.
 
 ## What It Does
 
@@ -60,6 +60,8 @@ The consumer repo does not need to contain this bundle. It only needs a Homeboy 
 - User-facing flow slug: `user-docs-flow`
 
 ## Setup For A Consumer Repo
+
+Docs Agent is not Automattic-only. Anyone can use it if they can run the Homeboy/Data Machine runner stack and provide the required GitHub and model-provider credentials. Automattic repositories can use the same contract through internal CI conventions, but the bundle itself does not depend on Automattic-specific source code.
 
 ### 1. Decide Which Docs The Agent May Edit
 
