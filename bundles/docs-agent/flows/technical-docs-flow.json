@@ -25,7 +25,7 @@
       "prompt_queue": [
         {
           "added_at": "2026-05-10T00:00:00Z",
-          "prompt": "Generate or update technical, developer-facing documentation from the target repository source code. Focus on APIs, architecture, extension points, lifecycle, data contracts, and development workflows. Open a documentation pull request only if changes are needed."
+          "prompt": "Generate or update technical, developer-facing documentation from the target repository source code. The docs should help developers work on, use, and extend the codebase from one coherent documentation surface. Audit coverage for public APIs, internal processes, module connections, extension points, lifecycle, data contracts, auth/permissions, errors and failure modes, examples, operational workflows, compatibility boundaries, and software philosophy. Return no_changes only when existing docs are accurate, complete enough, and easy to navigate across that rubric. Open a documentation pull request only if changes are needed."
         }
       ],
       "queue_mode": "static",

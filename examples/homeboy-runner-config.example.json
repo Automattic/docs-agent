@@ -28,7 +28,7 @@
   "allowed_repos": ["OWNER/REPO"],
   "success_requires_pr": false,
   "max_turns": 12,
-  "prompt": "Generate or update technical, developer-facing documentation from the repository source code. Open a documentation PR only if needed.",
+  "prompt": "Generate or update technical, developer-facing documentation from the repository source code. Audit whether existing docs make it easy for developers to work on, use, and extend the codebase across public APIs, internal processes, architecture connections, extension points, data contracts, examples, operational workflows, and software philosophy. Open a documentation PR only if needed.",
   "step_budget": 16,
   "time_budget_ms": 600000,
   "transcript_dir": "/wordpress/wp-content/plugins/docs-agent-ci-driver/artifacts/docs-agent",
