@@ -72,10 +72,11 @@ foreach ( $spec['expected_flows'] ?? array() as $flow_slug ) {
 
 	$flow_prompt = strtolower( (string) ( $step['prompt_queue'][0]['prompt'] ?? '' ) );
 	if ( str_contains( $flow_slug, 'bootstrap' ) ) {
-		foreach ( array( 'clean documentation surface', 'covers every major', 'separate', 'digestible', 'hierarchy mirrors', 'parent/child relationships', 'cross-links', 'write every linked documentation page', 'links resolve to committed files', 'create_or_update_github_file before create_github_pull_request' ) as $phrase ) {
+		$required_phrases = array( 'source inventory', 'clean documentation surface', 'reader', 'separate', 'digestible', 'hierarchy mirrors', 'parent/child relationships', 'cross-links', 'committed documentation scope', 'write every linked documentation page', 'links resolve to committed files', 'reconcile the written docs against the source inventory', 'future coverage with the reason', 'create_or_update_github_file before create_github_pull_request' );
+		$required_phrases = array_merge( $required_phrases, str_starts_with( $flow_slug, 'technical-' ) ? array( 'reference-level details', 'representative payloads or examples' ) : array( 'practical details', 'configuration examples' ) );
+		foreach ( $required_phrases as $phrase ) {
 			$assert( str_contains( $flow_prompt, $phrase ), "Bootstrap flow {$flow_slug} missing phrase: {$phrase}" );
 		}
-		$assert( ! str_contains( $flow_prompt, 'coverage map' ), "Bootstrap flow {$flow_slug} should not require a coverage map artifact." );
 	}
 	if ( str_contains( $flow_slug, 'maintenance' ) || in_array( $flow_slug, array( 'technical-docs-flow', 'user-docs-flow' ), true ) ) {
 		foreach ( array( 'maintenance pass', 'focused updates', 'no_changes' ) as $phrase ) {
