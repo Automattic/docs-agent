@@ -72,7 +72,7 @@ foreach ( $spec['expected_flows'] ?? array() as $flow_slug ) {
 
 	$flow_prompt = strtolower( (string) ( $step['prompt_queue'][0]['prompt'] ?? '' ) );
 	if ( str_contains( $flow_slug, 'bootstrap' ) ) {
-		foreach ( array( 'coverage map', 'not complete until', 'out of scope' ) as $phrase ) {
+		foreach ( array( 'coverage map', 'not complete until', 'default bootstrap output', 'create_or_update_github_file before create_github_pull_request', 'explicit coverage map' ) as $phrase ) {
 			$assert( str_contains( $flow_prompt, $phrase ), "Bootstrap flow {$flow_slug} missing phrase: {$phrase}" );
 		}
 	}
