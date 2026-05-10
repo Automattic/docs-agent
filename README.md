@@ -55,9 +55,13 @@ The consumer repo does not need to contain this bundle. It only needs a Homeboy 
 - Bundle path: `bundles/docs-agent`
 - Agent slug: `docs-agent`
 - Technical pipeline slug: `technical-docs-pipeline`
-- Technical flow slug: `technical-docs-flow`
+- Technical bootstrap flow slug: `technical-docs-bootstrap-flow`
+- Technical maintenance flow slug: `technical-docs-maintenance-flow`
+- Technical maintenance alias: `technical-docs-flow`
 - User-facing pipeline slug: `user-docs-pipeline`
-- User-facing flow slug: `user-docs-flow`
+- User-facing bootstrap flow slug: `user-docs-bootstrap-flow`
+- User-facing maintenance flow slug: `user-docs-maintenance-flow`
+- User-facing maintenance alias: `user-docs-flow`
 
 ## Setup For A Consumer Repo
 
@@ -89,27 +93,45 @@ Start from `examples/homeboy-runner-config.example.json` and change these fields
 - `component_path`: checkout path for the consuming repo during the run.
 - `validation_dependencies`: local paths to prepared checkouts for Agents API, Data Machine, Data Machine Code, and the OpenAI provider.
 - `bundle_ref`: pinned branch, tag, or SHA from this repo.
-- `pipeline_slug` and `flow_slug`: choose either the technical or user workflow.
+- `pipeline_slug` and `flow_slug`: choose the technical or user pipeline, then choose bootstrap or maintenance mode.
 - `target_repo`: GitHub `OWNER/REPO` for the repository being documented.
 - `allowed_repos`: usually the same single `OWNER/REPO`.
 - `tool_recorders[].forced_parameters.allowed_file_paths`: exact docs path scope the agent may write.
 - `bench_env`: maps CI secrets into the runner environment.
 
-For technical docs, use:
+For an initial technical docs pass, use:
 
 ```json
 {
   "pipeline_slug": "technical-docs-pipeline",
-  "flow_slug": "technical-docs-flow"
+  "flow_slug": "technical-docs-bootstrap-flow"
 }
 ```
 
-For user docs, use:
+For ongoing technical docs maintenance, use:
+
+```json
+{
+  "pipeline_slug": "technical-docs-pipeline",
+  "flow_slug": "technical-docs-maintenance-flow"
+}
+```
+
+For an initial user docs pass, use:
 
 ```json
 {
   "pipeline_slug": "user-docs-pipeline",
-  "flow_slug": "user-docs-flow"
+  "flow_slug": "user-docs-bootstrap-flow"
+}
+```
+
+For ongoing user docs maintenance, use:
+
+```json
+{
+  "pipeline_slug": "user-docs-pipeline",
+  "flow_slug": "user-docs-maintenance-flow"
 }
 ```
 
@@ -150,7 +172,11 @@ The runner should treat both outcomes as successful:
 
 ## Technical Documentation Standard
 
-The technical workflow should optimize for a clean, navigable documentation surface that helps developers work on, use, and extend the target codebase. It should not treat the presence of a README as sufficient by itself.
+The technical pipeline should optimize for a clean, navigable living documentation surface that helps developers work on, use, and extend the target codebase as the code changes. It should not treat the presence of a README as sufficient by itself.
+
+Use `technical-docs-bootstrap-flow` for an initial full-repo documentation pass. Bootstrap documentation is incomplete until every major source area is documented or explicitly marked out of scope.
+
+Use `technical-docs-maintenance-flow` for ongoing updates. Maintenance runs should prefer focused PRs that keep existing docs aligned with current source behavior. The legacy `technical-docs-flow` slug is kept as a maintenance alias for existing consumers.
 
 Before returning `no_changes`, the agent should audit whether existing docs cover:
 
@@ -166,9 +192,11 @@ When coverage is missing, stale, fragmented, or too shallow for a developer to c
 
 ## User Documentation Standard
 
-The user-facing workflow should explain what users can do with the project without requiring them to understand internal implementation details. It should cover setup, common tasks, configuration that affects behavior, expected outputs, and troubleshooting.
+The user pipeline should optimize for a clean, navigable living documentation surface that helps non-technical users understand what the product does, get started, configure it, complete common tasks, and troubleshoot user-visible behavior.
 
-When the source exposes user-visible behavior that is undocumented or stale, the user workflow should update the docs and open one reviewable pull request.
+Use `user-docs-bootstrap-flow` for an initial full user documentation pass. Bootstrap user docs are incomplete until every major user-visible feature, setup path, configuration option, permission or requirement, common task, compatibility boundary, troubleshooting path, and FAQ-worthy behavior is documented or explicitly marked out of scope.
+
+Use `user-docs-maintenance-flow` for ongoing updates. Maintenance runs should prefer focused PRs that keep existing user docs aligned with current product behavior. The legacy `user-docs-flow` slug is kept as a maintenance alias for existing consumers.
 
 ## Portability Notes
 
@@ -183,3 +211,5 @@ When the source exposes user-visible behavior that is undocumented or stale, the
 ```bash
 php tests/validate-docs-agent-bundle.php
 ```
+
+CI validates the bundle with `tests/docs-agent.validate-bundle-spec.json`.

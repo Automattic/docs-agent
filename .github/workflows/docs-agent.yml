@@ -10,9 +10,13 @@ on:
         description: Which docs flow to run.
         type: choice
         options:
+          - technical-docs-bootstrap-flow
+          - technical-docs-maintenance-flow
           - technical-docs-flow
+          - user-docs-bootstrap-flow
+          - user-docs-maintenance-flow
           - user-docs-flow
-        default: technical-docs-flow
+        default: technical-docs-maintenance-flow
       prompt:
         description: Override the default prompt (optional).
         required: false
@@ -27,7 +31,7 @@ jobs:
     with:
       bundle_path: bundles/docs-agent
       agent_slug: docs-agent
-      pipeline_slug: ${{ inputs.flow_kind == 'technical-docs-flow' && 'technical-docs-pipeline' || 'user-docs-pipeline' }}
+      pipeline_slug: ${{ contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-pipeline' || 'user-docs-pipeline' }}
       flow_slug: ${{ inputs.flow_kind }}
       target_repo: ${{ inputs.target_repo }}
       prompt: >-
@@ -35,9 +39,13 @@ jobs:
           inputs.prompt != '' &&
           inputs.prompt ||
           (
-            inputs.flow_kind == 'technical-docs-flow' &&
-            'Generate or update technical, developer-facing documentation from the target repository source code. The docs should help developers work on, use, and extend the codebase from one coherent documentation surface. Audit coverage for public APIs, internal processes, module connections, extension points, lifecycle, data contracts, auth/permissions, errors and failure modes, examples, operational workflows, compatibility boundaries, and software philosophy. Return no_changes only when existing docs are accurate, complete enough, and easy to navigate across that rubric. Open a documentation pull request only if changes are needed.' ||
-            'Generate or update non-technical, user-facing documentation from the target repository source code. Focus on what users can do, getting started, common tasks, configuration, and troubleshooting. Open a documentation pull request only if changes are needed.'
+            contains(inputs.flow_kind, 'technical-docs-bootstrap') &&
+            'Run the technical docs bootstrap flow. Build the broadest complete initial developer documentation surface possible from source code, tests, existing docs, issues, and pull requests. Open one documentation PR unless the repo already has complete technical docs.' ||
+            contains(inputs.flow_kind, 'technical-docs') &&
+            'Run the technical docs maintenance flow. Update developer-facing living documentation only where source code, tests, recent issues, recent pull requests, or existing docs show stale, missing, fragmented, or misleading coverage. Open a documentation PR only if needed.' ||
+            contains(inputs.flow_kind, 'user-docs-bootstrap') &&
+            'Run the user docs bootstrap flow. Build the broadest complete initial user-facing documentation surface possible from source code, UI strings, existing docs, issues, and pull requests. Open one documentation PR unless the repo already has complete user docs.' ||
+            'Run the user docs maintenance flow. Update non-technical user-facing living documentation only where source code, UI strings, recent issues, recent pull requests, or existing docs show stale, missing, fragmented, or misleading coverage. Open a documentation PR only if needed.'
           )
         }}
       model: ${{ inputs.openai_model }}

@@ -8,6 +8,8 @@
 - Documentation updates must stay inside the runner-enforced writable path scope.
 - No-op success is valid when documentation is already aligned.
 - One focused pull request is the review boundary when changes are needed.
+- Documentation is living documentation: it is expected to change as source behavior changes.
+- Bootstrap flows build the broad initial documentation surface; maintenance flows keep that surface accurate over time.
 
 ## Technical Documentation Rubric
 
@@ -25,8 +27,12 @@ Prefer one clean, navigable documentation surface with useful cross-links over s
 
 ## Supported Workflows
 
-- `technical`: developer-facing documentation from source code.
-- `user`: non-technical user-facing documentation from source code.
+- `technical-docs-bootstrap-flow`: first-run developer-facing documentation from source code.
+- `technical-docs-maintenance-flow`: ongoing developer-facing documentation maintenance from source code.
+- `technical-docs-flow`: maintenance alias for existing consumers.
+- `user-docs-bootstrap-flow`: first-run non-technical user-facing documentation from source code.
+- `user-docs-maintenance-flow`: ongoing non-technical user-facing documentation maintenance from source code.
+- `user-docs-flow`: maintenance alias for existing consumers.
 
 ## Default Writable Scope
 
