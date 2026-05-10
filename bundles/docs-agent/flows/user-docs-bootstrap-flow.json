@@ -1,0 +1,36 @@
+{
+  "max_items": [],
+  "name": "User Documentation Bootstrap",
+  "pipeline_slug": "user-docs-pipeline",
+  "schedule": "manual",
+  "schema_version": 1,
+  "slug": "user-docs-bootstrap-flow",
+  "steps": [
+    {
+      "enabled_tools": [
+        "list_github_issues",
+        "get_github_issue",
+        "list_github_pulls",
+        "get_github_pull",
+        "get_github_pull_files",
+        "get_github_pull_review_context",
+        "github_pr_documentation_impact",
+        "list_github_tree",
+        "get_github_file",
+        "create_or_update_github_file",
+        "create_github_pull_request",
+        "comment_github_pull_request"
+      ],
+      "handler_configs": {},
+      "prompt_queue": [
+        {
+          "added_at": "2026-05-10T00:00:00Z",
+          "prompt": "Bootstrap the repository's non-technical, user-facing living documentation from source code. First build a coverage map from README.md, docs/**, source files, UI strings, commands, configuration, tests, examples, issues, and pull requests. Documentation is not complete until every major user-visible feature, setup path, configuration option, permission or requirement, common task, operational expectation, compatibility boundary, troubleshooting path, and FAQ-worthy behavior is documented or explicitly marked out of scope. Prefer one coherent docs surface with an index or clear navigation over isolated pages. Do not expose internal implementation details unless they affect user behavior. Do not stop after a single high-signal gap unless tool, token, or writable-scope limits prevent a full pass; if constrained, state the partial coverage in the pull request body. Open one reviewable documentation pull request with the broadest complete initial user docs surface you can produce. Return no_changes only if the repo already has complete, navigable user docs across all user-visible behavior."
+        }
+      ],
+      "queue_mode": "static",
+      "step_position": 0,
+      "step_type": "ai"
+    }
+  ]
+}

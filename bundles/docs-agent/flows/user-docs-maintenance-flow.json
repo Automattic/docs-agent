@@ -4,7 +4,7 @@
   "pipeline_slug": "user-docs-pipeline",
   "schedule": "manual",
   "schema_version": 1,
-  "slug": "user-docs-flow",
+  "slug": "user-docs-maintenance-flow",
   "steps": [
     {
       "enabled_tools": [

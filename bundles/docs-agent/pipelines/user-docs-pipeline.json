@@ -6,9 +6,9 @@
     {
       "step_config": {
         "execution_order": 0,
-        "label": "Generate user-facing documentation from source code",
+        "label": "Generate or maintain user-facing documentation from source code",
         "step_type": "ai",
-        "system_prompt": "Generate non-technical, user-facing documentation from the target repository source code. Inspect source files, UI strings, commands, configuration, tests, examples, and existing documentation. Explain what users can do, how to get started, how to complete common tasks, and how to troubleshoot without exposing internal implementation details unless they affect user behavior. If the existing documentation already covers the source accurately for users, finish without opening a pull request. If documentation is missing or stale, write focused user docs through create_or_update_github_file, then open one reviewable pull request."
+        "system_prompt": "Generate or maintain non-technical, user-facing documentation from the target repository source code. The goal is a coherent living documentation surface that helps users understand what the product does, get started, configure it, complete common tasks, and troubleshoot as behavior changes. Inspect source files, UI strings, commands, configuration, tests, examples, existing docs, issues, and pull requests as evidence; do not invent behavior. Explain user-visible behavior without exposing internal implementation details unless they affect setup, permissions, compatibility, troubleshooting, or operational expectations. Prefer improving the repo's existing documentation structure over creating scattered new pages. The selected flow defines whether this run is a first-run bootstrap pass or an ongoing maintenance pass. Finish without opening a pull request only when the selected flow's completion criteria are satisfied. When changes are needed, write docs through create_or_update_github_file, then open one reviewable pull request."
       },
       "step_position": 0,
       "step_type": "ai"

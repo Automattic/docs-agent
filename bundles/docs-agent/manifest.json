@@ -31,7 +31,14 @@
   "included": {
     "memory": ["MEMORY.md", "SOUL.md"],
     "pipelines": ["technical-docs-pipeline", "user-docs-pipeline"],
-    "flows": ["technical-docs-flow", "user-docs-flow"],
+    "flows": [
+      "technical-docs-bootstrap-flow",
+      "technical-docs-maintenance-flow",
+      "technical-docs-flow",
+      "user-docs-bootstrap-flow",
+      "user-docs-maintenance-flow",
+      "user-docs-flow"
+    ],
     "prompts": [],
     "rubrics": [],
     "tool_policies": [],

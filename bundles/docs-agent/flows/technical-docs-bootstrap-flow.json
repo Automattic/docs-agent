@@ -1,0 +1,36 @@
+{
+  "max_items": [],
+  "name": "Technical Documentation Bootstrap",
+  "pipeline_slug": "technical-docs-pipeline",
+  "schedule": "manual",
+  "schema_version": 1,
+  "slug": "technical-docs-bootstrap-flow",
+  "steps": [
+    {
+      "enabled_tools": [
+        "list_github_issues",
+        "get_github_issue",
+        "list_github_pulls",
+        "get_github_pull",
+        "get_github_pull_files",
+        "get_github_pull_review_context",
+        "github_pr_documentation_impact",
+        "list_github_tree",
+        "get_github_file",
+        "create_or_update_github_file",
+        "create_github_pull_request",
+        "comment_github_pull_request"
+      ],
+      "handler_configs": {},
+      "prompt_queue": [
+        {
+          "added_at": "2026-05-10T00:00:00Z",
+          "prompt": "Bootstrap the repository's technical, developer-facing living documentation from source code. First build a coverage map from README.md, docs/**, source directories, tests, examples, issues, and pull requests. Documentation is not complete until every major public API, extension point, runtime contract, workflow/lifecycle path, data contract, storage/persistence boundary, auth/permission behavior, failure mode, operational workflow, and contributor-facing design principle is documented or explicitly marked out of scope. Prefer one coherent docs surface with an index or clear navigation over isolated pages. Do not stop after a single high-signal gap unless tool, token, or writable-scope limits prevent a full pass; if constrained, state the partial coverage in the pull request body. Open one reviewable documentation pull request with the broadest complete initial docs surface you can produce. Return no_changes only if the repo already has complete, navigable technical docs across the full codebase."
+        }
+      ],
+      "queue_mode": "static",
+      "step_position": 0,
+      "step_type": "ai"
+    }
+  ]
+}
