@@ -102,5 +102,6 @@ foreach ( $recorders as $recorder ) {
 
 $assert( is_array( $file_recorder ), 'Example config must record create_or_update_github_file.' );
 $assert( array( 'README.md', 'docs/**' ) === ( $file_recorder['forced_parameters']['allowed_file_paths'] ?? null ), 'Example config must force writable docs paths.' );
+$assert( is_file( $root . '/scripts/repair-docs-links.php' ), 'Docs link repair script must be available to consumer workflows.' );
 
 fwrite( STDOUT, "Docs Agent bundle validation passed.\n" );
