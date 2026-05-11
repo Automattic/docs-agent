@@ -42,3 +42,10 @@ Consumers should usually allow docs paths such as:
 - `docs/**`
 
 Consumers may narrow or expand this list explicitly.
+
+## Documentation Structure Policy
+
+- Always inventory the repository's existing documentation information architecture before writing files.
+- Preserve or improve the existing docs taxonomy, index convention, and topic grouping instead of introducing a generic audience folder.
+- Create audience folders such as `technical/` or `user/` only when the repository already uses that convention or the consumer prompt explicitly requests it.
+- Prefer a `docs/README.md` or existing docs index that links focused topic pages by architecture, API, runtime, operations, and integration areas when the repo has no stronger convention.
