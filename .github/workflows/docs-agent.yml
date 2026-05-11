@@ -50,7 +50,20 @@ jobs:
         }}
       model: ${{ inputs.openai_model }}
       validation_dependencies: Automattic/agents-api@main,Extra-Chill/data-machine@main,Extra-Chill/data-machine-code@main,WordPress/ai-provider-for-openai@main
+      runner_workspace: |
+        {
+          "enabled": true,
+          "repo": "${{ inputs.target_repo }}",
+          "clone_url": "https://github.com/${{ inputs.target_repo }}.git",
+          "branch_prefix": "docs/agent-run",
+          "from": "origin/main",
+          "bootstrap": false
+        }
       success_requires_pr: false
+      extra_required_abilities: |
+        [
+          "datamachine/workspace-worktree-add"
+        ]
       app_token_repos: ${{ inputs.target_repo }}
       engine_data_outputs: '{"docs_pr_url":"metadata.engine_data.docs_agent.pr_url"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}

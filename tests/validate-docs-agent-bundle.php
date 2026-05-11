@@ -74,9 +74,9 @@ foreach ( $spec['expected_flows'] ?? array() as $flow_slug ) {
 	if ( str_contains( $flow_slug, 'bootstrap' ) ) {
 		$completion_assertions = $step['completion_assertions'] ?? array();
 		$assert( array( 'create_github_pull_request' ) === ( $completion_assertions['required_tool_names'] ?? null ), "Bootstrap flow {$flow_slug} must require pull request creation." );
-		$assert( 6 === ( $completion_assertions['minimum_successful_tool_counts']['create_or_update_github_file'] ?? null ), "Bootstrap flow {$flow_slug} must require at least six file writes." );
+		$assert( 6 === ( $completion_assertions['minimum_successful_tool_counts']['workspace_write'] ?? null ), "Bootstrap flow {$flow_slug} must require at least six workspace file writes." );
 
-		$required_phrases = array( 'source inventory', 'clean documentation surface', 'reader', 'documentation information architecture', 'preserve or improve', 'committed scope that fits the run budget', 'future coverage section as plain text', 'separate', 'digestible', 'hierarchy mirrors', 'parent/child relationships', 'cross-links', 'committed documentation scope', 'write topic pages first', 'index last', 'write every linked documentation page', 'links resolve to committed files', 'reconcile the written docs against the source inventory', 'future coverage with the reason', 'create_or_update_github_file before create_github_pull_request' );
+		$required_phrases = array( 'source inventory', 'clean documentation surface', 'reader', 'documentation information architecture', 'preserve or improve', 'committed scope that fits the run budget', 'future coverage section as plain text', 'separate', 'digestible', 'hierarchy mirrors', 'parent/child relationships', 'cross-links', 'committed documentation scope', 'write topic pages first', 'index last', 'write every linked documentation page', 'links resolve to committed files', 'reconcile the written docs against the source inventory', 'future coverage with the reason' );
 		$required_phrases = array_merge( $required_phrases, str_starts_with( $flow_slug, 'technical-' ) ? array( 'reference-level details', 'representative payloads or examples' ) : array( 'practical details', 'configuration examples' ) );
 		foreach ( $required_phrases as $phrase ) {
 			$assert( str_contains( $flow_prompt, $phrase ), "Bootstrap flow {$flow_slug} missing phrase: {$phrase}" );
@@ -95,17 +95,9 @@ foreach ( $spec['example_assertions'] ?? array() as $key => $expected ) {
 	$assert( $expected === ( $example[ $key ] ?? null ), "Example config {$key} mismatch." );
 }
 
-$recorders     = $example['tool_recorders'] ?? array();
-$file_recorder = null;
-foreach ( $recorders as $recorder ) {
-	if ( is_array( $recorder ) && 'create_or_update_github_file' === ( $recorder['tool'] ?? '' ) ) {
-		$file_recorder = $recorder;
-		break;
-	}
-}
-
-$assert( is_array( $file_recorder ), 'Example config must record create_or_update_github_file.' );
-$assert( array( 'README.md', 'docs/**' ) === ( $file_recorder['forced_parameters']['allowed_file_paths'] ?? null ), 'Example config must force writable docs paths.' );
+$runner_workspace = $example['runner_workspace'] ?? array();
+$assert( ! empty( $runner_workspace['enabled'] ), 'Example config must enable runner-owned workspace provisioning.' );
+$assert( 'docs/agent-run' === ( $runner_workspace['branch_prefix'] ?? null ), 'Example config must declare the docs branch prefix.' );
 $assert( is_file( $root . '/scripts/repair-docs-links.php' ), 'Docs link repair script must be available to consumer workflows.' );
 
 fwrite( STDOUT, "Docs Agent bundle validation passed.\n" );
