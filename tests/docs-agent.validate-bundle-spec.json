@@ -17,7 +17,11 @@
       "pipeline_slug": "technical-docs-pipeline",
       "ai_step_required_tools": [
         "get_github_file",
-        "create_or_update_github_file",
+        "workspace_read",
+        "workspace_grep",
+        "workspace_write",
+        "workspace_git_commit",
+        "workspace_git_push",
         "create_github_pull_request"
       ]
     },
@@ -25,7 +29,11 @@
       "pipeline_slug": "technical-docs-pipeline",
       "ai_step_required_tools": [
         "get_github_file",
-        "create_or_update_github_file",
+        "workspace_read",
+        "workspace_grep",
+        "workspace_edit",
+        "workspace_git_commit",
+        "workspace_git_push",
         "create_github_pull_request"
       ],
       "completion_assertions_empty": true
@@ -34,7 +42,11 @@
       "pipeline_slug": "technical-docs-pipeline",
       "ai_step_required_tools": [
         "get_github_file",
-        "create_or_update_github_file",
+        "workspace_read",
+        "workspace_grep",
+        "workspace_edit",
+        "workspace_git_commit",
+        "workspace_git_push",
         "create_github_pull_request"
       ],
       "completion_assertions_empty": true
@@ -43,7 +55,11 @@
       "pipeline_slug": "user-docs-pipeline",
       "ai_step_required_tools": [
         "get_github_file",
-        "create_or_update_github_file",
+        "workspace_read",
+        "workspace_grep",
+        "workspace_write",
+        "workspace_git_commit",
+        "workspace_git_push",
         "create_github_pull_request"
       ]
     },
@@ -51,7 +67,11 @@
       "pipeline_slug": "user-docs-pipeline",
       "ai_step_required_tools": [
         "get_github_file",
-        "create_or_update_github_file",
+        "workspace_read",
+        "workspace_grep",
+        "workspace_edit",
+        "workspace_git_commit",
+        "workspace_git_push",
         "create_github_pull_request"
       ],
       "completion_assertions_empty": true
@@ -60,7 +80,11 @@
       "pipeline_slug": "user-docs-pipeline",
       "ai_step_required_tools": [
         "get_github_file",
-        "create_or_update_github_file",
+        "workspace_read",
+        "workspace_grep",
+        "workspace_edit",
+        "workspace_git_commit",
+        "workspace_git_push",
         "create_github_pull_request"
       ],
       "completion_assertions_empty": true

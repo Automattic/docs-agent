@@ -17,7 +17,18 @@
         "github_pr_documentation_impact",
         "list_github_tree",
         "get_github_file",
-        "create_or_update_github_file",
+        "workspace_show",
+        "workspace_ls",
+        "workspace_read",
+        "workspace_grep",
+        "workspace_write",
+        "workspace_edit",
+        "workspace_apply_patch",
+        "workspace_git_status",
+        "workspace_git_diff",
+        "workspace_git_add",
+        "workspace_git_commit",
+        "workspace_git_push",
         "create_github_pull_request",
         "comment_github_pull_request"
       ],
@@ -25,7 +36,7 @@
       "prompt_queue": [
         {
           "added_at": "2026-05-10T00:00:00Z",
-          "prompt": "Maintenance pass for technical, developer-facing living documentation. Review the repository source code, tests, existing docs, recent issues, and recent pull requests for documentation gaps, drift, fragmentation, unclear developer guidance, and documentation information architecture problems. Preserve or improve the repository's existing docs taxonomy, index convention, and topic grouping; create audience folders such as technical/ only when the repository already uses that convention or the consumer prompt explicitly asks for it. Prefer focused updates that keep existing docs aligned with current code behavior across public APIs, internal processes, module connections, extension points, lifecycle, data contracts, auth/permissions, errors and failure modes, examples, operational workflows, compatibility boundaries, and software philosophy. Use no_changes when existing docs are accurate, sufficiently broad for the changed or inspected areas, and easy to navigate. When changes are needed, open one documentation pull request."
+          "prompt": "Maintenance pass for technical, developer-facing living documentation. Review the repository source code, tests, existing docs, recent issues, and recent pull requests for documentation gaps, drift, fragmentation, unclear developer guidance, and documentation information architecture problems. When the runner provides a workspace handle, inspect and edit documentation through workspace tools, commit and push the scoped docs change, then open one documentation pull request. Preserve or improve the repository's existing docs taxonomy, index convention, and topic grouping; create audience folders such as technical/ only when the repository already uses that convention or the consumer prompt explicitly asks for it. Prefer focused updates that keep existing docs aligned with current code behavior across public APIs, internal processes, module connections, extension points, lifecycle, data contracts, auth/permissions, errors and failure modes, examples, operational workflows, compatibility boundaries, and software philosophy. Use no_changes when existing docs are accurate, sufficiently broad for the changed or inspected areas, and easy to navigate."
         }
       ],
       "queue_mode": "static",

@@ -26,6 +26,14 @@
   "github_profile_id": "docs-agent-ci",
   "target_repo": "OWNER/REPO",
   "allowed_repos": ["OWNER/REPO"],
+  "runner_workspace": {
+    "enabled": true,
+    "repo": "REPO",
+    "clone_url": "https://github.com/OWNER/REPO.git",
+    "branch_prefix": "docs/agent-run",
+    "from": "origin/main",
+    "bootstrap": false
+  },
   "success_requires_pr": false,
   "max_turns": 12,
   "prompt": "Run the technical docs maintenance flow. Update developer-facing living documentation only where source code, tests, recent issues, recent pull requests, or existing docs show stale, missing, fragmented, or misleading coverage. Open a documentation PR only if needed.",
@@ -36,19 +44,9 @@
     "datamachine/import-agent",
     "datamachine/run-flow",
     "datamachine/drain-job",
-    "datamachine/create-or-update-github-file"
+    "datamachine/workspace-worktree-add"
   ],
   "tool_recorders": [
-    {
-      "tool": "create_or_update_github_file",
-      "forced_parameters": {
-        "allowed_file_paths": ["README.md", "docs/**"]
-      },
-      "record": {
-        "engine_key": "docs_agent",
-        "tool_results_key": "github_tool_results"
-      }
-    },
     {
       "tool": "create_github_pull_request",
       "record": {
