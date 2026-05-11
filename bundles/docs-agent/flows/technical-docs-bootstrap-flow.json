@@ -21,6 +21,12 @@
         "create_github_pull_request",
         "comment_github_pull_request"
       ],
+      "completion_assertions": {
+        "required_tool_names": ["create_github_pull_request"],
+        "minimum_successful_tool_counts": {
+          "create_or_update_github_file": 6
+        }
+      },
       "handler_configs": {},
       "prompt_queue": [
         {
