@@ -19,8 +19,7 @@
         "get_github_file",
         "create_or_update_github_file",
         "create_github_pull_request"
-      ],
-      "completion_assertions_empty": true
+      ]
     },
     "technical-docs-maintenance-flow": {
       "pipeline_slug": "technical-docs-pipeline",
@@ -46,8 +45,7 @@
         "get_github_file",
         "create_or_update_github_file",
         "create_github_pull_request"
-      ],
-      "completion_assertions_empty": true
+      ]
     },
     "user-docs-maintenance-flow": {
       "pipeline_slug": "user-docs-pipeline",
