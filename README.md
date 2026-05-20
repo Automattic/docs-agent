@@ -1,30 +1,26 @@
 # Docs Agent
 
-Reusable Data Machine source-code documentation agent bundle.
+Reusable Data Machine documentation-agent package for GitHub repositories.
 
-`docs-agent` lets teams run documentation automation against a GitHub repository without building a bespoke agent for that repository. The target repo can be a WordPress plugin, package, service, app, CLI, or other codebase. The automation is repo-agnostic as long as the runner can read the target GitHub repo, write to the configured documentation paths, and open a pull request.
+This repo ships multiple portable agent bundles. Consumers choose the bundle that matches the documentation audience instead of running one shared agent with different lanes.
 
-## What It Does
+## Bundles
 
-Docs Agent imports a reusable agent bundle into a temporary WordPress/Data Machine runtime, points it at a target GitHub repository, lets the agent inspect source code and existing docs, and opens one documentation PR when updates are needed.
+- `bundles/technical-docs-agent`: developer, site-owner, operator, contributor, and integrator documentation.
+- `bundles/user-docs-agent`: non-technical product documentation for frontend users.
 
-It currently ships two workflows:
-
-- **Technical documentation**: developer-facing docs for APIs, architecture, extension points, lifecycle, data contracts, examples, operational workflows, and project philosophy.
-- **User documentation**: non-technical docs for getting started, common tasks, configuration, and troubleshooting.
-
-Both workflows may finish with `no_changes` when the existing docs already cover the source accurately.
+Both bundles run in the same Homeboy/Data Machine runner stack. Each imports a distinct agent identity, memory, pipeline, flow set, and documentation standard.
 
 ## How The Pieces Fit
 
 ```text
 Target GitHub repo
         |
-        | read files, write docs, open PR
+        | read context, write allowed docs paths, open PR
         v
-Data Machine Code GitHub tools
+Data Machine Code GitHub/workspace tools
         |
-        | tools exposed to the agent
+        | tools exposed to selected bundle agent
         v
 Data Machine flow + pipeline
         |
@@ -34,66 +30,85 @@ Agents API + model provider
         |
         | reusable runtime primitives + LLM call
         v
-Docs Agent bundle
+Selected Docs Agent bundle
 ```
 
-The consumer repo does not need to contain this bundle. It only needs a Homeboy runner configuration that says which bundle, flow, target repo, credentials, and writable paths to use.
+The consumer repo does not need to contain these bundles. It only needs a Homeboy runner configuration that says which bundle, flow, target repo, credentials, and writable paths to use.
 
 ## Repositories Involved
 
-- Docs Agent bundle: https://github.com/Automattic/docs-agent
+- Docs Agent bundles: https://github.com/Automattic/docs-agent
 - Agents API runtime primitives: https://github.com/Automattic/agents-api
 - Data Machine agent, bundle, flow, and pipeline runtime: https://github.com/Extra-Chill/data-machine
 - Data Machine Code GitHub tools and PR-writing abilities: https://github.com/Extra-Chill/data-machine-code
 - OpenAI provider for the WordPress AI Client: https://github.com/WordPress/ai-provider-for-openai
 - Homeboy command runner and artifact framework: https://github.com/Extra-Chill/homeboy
 - Homeboy WordPress/Playground extension layer: https://github.com/Extra-Chill/homeboy-extensions
-- WordPress Playground runtime used by Homeboy WordPress runs: https://github.com/WordPress/wordpress-playground
 
-## Bundle Contents
+## Technical Docs Agent
 
-- Bundle path: `bundles/docs-agent`
-- Agent slug: `docs-agent`
-- Technical pipeline slug: `technical-docs-pipeline`
-- Technical bootstrap flow slug: `technical-docs-bootstrap-flow`
-- Technical maintenance flow slug: `technical-docs-maintenance-flow`
-- Technical maintenance alias: `technical-docs-flow`
-- User-facing pipeline slug: `user-docs-pipeline`
-- User-facing bootstrap flow slug: `user-docs-bootstrap-flow`
-- User-facing maintenance flow slug: `user-docs-maintenance-flow`
-- User-facing maintenance alias: `user-docs-flow`
+- Bundle path: `bundles/technical-docs-agent`
+- Agent slug: `technical-docs-agent`
+- Pipeline slug: `technical-docs-pipeline`
+- Bootstrap flow slug: `technical-docs-bootstrap-flow`
+- Maintenance flow slug: `technical-docs-maintenance-flow`
+- Maintenance alias: `technical-docs-flow`
+
+Use this bundle for developer-facing docs: architecture, APIs, hooks, filters, abilities, commands, extension points, lifecycle, data contracts, local development, tests, release workflows, operations, and contributor guidance.
+
+The technical bundle can write in the repository's existing developer-docs namespace, commonly `README.md` and `docs/**`.
+
+## User Docs Agent
+
+- Bundle path: `bundles/user-docs-agent`
+- Agent slug: `user-docs-agent`
+- Pipeline slug: `user-docs-pipeline`
+- Bootstrap flow slug: `user-docs-bootstrap-flow`
+- Maintenance flow slug: `user-docs-maintenance-flow`
+- Maintenance alias: `user-docs-flow`
+
+Use this bundle for non-technical product docs: what the product does, onboarding, product-surface setup, visible settings, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQ-worthy behavior.
+
+The user bundle should write to its own product-docs namespace, commonly `docs/user/**`, with its own index such as `docs/user/README.md`. It writes for frontend consumers and keeps implementation evidence internal to the run.
 
 ## Setup For A Consumer Repo
 
-Docs Agent is not Automattic-only. Anyone can use it if they can run the Homeboy/Data Machine runner stack and provide the required GitHub and model-provider credentials. Automattic repositories can use the same contract through internal CI conventions, but the bundle itself does not depend on Automattic-specific source code.
+Docs Agent is not Automattic-only. Anyone can use it if they can run the Homeboy/Data Machine runner stack and provide the required GitHub and model-provider credentials.
 
-### 1. Decide Which Docs The Agent May Edit
+### 1. Choose The Audience
 
-Set a narrow writable scope before enabling the workflow. The example allows only:
+Choose exactly one bundle per run:
 
-- `README.md`
-- `docs/**`
+- Technical docs: `bundles/technical-docs-agent`
+- User docs: `bundles/user-docs-agent`
 
-Keep this scope small unless the repository intentionally stores documentation elsewhere.
+Run separate PRs for separate audiences. Avoid letting both bundles edit the same docs index in one pass.
 
-### 2. Create Credentials
+### 2. Choose The Writable Scope
+
+Keep the writable scope narrow:
+
+- Technical docs often use `README.md` and `docs/**`.
+- User docs should use a dedicated namespace such as `docs/user/**`.
+
+The writable scope is the main safety boundary. Keep it explicit.
+
+### 3. Create Credentials
 
 The runner needs:
 
-- `GITHUB_TOKEN`: token with access to read the target repo, create branches, write configured docs files, and open pull requests.
-- `OPENAI_API_KEY`: model provider credential used by `ai-provider-for-openai`.
+- A GitHub credential that can read the target repo, create branches, write configured docs files, and open pull requests.
+- `OPENAI_API_KEY` or the equivalent model-provider credential.
 
-Use repository or organization secrets in CI. Do not commit credentials into the runner config.
+Use repository or organization secrets in CI. Do not commit credentials into runner config.
 
-### 3. Add A Runner Config
+### 4. Add A Runner Config
 
 Start from `examples/homeboy-runner-config.example.json` and change these fields:
 
-- `component_id`: stable ID for the consuming repo or CI driver.
-- `component_path`: checkout path for the consuming repo during the run.
-- `validation_dependencies`: local paths to prepared checkouts for Agents API, Data Machine, Data Machine Code, and the OpenAI provider.
-- `bundle_ref`: pinned branch, tag, or SHA from this repo.
-- `pipeline_slug` and `flow_slug`: choose the technical or user pipeline, then choose bootstrap or maintenance mode.
+- `bundle_path_in_repo`: selected bundle path.
+- `agent_slug`: selected bundle agent slug.
+- `pipeline_slug` and `flow_slug`: selected bundle pipeline and flow.
 - `target_repo`: GitHub `OWNER/REPO` for the repository being documented.
 - `allowed_repos`: usually the same single `OWNER/REPO`.
 - `tool_recorders[].forced_parameters.allowed_file_paths`: exact docs path scope the agent may write.
@@ -103,6 +118,8 @@ For an initial technical docs pass, use:
 
 ```json
 {
+  "bundle_path_in_repo": "bundles/technical-docs-agent",
+  "agent_slug": "technical-docs-agent",
   "pipeline_slug": "technical-docs-pipeline",
   "flow_slug": "technical-docs-bootstrap-flow"
 }
@@ -112,6 +129,8 @@ For ongoing technical docs maintenance, use:
 
 ```json
 {
+  "bundle_path_in_repo": "bundles/technical-docs-agent",
+  "agent_slug": "technical-docs-agent",
   "pipeline_slug": "technical-docs-pipeline",
   "flow_slug": "technical-docs-maintenance-flow"
 }
@@ -121,6 +140,8 @@ For an initial user docs pass, use:
 
 ```json
 {
+  "bundle_path_in_repo": "bundles/user-docs-agent",
+  "agent_slug": "user-docs-agent",
   "pipeline_slug": "user-docs-pipeline",
   "flow_slug": "user-docs-bootstrap-flow"
 }
@@ -130,25 +151,12 @@ For ongoing user docs maintenance, use:
 
 ```json
 {
+  "bundle_path_in_repo": "bundles/user-docs-agent",
+  "agent_slug": "user-docs-agent",
   "pipeline_slug": "user-docs-pipeline",
   "flow_slug": "user-docs-maintenance-flow"
 }
 ```
-
-### 4. Wire It Into Homeboy
-
-Run the config through the Homeboy WordPress/Data Machine agent runner used by your repo's CI. The runner is responsible for creating the temporary WordPress runtime, mounting the validation dependencies, importing `bundles/docs-agent`, executing the selected flow, recording artifacts, and reporting whether the result was `pr_opened` or `no_changes`.
-
-The important contract is the config shape, not the target repo's language. If the target repo is available through GitHub and the allowed docs paths are writable, Docs Agent can operate on it.
-
-### 5. Review The Output PR
-
-Docs Agent opens a documentation PR only when it changes files. Review it like any other generated change:
-
-- Check that the docs match the current source.
-- Confirm the agent stayed inside the intended writable paths.
-- Confirm the PR scope is one coherent docs update, not unrelated cleanup.
-- Edit, close, or merge based on normal repository review standards.
 
 ## Runner Contract
 
@@ -158,58 +166,33 @@ Important fields:
 
 - `bundle_repo`: `https://github.com/Automattic/docs-agent.git`
 - `bundle_ref`: a branch, tag, or SHA from this repo
-- `bundle_path_in_repo`: `bundles/docs-agent`
-- `agent_slug`: `docs-agent`
+- `bundle_path_in_repo`: selected bundle path
+- `agent_slug`: selected bundle agent slug
 - `pipeline_slug` and `flow_slug`: selected by the consuming repo
 - `target_repo` and `allowed_repos`: GitHub repository scope
-- `success_requires_pr`: `false`
-- `tool_recorders[].forced_parameters.allowed_file_paths`: hard writable path scope, for example `README.md` and `docs/**`
+- `success_requires_pr`: `false` for maintenance, usually `true` for bootstrap when the consumer expects a first draft PR
+- `tool_recorders[].forced_parameters.allowed_file_paths`: hard writable path scope
 
-The runner should treat both outcomes as successful:
+The runner should treat both outcomes as successful when bootstrap PRs are not required:
 
 - `pr_opened`: docs changes were needed and a pull request was opened.
 - `no_changes`: docs are already aligned and no pull request was needed.
 
-## Technical Documentation Standard
+## Review The Output PR
 
-The technical pipeline should optimize for a clean, navigable living documentation surface that helps developers work on, use, and extend the target codebase as the code changes. It should not treat the presence of a README as sufficient by itself.
+Docs Agent opens a documentation PR only when it changes files. Review it like any other generated change:
 
-Use `technical-docs-bootstrap-flow` for an initial full-repo documentation pass. Bootstrap documentation is incomplete until every major source area is documented or explicitly marked out of scope.
-
-Use `technical-docs-maintenance-flow` for ongoing updates. Maintenance runs should prefer focused PRs that keep existing docs aligned with current source behavior. The legacy `technical-docs-flow` slug is kept as a maintenance alias for existing consumers.
-
-Before returning `no_changes`, the agent should audit whether existing docs cover:
-
-- Public APIs, exported interfaces, commands, abilities, hooks, filters, events, and configuration.
-- Internal processes, lifecycle, scheduling, queues, workflows, state transitions, and failure handling.
-- Architecture boundaries, module relationships, data flow, and how the important pieces connect.
-- Data contracts, value objects, storage, persistence, auth, permissions, and compatibility boundaries.
-- Build, test, release, local development, and operational workflows.
-- Practical examples for common integration, contribution, and extension paths.
-- Software philosophy, ownership boundaries, constraints, and design principles that guide contributors.
-
-When coverage is missing, stale, fragmented, or too shallow for a developer to confidently maintain or extend the project, the technical workflow should update docs and open one reviewable pull request.
-
-## User Documentation Standard
-
-The user pipeline should optimize for a clean, navigable living documentation surface that helps non-technical users understand what the product does, get started, configure it, complete common tasks, and troubleshoot user-visible behavior.
-
-Use `user-docs-bootstrap-flow` for an initial full user documentation pass. Bootstrap user docs are incomplete until every major user-visible feature, setup path, configuration option, permission or requirement, common task, compatibility boundary, troubleshooting path, and FAQ-worthy behavior is documented or explicitly marked out of scope.
-
-Use `user-docs-maintenance-flow` for ongoing updates. Maintenance runs should prefer focused PRs that keep existing user docs aligned with current product behavior. The legacy `user-docs-flow` slug is kept as a maintenance alias for existing consumers.
-
-## Portability Notes
-
-- Docs Agent is portable across GitHub repositories, not tied to one codebase.
-- The target repo does not need to be a WordPress project.
-- The runner runtime is WordPress/Data Machine-based, so the CI environment must provide the WordPress/Data Machine dependencies listed above.
-- The writable path scope is the main safety boundary. Keep it explicit and narrow.
-- `success_requires_pr` should stay `false` because a correct run may find that no docs changes are needed.
+- Check that the docs match current behavior.
+- Confirm the agent stayed inside the intended writable paths.
+- Confirm the PR scope is one coherent docs update.
+- Confirm the chosen audience is correct for every page.
+- Edit, close, or merge based on normal repository review standards.
 
 ## Validation
 
 ```bash
 php tests/validate-docs-agent-bundle.php
+php tests/repair-docs-links-smoke.php
 ```
 
-CI validates the bundle with `tests/docs-agent.validate-bundle-spec.json`.
+CI validates both bundles with `tests/docs-agent.validate-bundle-spec.json`.

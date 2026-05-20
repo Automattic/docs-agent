@@ -29,8 +29,8 @@ jobs:
   run-docs-agent:
     uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@main
     with:
-      bundle_path: bundles/docs-agent
-      agent_slug: docs-agent
+      bundle_path: ${{ contains(inputs.flow_kind, 'technical-docs') && 'bundles/technical-docs-agent' || 'bundles/user-docs-agent' }}
+      agent_slug: ${{ contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-agent' || 'user-docs-agent' }}
       pipeline_slug: ${{ contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-pipeline' || 'user-docs-pipeline' }}
       flow_slug: ${{ inputs.flow_kind }}
       target_repo: ${{ inputs.target_repo }}
@@ -44,12 +44,12 @@ jobs:
             contains(inputs.flow_kind, 'technical-docs') &&
             'Run the technical docs maintenance flow. Update developer-facing living documentation only where source code, tests, recent issues, recent pull requests, or existing docs show stale, missing, fragmented, or misleading coverage. Open a documentation PR only if needed.' ||
             contains(inputs.flow_kind, 'user-docs-bootstrap') &&
-            'Run the user docs bootstrap flow. Build the broadest complete initial user-facing documentation surface possible from source code, UI strings, existing docs, issues, and pull requests. Open one documentation PR unless the repo already has complete user docs.' ||
-            'Run the user docs maintenance flow. Update non-technical user-facing living documentation only where source code, UI strings, recent issues, recent pull requests, or existing docs show stale, missing, fragmented, or misleading coverage. Open a documentation PR only if needed.'
+            'Run the user docs bootstrap flow. Build the broadest complete initial non-technical product documentation surface possible for frontend users from product-facing evidence, existing user docs, UI strings, support-style issues, release notes, and pull requests describing user-visible behavior. Use a separate user-docs namespace such as docs/user/. Open one documentation PR unless the repo already has complete user docs.' ||
+            'Run the user docs maintenance flow. Update non-technical product documentation only where product-facing evidence, existing user docs, UI strings, support-style issues, release notes, or recent pull requests show stale, missing, fragmented, or misleading user guidance. Keep changes in the user-docs namespace and open a documentation PR only if needed.'
           )
         }}
       model: ${{ inputs.openai_model }}
-      validation_dependencies: Automattic/agents-api@main,Extra-Chill/data-machine@main,Extra-Chill/data-machine-code@main,WordPress/ai-provider-for-openai@main
+      validation_dependencies: Automattic/agents-api@main,Extra-Chill/data-machine@main,Extra-Chill/data-machine-code@main
       runner_workspace: |
         {
           "enabled": true,
