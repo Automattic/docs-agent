@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "bundle_slug": "user-docs-agent",
+  "bundle_version": "0.1.0",
+  "source_ref": "Automattic/docs-agent",
+  "source_revision": "initial-user-bundle",
+  "exported_at": "2026-05-10T00:00:00Z",
+  "exported_by": "Franklin",
+  "agent": {
+    "slug": "user-docs-agent",
+    "label": "User Docs Agent",
+    "description": "Reusable non-technical product documentation agent for frontend users.",
+    "agent_config": {
+      "default_provider": "openai",
+      "default_model": "gpt-5.5",
+      "max_turns": 12,
+      "daily_memory": {
+        "enabled": false,
+        "recent_days": 0
+      }
+    }
+  },
+  "run_artifacts": {
+    "completion_assertions": {
+      "egress": ["pr-body"]
+    },
+    "transcript_summary": {
+      "egress": ["artifact"]
+    }
+  },
+  "included": {
+    "memory": ["MEMORY.md", "SOUL.md"],
+    "pipelines": ["user-docs-pipeline"],
+    "flows": [
+      "user-docs-bootstrap-flow",
+      "user-docs-maintenance-flow",
+      "user-docs-flow"
+    ],
+    "prompts": [],
+    "rubrics": [],
+    "tool_policies": [],
+    "auth_refs": [],
+    "seed_queues": [],
+    "handler_auth": "refs"
+  }
+}

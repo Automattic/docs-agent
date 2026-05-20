@@ -1,0 +1,23 @@
+{
+  "max_items": [],
+  "name": "User Documentation Maintenance",
+  "pipeline_slug": "user-docs-pipeline",
+  "schedule": "manual",
+  "schema_version": 1,
+  "slug": "user-docs-maintenance-flow",
+  "steps": [
+    {
+      "enabled_tools": ["list_github_issues", "get_github_issue", "list_github_pulls", "get_github_pull", "get_github_pull_files", "get_github_pull_review_context", "github_pr_documentation_impact", "list_github_tree", "get_github_file", "workspace_show", "workspace_ls", "workspace_read", "workspace_grep", "workspace_write", "workspace_edit", "workspace_apply_patch", "workspace_git_status", "workspace_git_diff", "workspace_git_add", "workspace_git_commit", "workspace_git_push", "create_github_pull_request", "comment_github_pull_request"],
+      "handler_configs": {},
+      "prompt_queue": [
+        {
+          "added_at": "2026-05-10T00:00:00Z",
+          "prompt": "Maintenance pass for non-technical product documentation. Review existing user docs, README overview language, UI strings and visible labels, product assets, support-style issues, release notes, and recent pull requests for user documentation gaps, drift, fragmentation, unclear guidance, and information architecture problems. When the runner provides a workspace handle, inspect and edit documentation through workspace tools, commit and push the scoped docs change, then open one documentation pull request. Keep user docs in their own namespace, such as docs/user/, unless the consumer prompt provides another product-docs path. Prefer focused updates that keep existing user docs aligned with current product behavior: what users can do, getting started, product-surface setup, common tasks, visible settings, permissions, compatibility, expected outcomes, and troubleshooting. Use no_changes when existing user docs are accurate, sufficiently broad for the changed or inspected areas, and easy to navigate."
+        }
+      ],
+      "queue_mode": "static",
+      "step_position": 0,
+      "step_type": "ai"
+    }
+  ]
+}

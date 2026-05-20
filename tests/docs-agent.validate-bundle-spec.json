@@ -1,17 +1,30 @@
 {
-  "bundle_dir": "../bundles/docs-agent",
-  "bundle_slug": "docs-agent",
-  "agent_slug": "docs-agent",
-  "expected_pipelines": ["technical-docs-pipeline", "user-docs-pipeline"],
-  "expected_flows": [
-    "technical-docs-bootstrap-flow",
-    "technical-docs-maintenance-flow",
-    "technical-docs-flow",
-    "user-docs-bootstrap-flow",
-    "user-docs-maintenance-flow",
-    "user-docs-flow"
-  ],
-  "memory_files": ["SOUL.md", "MEMORY.md"],
+  "bundles": {
+    "technical-docs-agent": {
+      "bundle_dir": "../bundles/technical-docs-agent",
+      "bundle_slug": "technical-docs-agent",
+      "agent_slug": "technical-docs-agent",
+      "expected_pipelines": ["technical-docs-pipeline"],
+      "expected_flows": [
+        "technical-docs-bootstrap-flow",
+        "technical-docs-maintenance-flow",
+        "technical-docs-flow"
+      ],
+      "memory_files": ["SOUL.md", "MEMORY.md"]
+    },
+    "user-docs-agent": {
+      "bundle_dir": "../bundles/user-docs-agent",
+      "bundle_slug": "user-docs-agent",
+      "agent_slug": "user-docs-agent",
+      "expected_pipelines": ["user-docs-pipeline"],
+      "expected_flows": [
+        "user-docs-bootstrap-flow",
+        "user-docs-maintenance-flow",
+        "user-docs-flow"
+      ],
+      "memory_files": ["SOUL.md", "MEMORY.md"]
+    }
+  },
   "flow_assertions": {
     "technical-docs-bootstrap-flow": {
       "pipeline_slug": "technical-docs-pipeline",
@@ -61,7 +74,8 @@
         "workspace_git_commit",
         "workspace_git_push",
         "create_github_pull_request"
-      ]
+      ],
+      "prompt_forbidden": ["source code", "commands", "configuration examples", "CLI", "code snippets"]
     },
     "user-docs-maintenance-flow": {
       "pipeline_slug": "user-docs-pipeline",
@@ -74,7 +88,8 @@
         "workspace_git_push",
         "create_github_pull_request"
       ],
-      "completion_assertions_empty": true
+      "completion_assertions_empty": true,
+      "prompt_forbidden": ["source code", "commands", "configuration examples", "CLI", "code snippets"]
     },
     "user-docs-flow": {
       "pipeline_slug": "user-docs-pipeline",
@@ -87,7 +102,8 @@
         "workspace_git_push",
         "create_github_pull_request"
       ],
-      "completion_assertions_empty": true
+      "completion_assertions_empty": true,
+      "prompt_forbidden": ["source code", "commands", "configuration examples", "CLI", "code snippets"]
     }
   },
   "pipeline_assertions": {
@@ -95,12 +111,15 @@
       "system_prompt_must_contain": "source code"
     },
     "user-docs-pipeline": {
-      "system_prompt_must_contain": "source code"
+      "system_prompt_must_contain": "frontend users",
+      "system_prompt_forbidden": ["source code", "commands", "configuration examples", "CLI", "code snippets"]
     }
   },
   "example_runner_config": "../examples/homeboy-runner-config.example.json",
   "example_assertions": {
     "success_requires_pr": false,
+    "bundle_path_in_repo": "bundles/technical-docs-agent",
+    "agent_slug": "technical-docs-agent",
     "pipeline_slug": "technical-docs-pipeline",
     "flow_slug": "technical-docs-maintenance-flow"
   }
