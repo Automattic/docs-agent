@@ -75,6 +75,9 @@ foreach ( $spec['expected_flows'] ?? array() as $flow_slug ) {
 		$completion_assertions = $step['completion_assertions'] ?? array();
 		$assert( array( 'create_github_pull_request' ) === ( $completion_assertions['required_tool_names'] ?? null ), "Bootstrap flow {$flow_slug} must require pull request creation." );
 		$assert( 6 === ( $completion_assertions['minimum_successful_tool_counts']['workspace_write'] ?? null ), "Bootstrap flow {$flow_slug} must require at least six workspace file writes." );
+		$assert( str_contains( $flow_prompt, 'runner-provided workspace handle' ), "Bootstrap flow {$flow_slug} must direct agents to use the runner workspace." );
+		$assert( str_contains( $flow_prompt, 'workspace_git_push' ), "Bootstrap flow {$flow_slug} must direct agents through the workspace git workflow." );
+		$assert( ! str_contains( $flow_prompt, 'create_or_update_github_file' ), "Bootstrap flow {$flow_slug} must not reference direct GitHub file writes." );
 
 		$required_phrases = array( 'source inventory', 'clean documentation surface', 'reader', 'documentation information architecture', 'preserve or improve', 'committed scope that fits the run budget', 'future coverage section as plain text', 'separate', 'digestible', 'hierarchy mirrors', 'parent/child relationships', 'cross-links', 'committed documentation scope', 'write topic pages first', 'index last', 'write every linked documentation page', 'links resolve to committed files', 'reconcile the written docs against the source inventory', 'future coverage with the reason' );
 		$required_phrases = array_merge( $required_phrases, str_starts_with( $flow_slug, 'technical-' ) ? array( 'reference-level details', 'representative payloads or examples' ) : array( 'practical details', 'configuration examples' ) );
