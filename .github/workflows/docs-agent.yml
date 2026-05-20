@@ -49,7 +49,7 @@ jobs:
           )
         }}
       model: ${{ inputs.openai_model }}
-      validation_dependencies: Automattic/agents-api@main,Extra-Chill/data-machine@main,Extra-Chill/data-machine-code@main,WordPress/ai-provider-for-openai@main
+      validation_dependencies: Automattic/agents-api@main,Extra-Chill/data-machine@main,Extra-Chill/data-machine-code@main
       runner_workspace: |
         {
           "enabled": true,
