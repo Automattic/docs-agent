@@ -49,7 +49,8 @@
         "workspace_git_push",
         "create_github_pull_request"
       ],
-      "completion_assertions_empty": true
+      "completion_assertions_empty": true,
+      "prompt_must_contain": ["Future coverage", "documentation backlog", "remove the satisfied deferred items", "docs/ is the default technical documentation surface"]
     },
     "technical-docs-flow": {
       "pipeline_slug": "technical-docs-pipeline",
@@ -62,7 +63,8 @@
         "workspace_git_push",
         "create_github_pull_request"
       ],
-      "completion_assertions_empty": true
+      "completion_assertions_empty": true,
+      "prompt_must_contain": ["Future coverage", "documentation backlog", "remove the satisfied deferred items", "docs/ is the default technical documentation surface"]
     },
     "user-docs-bootstrap-flow": {
       "pipeline_slug": "user-docs-pipeline",
@@ -75,6 +77,7 @@
         "workspace_git_push",
         "create_github_pull_request"
       ],
+      "prompt_must_contain": ["source-code GitHub repositories", "docs/ is already the technical documentation surface", "docs/user/", "explicitly user-docs-only"],
       "prompt_forbidden": ["source code", "commands", "configuration examples", "CLI", "code snippets"]
     },
     "user-docs-maintenance-flow": {
@@ -89,6 +92,7 @@
         "create_github_pull_request"
       ],
       "completion_assertions_empty": true,
+      "prompt_must_contain": ["source-code GitHub repositories", "docs/ is already the technical documentation surface", "docs/user/", "explicitly user-docs-only"],
       "prompt_forbidden": ["source code", "commands", "configuration examples", "CLI", "code snippets"]
     },
     "user-docs-flow": {
@@ -103,6 +107,7 @@
         "create_github_pull_request"
       ],
       "completion_assertions_empty": true,
+      "prompt_must_contain": ["source-code GitHub repositories", "docs/ is already the technical documentation surface", "docs/user/", "explicitly user-docs-only"],
       "prompt_forbidden": ["source code", "commands", "configuration examples", "CLI", "code snippets"]
     }
   },
@@ -112,6 +117,7 @@
     },
     "user-docs-pipeline": {
       "system_prompt_must_contain": "frontend users",
+      "system_prompt_must_contain_all": ["source-code GitHub repositories", "docs/ is already the technical documentation surface", "docs/user/", "explicitly user-docs-only"],
       "system_prompt_forbidden": ["source code", "commands", "configuration examples", "CLI", "code snippets"]
     }
   },

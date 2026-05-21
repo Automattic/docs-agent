@@ -52,6 +52,9 @@ foreach ( $spec['bundles'] ?? array() as $bundle_name => $bundle_spec ) {
 		if ( isset( $pipeline_spec['system_prompt_must_contain'] ) ) {
 			$assert( str_contains( $system_prompt, (string) $pipeline_spec['system_prompt_must_contain'] ), "Pipeline {$pipeline_slug} system prompt missing required text." );
 		}
+		foreach ( $pipeline_spec['system_prompt_must_contain_all'] ?? array() as $required ) {
+			$assert( str_contains( $system_prompt, (string) $required ), "Pipeline {$pipeline_slug} system prompt missing required text: {$required}" );
+		}
 		foreach ( $pipeline_spec['system_prompt_forbidden'] ?? array() as $forbidden ) {
 			$assert( ! str_contains( $system_prompt, (string) $forbidden ), "Pipeline {$pipeline_slug} system prompt must not contain: {$forbidden}" );
 		}
@@ -78,6 +81,9 @@ foreach ( $spec['bundles'] ?? array() as $bundle_name => $bundle_spec ) {
 		$flow_prompt = strtolower( (string) ( $step['prompt_queue'][0]['prompt'] ?? '' ) );
 		foreach ( $flow_spec['prompt_forbidden'] ?? array() as $forbidden ) {
 			$assert( ! str_contains( $flow_prompt, strtolower( (string) $forbidden ) ), "Flow {$flow_slug} prompt must not contain: {$forbidden}" );
+		}
+		foreach ( $flow_spec['prompt_must_contain'] ?? array() as $required ) {
+			$assert( str_contains( $flow_prompt, strtolower( (string) $required ) ), "Flow {$flow_slug} prompt missing required text: {$required}" );
 		}
 		if ( str_contains( $flow_slug, 'bootstrap' ) ) {
 			$completion_assertions = $step['completion_assertions'] ?? array();
