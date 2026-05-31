@@ -105,6 +105,8 @@ Docs Agent bundle + Homeboy runner
 
 The `Automattic/docs-agent` repository's `GITHUB_TOKEN` cannot reliably write to arbitrary private or cross-repository targets. For central dispatch, configure Homeboy GitHub App credentials in the workflow repo and authorize the app on the target repository or organization. Pass `app_token_repos` for the target repository and use `require_homeboy_app_token` when a missing app token should fail before the runner performs expensive setup.
 
+The central dispatcher also accepts `writable_paths`, a comma-separated path allowlist such as `README.md,docs/**` or `docs/user/**`. The workflow mounts `ci/docs-agent-workspace-policy.php` into the runner as a must-use plugin so Data Machine Code enforces those paths when staging workspace changes.
+
 Use this mode for central operations where installing a consumer workflow in the target repository is not practical.
 
 ## Setup For A Consumer Repo
