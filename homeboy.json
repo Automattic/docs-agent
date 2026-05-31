@@ -1,0 +1,12 @@
+{
+  "auto_cleanup": false,
+  "changelog_target": "CHANGELOG.md",
+  "id": "docs-agent",
+  "remote_path": "",
+  "version_targets": [
+    {
+      "file": "VERSION",
+      "pattern": "(?m)^([0-9]+\\.[0-9]+\\.[0-9]+)$"
+    }
+  ]
+}
