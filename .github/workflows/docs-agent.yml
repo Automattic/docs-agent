@@ -24,17 +24,21 @@ on:
         description: OpenAI model to use.
         required: false
         default: gpt-5.5
+      writable_paths:
+        description: Comma-separated repository paths the agent may stage and include in the docs PR.
+        required: true
+        default: README.md,docs/**
 
 jobs:
   run-docs-agent:
-    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@wordpress-v2.108.2
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@wordpress-v2.108.3
     with:
       bundle_path: ${{ contains(inputs.flow_kind, 'technical-docs') && 'bundles/technical-docs-agent' || 'bundles/user-docs-agent' }}
       agent_slug: ${{ contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-agent' || 'user-docs-agent' }}
       pipeline_slug: ${{ contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-pipeline' || 'user-docs-pipeline' }}
       flow_slug: ${{ inputs.flow_kind }}
       target_repo: ${{ inputs.target_repo }}
-      prompt: >-
+      prompt: |
         ${{
           inputs.prompt != '' &&
           inputs.prompt ||
@@ -48,6 +52,8 @@ jobs:
             'Run the user docs maintenance flow. Update non-technical product documentation only where product-facing evidence, existing user docs, UI strings, support-style issues, release notes, or recent pull requests show stale, missing, fragmented, or misleading user guidance. Keep changes in the user-docs namespace and open a documentation PR only if needed.'
           )
         }}
+
+        Writable documentation paths: ${{ inputs.writable_paths }}
       model: ${{ inputs.openai_model }}
       validation_dependencies: Automattic/agents-api@main,Extra-Chill/data-machine@main,Extra-Chill/data-machine-code@main
       runner_workspace: |
@@ -59,12 +65,26 @@ jobs:
           "from": "origin/main",
           "bootstrap": false
         }
+      extra_wp_config_defines: |
+        {
+          "DOCS_AGENT_TARGET_REPO": "${{ inputs.target_repo }}",
+          "DOCS_AGENT_WRITABLE_PATHS": "${{ inputs.writable_paths }}"
+        }
+      extra_playground_file_mounts: |
+        [
+          {
+            "from": "ci/docs-agent-workspace-policy.php",
+            "to": "/wordpress/wp-content/mu-plugins/docs-agent-workspace-policy.php"
+          }
+        ]
       success_requires_pr: false
       extra_required_abilities: |
         [
           "datamachine/workspace-worktree-add"
         ]
       app_token_repos: ${{ inputs.target_repo }}
+      require_homeboy_app_token: true
+      allowed_repos: '["${{ inputs.target_repo }}"]'
       engine_data_outputs: '{"docs_pr_url":"metadata.engine_data.docs_agent.pr_url"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
       bundle_validator_spec: tests/docs-agent.validate-bundle-spec.json
