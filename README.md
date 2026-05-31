@@ -71,6 +71,42 @@ Use this bundle for non-technical product docs: what the product does, onboardin
 
 The user bundle should write to its own product-docs namespace, commonly `docs/user/**`, with its own index such as `docs/user/README.md`. It writes for frontend consumers and keeps implementation evidence internal to the run.
 
+## Deployment Modes
+
+Docs Agent supports two deployment modes. Prefer the same-repo consumer workflow when the target repository can own a small workflow file.
+
+### Same-Repo Consumer Workflow
+
+In this mode, the workflow lives in the repository being documented and passes that same repository as `target_repo`.
+
+```text
+OWNER/REPO/.github/workflows/docs-agent.yml
+        |
+        | target_repo: OWNER/REPO
+        v
+Docs Agent bundle + Homeboy runner
+```
+
+This mode can use the workflow's normal `GITHUB_TOKEN` for branches, commits, pull requests, and comments in the same repository. Generated pull requests and commits appear as `github-actions[bot]`.
+
+Use this mode for most repositories. Start from `examples/consumer-workflow.yml` and customize the repository name, writable docs paths, branch names, prompt text, and selected bundle.
+
+### Central Dispatcher Workflow
+
+In this mode, the workflow runs from `Automattic/docs-agent` and accepts an arbitrary `target_repo` input.
+
+```text
+Automattic/docs-agent workflow
+        |
+        | target_repo: OWNER/OTHER-REPO
+        v
+Docs Agent bundle + Homeboy runner
+```
+
+The `Automattic/docs-agent` repository's `GITHUB_TOKEN` cannot reliably write to arbitrary private or cross-repository targets. For central dispatch, configure Homeboy GitHub App credentials in the workflow repo and authorize the app on the target repository or organization. Pass `app_token_repos` for the target repository and use `require_homeboy_app_token` when a missing app token should fail before the runner performs expensive setup.
+
+Use this mode for central operations where installing a consumer workflow in the target repository is not practical.
+
 ## Setup For A Consumer Repo
 
 Docs Agent is not Automattic-only. Anyone can use it if they can run the Homeboy/Data Machine runner stack and provide the required GitHub and model-provider credentials.
@@ -100,11 +136,13 @@ The runner needs:
 - A GitHub credential that can read the target repo, create branches, write configured docs files, and open pull requests.
 - `OPENAI_API_KEY` or the equivalent model-provider credential.
 
+For same-repo consumer workflows, the default workflow `GITHUB_TOKEN` can write to the repository running the workflow when repository workflow permissions allow it. For central dispatch or private cross-repo targets, use the Homeboy GitHub App token path instead.
+
 Use repository or organization secrets in CI. Do not commit credentials into runner config.
 
 ### 4. Add A Runner Config
 
-Start from `examples/homeboy-runner-config.example.json` and change these fields:
+Start from `examples/consumer-workflow.yml` for a GitHub Actions consumer workflow, or `examples/homeboy-runner-config.example.json` for a lower-level runner config. Change these fields:
 
 - `bundle_path_in_repo`: selected bundle path.
 - `agent_slug`: selected bundle agent slug.
@@ -165,7 +203,7 @@ Consumers should pass the generic runner a config equivalent to `examples/homebo
 Important fields:
 
 - `bundle_repo`: `https://github.com/Automattic/docs-agent.git`
-- `bundle_ref`: a branch, tag, or SHA from this repo
+- `bundle_ref`: a branch, tag, or SHA from this repo. Prefer a release tag such as `v0.1.0` for stable consumer workflows.
 - `bundle_path_in_repo`: selected bundle path
 - `agent_slug`: selected bundle agent slug
 - `pipeline_slug` and `flow_slug`: selected by the consuming repo
