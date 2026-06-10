@@ -74,6 +74,7 @@ jobs:
       pipeline_slug: ${{ steps.config.outputs.pipeline_slug }}
       flow_slug: ${{ steps.config.outputs.flow_slug }}
       docs_agent_ref: ${{ steps.config.outputs.docs_agent_ref }}
+      bundle_validator_spec: ${{ steps.config.outputs.bundle_validator_spec }}
       fallback_pr_title: ${{ steps.config.outputs.fallback_pr_title }}
       default_prompt: ${{ steps.config.outputs.default_prompt }}
       context_repositories: ${{ steps.config.outputs.context_repositories }}
@@ -102,6 +103,7 @@ jobs:
               agent_slug="technical-docs-agent"
               pipeline_slug="technical-docs-pipeline"
               flow_slug="technical-docs-maintenance-flow"
+              bundle_validator_spec=".ci/docs-agent/tests/technical-docs-agent.validate-bundle-spec.json"
               fallback_pr_title="Update developer documentation"
               default_prompt="Maintain source-grounded developer documentation for architecture, APIs, extension points, setup, tests, operations, and contributor workflows. Add an adoption-oriented introduction path that explains project names, concepts, and where to start before deep reference material. Preserve technical precision and useful architecture/reference depth."
               ;;
@@ -110,6 +112,7 @@ jobs:
               agent_slug="user-docs-agent"
               pipeline_slug="user-docs-pipeline"
               flow_slug="user-docs-maintenance-flow"
+              bundle_validator_spec=".ci/docs-agent/tests/user-docs-agent.validate-bundle-spec.json"
               fallback_pr_title="Update product documentation"
               default_prompt="Maintain source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs. Add an adoption-oriented introduction path that explains product names, concepts, and where to start before detailed task/reference material. Preserve factual depth without turning the docs shallow."
               ;;
@@ -118,6 +121,7 @@ jobs:
               agent_slug="skills-agent"
               pipeline_slug="skills-pipeline"
               flow_slug="skills-maintenance-flow"
+              bundle_validator_spec=".ci/docs-agent/tests/skills-agent.validate-bundle-spec.json"
               fallback_pr_title="Update live agent skills"
               default_prompt="Maintain live agent skill instructions and generated packaged skill outputs. Keep the skills lane separate from technical docs upkeep: technical docs document skills, while this lane maintains executable skill instructions themselves. Preserve prompt quality, routing behavior, tool-use policy, writable-path safety, packaging consistency, and focused review of behavior changes. Run consumer-required verification such as pnpm build, pnpm verify, and generated-output drift checks when requested by the target repository."
               ;;
@@ -133,6 +137,7 @@ jobs:
             printf 'pipeline_slug=%s\n' "$pipeline_slug"
             printf 'flow_slug=%s\n' "$flow_slug"
             printf 'docs_agent_ref=%s\n' "$docs_agent_ref"
+            printf 'bundle_validator_spec=%s\n' "$bundle_validator_spec"
             printf 'fallback_pr_title=%s\n' "$fallback_pr_title"
             printf 'default_prompt<<EOF\n%s\nEOF\n' "$default_prompt"
             printf 'context_repositories<<EOF\n%s\nEOF\n' "$INPUT_CONTEXT_REPOSITORIES"
@@ -212,5 +217,5 @@ jobs:
       app_token_repos: ${{ github.repository }}
       engine_data_outputs: '{"docs_agent_pr_url":"metadata.engine_data.docs_agent.pr.url","fallback_pr_url":"metadata.fallback_pull_request.url","success_status":"metadata.success_status"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
-      bundle_validator_spec: .ci/docs-agent/tests/docs-agent.validate-bundle-spec.json
+      bundle_validator_spec: ${{ needs.prepare.outputs.bundle_validator_spec }}
     secrets: inherit

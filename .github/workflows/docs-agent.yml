@@ -91,5 +91,5 @@ jobs:
       allowed_repos: '["${{ inputs.target_repo }}"]'
       engine_data_outputs: '{"docs_pr_url":"metadata.engine_data.docs_agent.pr_url"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
-      bundle_validator_spec: tests/docs-agent.validate-bundle-spec.json
+      bundle_validator_spec: ${{ contains(inputs.flow_kind, 'skills') && 'tests/skills-agent.validate-bundle-spec.json' || (contains(inputs.flow_kind, 'technical-docs') && 'tests/technical-docs-agent.validate-bundle-spec.json' || 'tests/user-docs-agent.validate-bundle-spec.json') }}
     secrets: inherit
