@@ -8,8 +8,9 @@ This repo ships multiple portable agent bundles. Consumers choose the bundle tha
 
 - `bundles/technical-docs-agent`: developer, site-owner, operator, contributor, and integrator documentation.
 - `bundles/user-docs-agent`: non-technical product documentation for frontend users.
+- `bundles/skills-agent`: live agent skill instructions and generated packaged skill outputs.
 
-Both bundles run in the same Homeboy/Data Machine runner stack. Each imports a distinct agent identity, memory, pipeline, flow set, and documentation standard.
+All bundles run in the same Homeboy/Data Machine runner stack. Each imports a distinct agent identity, memory, pipeline, flow set, and maintenance standard.
 
 ## How The Pieces Fit
 
@@ -71,6 +72,20 @@ Use this bundle for non-technical product docs: what the product does, onboardin
 
 The user bundle should write to its own product-docs namespace, commonly `docs/user/**`, with its own index such as `docs/user/README.md`. It writes for frontend consumers and keeps implementation evidence internal to the run.
 
+## Skills Agent
+
+- Bundle path: `bundles/skills-agent`
+- Agent slug: `skills-agent`
+- Pipeline slug: `skills-pipeline`
+- Maintenance flow slug: `skills-maintenance-flow`
+- Maintenance alias: `skills-flow`
+
+Use this bundle for live agent skill upkeep: prompt instructions, task routing, tool-use policy, writable-path guidance, build and verification expectations, generated packaged copies, and intentionally generated plugin skill outputs.
+
+The technical docs lane documents skills for human readers. The skills lane maintains executable skill instructions themselves, so reviewers should treat its PRs as behavior changes rather than prose-only documentation edits.
+
+For `Automattic/build-with-wordpress`, the skills bundle should usually write only to `skills/**`, `plugins/**/skills/**`, `plugins/**/README.md` when generated packaging docs must stay aligned, and generated MCP or plugin config files only when build scripts intentionally update them. Verify with `pnpm build`, `pnpm verify`, and a generated-output drift check after build.
+
 ## Deployment Modes
 
 Docs Agent supports two deployment modes. Prefer the same-repo consumer workflow when the target repository can own a small workflow file.
@@ -119,8 +134,9 @@ Choose exactly one bundle per run:
 
 - Technical docs: `bundles/technical-docs-agent`
 - User docs: `bundles/user-docs-agent`
+- Skills maintenance: `bundles/skills-agent`
 
-Run separate PRs for separate audiences. Avoid letting both bundles edit the same docs index in one pass.
+Run separate PRs for separate lanes. Avoid letting docs lanes and the skills lane edit the same surfaces in one pass.
 
 ### 2. Choose The Writable Scope
 
@@ -128,6 +144,7 @@ Keep the writable scope narrow:
 
 - Technical docs often use `README.md` and `docs/**`.
 - User docs should use a dedicated namespace such as `docs/user/**`.
+- Skills maintenance should use a dedicated skill/package scope such as `skills/**`, `plugins/**/skills/**`, and generated package files that build scripts intentionally update.
 
 The writable scope is the main safety boundary. Keep it explicit.
 
@@ -198,6 +215,21 @@ For ongoing user docs maintenance, use:
 }
 ```
 
+For ongoing skills maintenance, use:
+
+```json
+{
+  "bundle_path_in_repo": "bundles/skills-agent",
+  "agent_slug": "skills-agent",
+  "pipeline_slug": "skills-pipeline",
+  "flow_slug": "skills-maintenance-flow"
+}
+```
+
+For `Automattic/build-with-wordpress`, run skills upkeep as its own scheduled lane with a canonical branch such as `docs-agent/build-with-wordpress-skills`, writable paths such as `skills/**,plugins/**/skills/**,plugins/**/README.md`, and verification instructions that require `pnpm build`, `pnpm verify`, and a generated-output drift check.
+
+See `examples/build-with-wordpress-skills-workflow.yml` for a scheduled skills lane that runs separately from docs upkeep.
+
 ## Runner Contract
 
 Consumers should pass the generic runner a config equivalent to `examples/homeboy-runner-config.example.json`.
@@ -227,6 +259,8 @@ Docs Agent opens a documentation PR only when it changes files. Review it like a
 - Confirm the PR scope is one coherent docs update.
 - Confirm the chosen audience is correct for every page.
 - Edit, close, or merge based on normal repository review standards.
+
+For skills PRs, also confirm the live instructions match current upstream tool behavior, generated package outputs are aligned after build, and verification results such as `pnpm build`, `pnpm verify`, and drift checks are included in the PR.
 
 ## Validation
 

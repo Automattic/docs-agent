@@ -1,0 +1,79 @@
+name: Build With WordPress Skills Agent
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 9 * * 1'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  skills-agent:
+    name: Maintain live skills
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@wordpress-v2.108.3
+    with:
+      bundle_path: bundles/skills-agent
+      bundle_repo: https://github.com/Automattic/docs-agent.git
+      bundle_ref: v0.1.0
+      bundle_path_in_repo: bundles/skills-agent
+      agent_slug: skills-agent
+      pipeline_slug: skills-pipeline
+      flow_slug: skills-maintenance-flow
+      target_repo: Automattic/build-with-wordpress
+      model: gpt-5.5
+      success_requires_pr: false
+      max_turns: 20
+      step_budget: 24
+      time_budget_ms: 600000
+      engine_key: docs_agent
+      tool_results_key: github_tool_results
+      allowed_repos: '["Automattic/build-with-wordpress"]'
+      tool_recorders: |
+        [
+          {
+            "tool": "create_or_update_github_file",
+            "forced_parameters": {
+              "allowed_file_paths": ["skills/**", "plugins/**/skills/**", "plugins/**/README.md"],
+              "branch": "docs-agent/build-with-wordpress-skills"
+            },
+            "record": {
+              "engine_key": "docs_agent",
+              "tool_results_key": "github_tool_results"
+            }
+          },
+          {
+            "tool": "create_github_pull_request",
+            "record": {
+              "engine_key": "docs_agent",
+              "tool_results_key": "github_tool_results",
+              "event": {
+                "key": "pr",
+                "type": "pull_request",
+                "only_if_success": true
+              }
+            }
+          }
+        ]
+      fallback_pull_request: |
+        {
+          "repo": "Automattic/build-with-wordpress",
+          "title": "Update live agent skills",
+          "head": "docs-agent/build-with-wordpress-skills",
+          "base": "main",
+          "body": "## Summary\n- Maintain live agent skill instructions and generated packaged skill outputs.\n- Keep changes inside skills/package writable paths.\n- Verify with pnpm build, pnpm verify, and generated-output drift checks.\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via OpenCode (GPT-5.5)\n- **Used for:** Generated skills maintenance draft from repository source for human review."
+        }
+      engine_data_outputs: '{"skills_agent_pr_url":"metadata.engine_data.docs_agent.pr.url","success_status":"metadata.success_status"}'
+      transcript_artifact_name: skills-agent-transcript-${{ github.run_id }}
+      prompt: |
+        Run the skills maintenance lane for Automattic/build-with-wordpress.
+
+        Target repository: Automattic/build-with-wordpress
+        Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        Canonical branch: docs-agent/build-with-wordpress-skills
+        Writable paths: skills/**, plugins/**/skills/**, plugins/**/README.md
+
+        Maintain live skill instructions and generated packaged copies separately from technical docs upkeep. Inspect skills/**, plugins/**/skills/**, build scripts, package manifests, and generated outputs for drift against current Studio MCP and Studio CLI behavior. Run pnpm build, pnpm verify, and a generated-output drift check after build before opening a pull request. Open one focused skills PR only if changes are needed; otherwise finish with no_changes.
+    secrets: inherit

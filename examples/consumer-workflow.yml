@@ -19,6 +19,8 @@ on:
           - technical-docs-bootstrap-flow
           - technical-docs-maintenance-flow
           - technical-docs-flow
+          - skills-maintenance-flow
+          - skills-flow
         default: technical-docs-maintenance-flow
       docs_agent_ref:
         description: Docs Agent release tag, branch, or SHA.
@@ -39,6 +41,11 @@ jobs:
       success_requires_pr: ${{ steps.config.outputs.success_requires_pr }}
       fallback_pr_title: ${{ steps.config.outputs.fallback_pr_title }}
       completion_instruction: ${{ steps.config.outputs.completion_instruction }}
+      bundle_path: ${{ steps.config.outputs.bundle_path }}
+      agent_slug: ${{ steps.config.outputs.agent_slug }}
+      pipeline_slug: ${{ steps.config.outputs.pipeline_slug }}
+      allowed_file_paths_json: ${{ steps.config.outputs.allowed_file_paths_json }}
+      writable_paths_text: ${{ steps.config.outputs.writable_paths_text }}
     steps:
       - name: Resolve flow settings
         id: config
@@ -50,6 +57,11 @@ jobs:
           success_requires_pr="false"
           docs_branch="docs-agent/developer-docs"
           fallback_pr_title="Update developer documentation"
+          bundle_path="bundles/technical-docs-agent"
+          agent_slug="technical-docs-agent"
+          pipeline_slug="technical-docs-pipeline"
+          allowed_file_paths_json='["README.md", "docs/**"]'
+          writable_paths_text="README.md, docs/**"
           completion_instruction="Preserve the existing documentation taxonomy. Write only README.md and docs/**. If no documentation update is needed, finish cleanly without opening a pull request. If an update is needed, open one focused documentation pull request."
 
           if [[ "$DOCS_AGENT_FLOW" == *-bootstrap-flow ]]; then
@@ -59,10 +71,26 @@ jobs:
             completion_instruction="This is a bootstrap run. Build a complete, clean, hierarchical developer documentation surface under README.md and docs/**, then open one focused documentation pull request. A no_changes outcome is invalid for this bootstrap proof."
           fi
 
+          if [[ "$DOCS_AGENT_FLOW" == skills-* ]]; then
+            docs_branch="docs-agent/build-with-wordpress-skills"
+            fallback_pr_title="Update live agent skills"
+            bundle_path="bundles/skills-agent"
+            agent_slug="skills-agent"
+            pipeline_slug="skills-pipeline"
+            allowed_file_paths_json='["skills/**", "plugins/**/skills/**", "plugins/**/README.md"]'
+            writable_paths_text="skills/**, plugins/**/skills/**, plugins/**/README.md"
+            completion_instruction="This is the skills maintenance lane, separate from technical docs upkeep. Maintain live skill instructions and generated packaged copies only inside the configured skills/package paths. For build-with-wordpress, use the canonical branch docs-agent/build-with-wordpress-skills, run pnpm build, pnpm verify, and a generated-output drift check after build, then open one focused skills pull request only if changes are needed."
+          fi
+
           {
             printf 'docs_branch=%s\n' "$docs_branch"
             printf 'success_requires_pr=%s\n' "$success_requires_pr"
             printf 'fallback_pr_title=%s\n' "$fallback_pr_title"
+            printf 'bundle_path=%s\n' "$bundle_path"
+            printf 'agent_slug=%s\n' "$agent_slug"
+            printf 'pipeline_slug=%s\n' "$pipeline_slug"
+            printf 'allowed_file_paths_json=%s\n' "$allowed_file_paths_json"
+            printf 'writable_paths_text=%s\n' "$writable_paths_text"
             printf 'completion_instruction<<EOF\n%s\nEOF\n' "$completion_instruction"
           } >> "$GITHUB_OUTPUT"
 
@@ -71,12 +99,12 @@ jobs:
     needs: prepare
     uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@wordpress-v2.108.3
     with:
-      bundle_path: bundles/technical-docs-agent
+      bundle_path: ${{ needs.prepare.outputs.bundle_path }}
       bundle_repo: https://github.com/Automattic/docs-agent.git
       bundle_ref: ${{ inputs.docs_agent_ref }}
-      bundle_path_in_repo: bundles/technical-docs-agent
-      agent_slug: technical-docs-agent
-      pipeline_slug: technical-docs-pipeline
+      bundle_path_in_repo: ${{ needs.prepare.outputs.bundle_path }}
+      agent_slug: ${{ needs.prepare.outputs.agent_slug }}
+      pipeline_slug: ${{ needs.prepare.outputs.pipeline_slug }}
       flow_slug: ${{ inputs.docs_agent_flow }}
       target_repo: ${{ github.repository }}
       model: ${{ inputs.openai_model }}
@@ -93,7 +121,7 @@ jobs:
           {
             "tool": "create_or_update_github_file",
             "forced_parameters": {
-              "allowed_file_paths": ["README.md", "docs/**"],
+              "allowed_file_paths": ${{ needs.prepare.outputs.allowed_file_paths_json }},
               "branch": "${{ needs.prepare.outputs.docs_branch }}"
             },
             "record": {
@@ -120,7 +148,7 @@ jobs:
           "title": "${{ needs.prepare.outputs.fallback_pr_title }}",
           "head": "${{ needs.prepare.outputs.docs_branch }}",
           "base": "${{ github.event.repository.default_branch }}",
-          "body": "## Summary\n- Generate or update developer documentation from repository source.\n- Keep documentation under README.md and docs/**.\n- Generated by the Docs Agent workflow.\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via OpenCode (GPT-5.5)\n- **Used for:** Generated documentation draft from repository source for human review."
+          "body": "## Summary\n- Generate or update the selected Docs Agent lane from repository source.\n- Keep changes inside the configured writable paths.\n- Generated by the Docs Agent workflow.\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via OpenCode (GPT-5.5)\n- **Used for:** Generated maintenance draft from repository source for human review."
         }
       engine_data_outputs: '{"docs_agent_pr_url":"metadata.engine_data.docs_agent.pr.url","success_status":"metadata.success_status"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
@@ -129,7 +157,7 @@ jobs:
 
         Target repository: ${{ github.repository }}
         Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        Writable documentation paths: README.md, docs/**
+        Writable paths: ${{ needs.prepare.outputs.writable_paths_text }}
 
-        Generate documentation from source code for developer-facing readers. ${{ needs.prepare.outputs.completion_instruction }}
+        Run the selected Docs Agent lane from repository evidence. ${{ needs.prepare.outputs.completion_instruction }}
     secrets: inherit
