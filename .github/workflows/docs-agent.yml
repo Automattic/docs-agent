@@ -33,7 +33,7 @@ on:
 
 jobs:
   run-docs-agent:
-    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@a02a06bae89cd52662e90dd8e725e7a6306552fd
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@fc0ba45d9836ff016aaa855764920058ba343dae
     with:
       bundle_path: ${{ contains(inputs.flow_kind, 'skills') && 'bundles/skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'bundles/technical-docs-agent' || 'bundles/user-docs-agent') }}
       agent_slug: ${{ contains(inputs.flow_kind, 'skills') && 'skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-agent' || 'user-docs-agent') }}
@@ -78,7 +78,7 @@ jobs:
         [
           {
             "type": "file",
-            "source": "${{ github.workspace }}/ci/docs-agent-workspace-policy.php",
+            "source": "ci/docs-agent-workspace-policy.php",
             "target": "/wordpress/wp-content/mu-plugins/docs-agent-workspace-policy.php",
             "mode": "readonly"
           }

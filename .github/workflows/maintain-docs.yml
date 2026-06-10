@@ -148,7 +148,7 @@ jobs:
   docs_agent:
     name: Maintain Docs
     needs: prepare
-    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@a02a06bae89cd52662e90dd8e725e7a6306552fd
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@fc0ba45d9836ff016aaa855764920058ba343dae
     with:
       bundle_path: .ci/docs-agent/${{ needs.prepare.outputs.bundle_path }}
       bundle_repo: https://github.com/Automattic/docs-agent.git
@@ -207,7 +207,7 @@ jobs:
         [
           {
             "type": "file",
-            "source": "${{ github.workspace }}/.ci/docs-agent/ci/docs-agent-workspace-policy.php",
+            "source": ".ci/docs-agent/ci/docs-agent-workspace-policy.php",
             "target": "/wordpress/wp-content/mu-plugins/docs-agent-workspace-policy.php",
             "mode": "readonly"
           }
