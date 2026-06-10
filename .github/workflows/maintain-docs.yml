@@ -207,7 +207,7 @@ jobs:
         [
           {
             "type": "file",
-            "source": ".ci/docs-agent/ci/docs-agent-workspace-policy.php",
+            "source": "${{ github.workspace }}/.ci/docs-agent/ci/docs-agent-workspace-policy.php",
             "target": "/wordpress/wp-content/mu-plugins/docs-agent-workspace-policy.php",
             "mode": "readonly"
           }

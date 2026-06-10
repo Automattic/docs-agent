@@ -74,11 +74,13 @@ jobs:
           "DOCS_AGENT_TARGET_REPO": "${{ inputs.target_repo }}",
           "DOCS_AGENT_WRITABLE_PATHS": "${{ inputs.writable_paths }}"
         }
-      extra_playground_file_mounts: |
+      extra_wp_codebox_mounts: |
         [
           {
-            "from": "ci/docs-agent-workspace-policy.php",
-            "to": "/wordpress/wp-content/mu-plugins/docs-agent-workspace-policy.php"
+            "type": "file",
+            "source": "${{ github.workspace }}/ci/docs-agent-workspace-policy.php",
+            "target": "/wordpress/wp-content/mu-plugins/docs-agent-workspace-policy.php",
+            "mode": "readonly"
           }
         ]
       success_requires_pr: false
