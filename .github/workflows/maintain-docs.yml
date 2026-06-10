@@ -4,7 +4,7 @@ name: Maintain Docs
   workflow_call:
     inputs:
       audience:
-        description: Documentation audience to maintain. Use technical for developer docs or user for product docs.
+        description: Maintenance lane to run. Use technical for developer docs, user for product docs, or skills for live skill upkeep.
         type: string
         default: technical
       base_ref:
@@ -12,11 +12,11 @@ name: Maintain Docs
         type: string
         default: main
       docs_branch:
-        description: Stable branch reused for the canonical documentation pull request.
+        description: Stable branch reused for the canonical Docs Agent pull request.
         type: string
         default: docs-agent/docs-upkeep
       writable_paths:
-        description: Comma-separated documentation paths Docs Agent may edit.
+        description: Comma-separated paths Docs Agent may edit.
         type: string
         default: README.md,docs/**
       prompt:
@@ -91,8 +91,16 @@ jobs:
               fallback_pr_title="Update product documentation"
               default_prompt="Maintain source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs. Add an adoption-oriented introduction path that explains product names, concepts, and where to start before detailed task/reference material. Preserve factual depth without turning the docs shallow."
               ;;
+            skills)
+              bundle_path="bundles/skills-agent"
+              agent_slug="skills-agent"
+              pipeline_slug="skills-pipeline"
+              flow_slug="skills-maintenance-flow"
+              fallback_pr_title="Update live agent skills"
+              default_prompt="Maintain live agent skill instructions and generated packaged skill outputs. Keep the skills lane separate from technical docs upkeep: technical docs document skills, while this lane maintains executable skill instructions themselves. Preserve prompt quality, routing behavior, tool-use policy, writable-path safety, packaging consistency, and focused review of behavior changes. Run consumer-required verification such as pnpm build, pnpm verify, and generated-output drift checks when requested by the target repository."
+              ;;
             *)
-              printf 'Unsupported audience: %s. Use technical or user.\n' "$AUDIENCE" >&2
+              printf 'Unsupported audience: %s. Use technical, user, or skills.\n' "$AUDIENCE" >&2
               exit 1
               ;;
           esac
@@ -127,12 +135,12 @@ jobs:
 
         Target repository: ${{ github.repository }}
         Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        Documentation audience: ${{ inputs.audience }}
+        Docs Agent lane: ${{ inputs.audience }}
         Base ref: ${{ inputs.base_ref }}
-        Canonical docs branch: ${{ inputs.docs_branch }}
-        Writable documentation paths: ${{ inputs.writable_paths }}
+        Canonical branch: ${{ inputs.docs_branch }}
+        Writable paths: ${{ inputs.writable_paths }}
 
-        Open or update one focused documentation pull request only if source evidence shows docs are stale, missing, fragmented, or misleading. If the docs are already aligned, finish cleanly without changing files or opening a pull request.
+        Open or update one focused pull request only if source evidence shows the selected surface is stale, missing, fragmented, or misleading. If the selected surface is already aligned, finish cleanly without changing files or opening a pull request.
       run_agent: ${{ inputs.run_agent }}
       model: ${{ inputs.model }}
       validation_dependencies: Automattic/docs-agent@${{ needs.prepare.outputs.docs_agent_ref }}
@@ -153,7 +161,7 @@ jobs:
           "title": "${{ needs.prepare.outputs.fallback_pr_title }}",
           "head": "${{ inputs.docs_branch }}",
           "base": "${{ inputs.base_ref }}",
-          "body": "## Summary\n- Maintain documentation for the configured audience.\n- Keep writes inside `${{ inputs.writable_paths }}`.\n- Reuse the canonical Docs Agent branch `${{ inputs.docs_branch }}`.\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via OpenCode (GPT-5.5)\n- **Used for:** Generated documentation updates from repository source for human review."
+          "body": "## Summary\n- Maintain the configured Docs Agent lane.\n- Keep writes inside `${{ inputs.writable_paths }}`.\n- Reuse the canonical Docs Agent branch `${{ inputs.docs_branch }}`.\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via OpenCode (GPT-5.5)\n- **Used for:** Generated maintenance updates from repository source for human review."
         }
       extra_wp_config_defines: |
         {

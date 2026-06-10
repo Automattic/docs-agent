@@ -23,6 +23,17 @@
         "user-docs-flow"
       ],
       "memory_files": ["SOUL.md", "MEMORY.md"]
+    },
+    "skills-agent": {
+      "bundle_dir": "../bundles/skills-agent",
+      "bundle_slug": "skills-agent",
+      "agent_slug": "skills-agent",
+      "expected_pipelines": ["skills-pipeline"],
+      "expected_flows": [
+        "skills-maintenance-flow",
+        "skills-flow"
+      ],
+      "memory_files": ["SOUL.md", "MEMORY.md"]
     }
   },
   "flow_assertions": {
@@ -109,6 +120,34 @@
       "completion_assertions_empty": true,
       "prompt_must_contain": ["source-code GitHub repositories", "docs/ is already the technical documentation surface", "docs/user/", "explicitly user-docs-only"],
       "prompt_forbidden": ["source code", "commands", "configuration examples", "CLI", "code snippets"]
+    },
+    "skills-maintenance-flow": {
+      "pipeline_slug": "skills-pipeline",
+      "ai_step_required_tools": [
+        "get_github_file",
+        "workspace_read",
+        "workspace_grep",
+        "workspace_edit",
+        "workspace_git_commit",
+        "workspace_git_push",
+        "create_github_pull_request"
+      ],
+      "completion_assertions_empty": true,
+      "prompt_must_contain": ["skills maintenance lane", "technical docs document skills", "pnpm build", "pnpm verify", "generated-output drift check", "docs-agent/build-with-wordpress-skills"]
+    },
+    "skills-flow": {
+      "pipeline_slug": "skills-pipeline",
+      "ai_step_required_tools": [
+        "get_github_file",
+        "workspace_read",
+        "workspace_grep",
+        "workspace_edit",
+        "workspace_git_commit",
+        "workspace_git_push",
+        "create_github_pull_request"
+      ],
+      "completion_assertions_empty": true,
+      "prompt_must_contain": ["skills maintenance lane", "technical docs document skills", "pnpm build", "pnpm verify", "generated-output drift check", "docs-agent/build-with-wordpress-skills"]
     }
   },
   "pipeline_assertions": {
@@ -119,6 +158,10 @@
       "system_prompt_must_contain": "frontend users",
       "system_prompt_must_contain_all": ["source-code GitHub repositories", "docs/ is already the technical documentation surface", "docs/user/", "explicitly user-docs-only"],
       "system_prompt_forbidden": ["source code", "commands", "configuration examples", "CLI", "code snippets"]
+    },
+    "skills-pipeline": {
+      "system_prompt_must_contain": "live agent skill instructions",
+      "system_prompt_must_contain_all": ["runtime behavior", "technical docs lane documents skills", "pnpm build", "pnpm verify", "generated-output drift checks"]
     }
   },
   "example_runner_config": "../examples/homeboy-runner-config.example.json",
