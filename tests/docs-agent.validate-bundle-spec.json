@@ -133,7 +133,7 @@
         "create_github_pull_request"
       ],
       "completion_assertions_empty": true,
-      "prompt_must_contain": ["skills maintenance lane", "technical docs document skills", "read-only context repository aliases", "studio", "wordpress-agent-skills", "pnpm build", "pnpm verify", "generated-output drift check", "docs-agent/build-with-wordpress-skills"]
+      "prompt_must_contain": ["skills maintenance lane", "technical docs document skills", "read-only context repository aliases", "consumer-declared writable paths", "build commands", "repository checks", "generated-output drift checks"]
     },
     "skills-flow": {
       "pipeline_slug": "skills-pipeline",
@@ -147,7 +147,7 @@
         "create_github_pull_request"
       ],
       "completion_assertions_empty": true,
-      "prompt_must_contain": ["skills maintenance lane", "technical docs document skills", "read-only context repository aliases", "studio", "wordpress-agent-skills", "pnpm build", "pnpm verify", "generated-output drift check", "docs-agent/build-with-wordpress-skills"]
+      "prompt_must_contain": ["skills maintenance lane", "technical docs document skills", "read-only context repository aliases", "consumer-declared writable paths", "build commands", "repository checks", "generated-output drift checks"]
     }
   },
   "pipeline_assertions": {
@@ -161,7 +161,7 @@
     },
     "skills-pipeline": {
       "system_prompt_must_contain": "live agent skill instructions",
-      "system_prompt_must_contain_all": ["runtime behavior", "technical docs lane documents skills", "read-only context repository aliases", "studio", "wordpress-agent-skills", "target workspace as the only writable PR boundary", "pnpm build", "pnpm verify", "generated-output drift checks"]
+      "system_prompt_must_contain_all": ["runtime behavior", "technical docs lane documents skills", "read-only context repository aliases", "target workspace as the only writable PR boundary", "build commands", "repository checks", "generated-output drift checks"]
     }
   },
   "example_runner_config": "../examples/homeboy-runner-config.example.json",

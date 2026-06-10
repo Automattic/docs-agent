@@ -72,17 +72,14 @@ The consumer API is product-level. Consumer repositories do not need to configur
 | `base_ref` | `main` | Base branch or ref for the maintenance PR. |
 | `docs_branch` | `docs-agent/docs-upkeep` | Stable branch reused for the canonical Docs Agent PR. |
 | `writable_paths` | `README.md,docs/**` | Comma-separated allowlist of paths Docs Agent may edit. |
-| `context_profile` | empty | Named canonical runner context profile. Use `studio-wordpress-skills` for Studio-backed WordPress skill upkeep. |
-| `context_repositories` | `[]` | JSON array of canonical read-only context repositories. Overrides profile repositories when non-empty. |
+| `context_repositories` | `[]` | JSON array of canonical read-only context repositories. |
 | `verification_commands` | `[]` | JSON array of canonical runner verification commands executed in the target workspace. |
 | `drift_checks` | `[]` | JSON array of canonical runner drift checks executed after verification. |
 | `prompt` | empty | Optional additional maintenance instruction. |
 | `model` | `gpt-5.5` | Model used by Docs Agent. |
 | `run_agent` | `true` | Set `false` to skip after deterministic preflight says docs are current. |
 
-`context_profile`, `context_repositories`, `verification_commands`, and `drift_checks` are passed to the Homeboy Extensions runner as canonical runner inputs. Docs Agent does not define extra checkout, allowed-repository, or writable-workspace policy for context repositories; the runner owns that API and keeps the target repository as the only writable PR boundary.
-
-The `studio-wordpress-skills` profile supplies read-only context aliases for `Automattic/studio` as `studio` and `WordPress/agent-skills` as `wordpress-agent-skills`, plus `pnpm build`, `pnpm verify`, and a generated-output drift check.
+`context_repositories`, `verification_commands`, and `drift_checks` are passed to the Homeboy Extensions runner as canonical runner inputs. Docs Agent does not define extra checkout, allowed-repository, or writable-workspace policy for context repositories; the runner owns that API and keeps the target repository as the only writable PR boundary.
 
 ## Pull Request Behavior
 
@@ -127,7 +124,7 @@ Use `audience: skills` for live skill maintenance:
 - Prompt instructions, routing behavior, and tool-use policy
 - Writable-path guidance and verification expectations
 - Generated packaged skill copies and plugin skill outputs
-- Current upstream Studio MCP, Studio CLI, build, package, and verification contracts from runner-provided context aliases
+- Current upstream tool, build, package, and verification contracts from runner-provided context aliases
 
 Run separate workflows or branches for separate lanes. Avoid letting docs lanes and the skills lane edit the same surfaces in one pass.
 
@@ -139,7 +136,7 @@ Keep the writable scope narrow. It is the main safety boundary for generated cha
 - User docs commonly use a dedicated namespace such as `docs/user/**`.
 - Skills maintenance commonly uses `skills/**,plugins/**/skills/**,plugins/**/README.md`, plus generated MCP or plugin config files only when build scripts intentionally update them.
 
-For `Automattic/build-with-wordpress`, run skills upkeep as its own scheduled lane with `context_profile: studio-wordpress-skills`, a canonical branch such as `docs-agent/build-with-wordpress-skills`, and writable paths such as `skills/**,plugins/**/skills/**,plugins/**/README.md`.
+For `Automattic/build-with-wordpress`, run skills upkeep as its own scheduled lane with `context_repositories`, `verification_commands`, `drift_checks`, a canonical branch such as `docs-agent/build-with-wordpress-skills`, and writable paths such as `skills/**,plugins/**/skills/**,plugins/**/README.md`.
 
 ## Examples
 

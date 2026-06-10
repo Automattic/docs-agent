@@ -122,18 +122,20 @@ $assert( 'docs/agent-run' === ( $runner_workspace['branch_prefix'] ?? null ), 'E
 $assert( is_file( $root . '/scripts/repair-docs-links.php' ), 'Docs link repair script must be available to consumer workflows.' );
 
 $maintain_docs_workflow = (string) file_get_contents( $root . '/.github/workflows/maintain-docs.yml' );
-foreach ( array( 'context_profile:', 'context_repositories:', 'verification_commands:', 'drift_checks:', 'studio-wordpress-skills', 'Automattic/studio', 'WordPress/agent-skills', 'wordpress-agent-skills' ) as $required_workflow_text ) {
+foreach ( array( 'context_repositories:', 'verification_commands:', 'drift_checks:' ) as $required_workflow_text ) {
 	$assert( str_contains( $maintain_docs_workflow, $required_workflow_text ), "maintain-docs.yml missing required text: {$required_workflow_text}" );
 }
 $assert( str_contains( $maintain_docs_workflow, 'context_repositories: ${{ needs.prepare.outputs.context_repositories }}' ), 'maintain-docs.yml must pass context_repositories through to the canonical runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'verification_commands: ${{ needs.prepare.outputs.verification_commands }}' ), 'maintain-docs.yml must pass verification_commands through to the canonical runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'drift_checks: ${{ needs.prepare.outputs.drift_checks }}' ), 'maintain-docs.yml must pass drift_checks through to the canonical runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'allowed_repos: \'["${{ github.repository }}"]\'' ), 'maintain-docs.yml must keep the target repository as the only Docs Agent writable repository boundary.' );
+$assert( ! str_contains( $maintain_docs_workflow, 'Automattic/studio' ), 'maintain-docs.yml must not hardcode downstream Studio context.' );
+$assert( ! str_contains( $maintain_docs_workflow, 'WordPress/agent-skills' ), 'maintain-docs.yml must not hardcode downstream skills context.' );
 
 $skills_example = (string) file_get_contents( $root . '/examples/build-with-wordpress-skills-workflow.yml' );
-foreach ( array( 'audience: skills', 'base_ref: trunk', 'docs_branch: docs-agent/build-with-wordpress-skills', 'context_profile: studio-wordpress-skills' ) as $required_example_text ) {
+foreach ( array( 'audience: skills', 'base_ref: trunk', 'docs_branch: docs-agent/build-with-wordpress-skills', 'context_repositories:', 'Automattic/studio', 'WordPress/agent-skills', 'verification_commands:', 'drift_checks:' ) as $required_example_text ) {
 	$assert( str_contains( $skills_example, $required_example_text ), "build-with-wordpress skills example missing required text: {$required_example_text}" );
 }
-$assert( ! str_contains( $skills_example, 'pnpm build' ), 'build-with-wordpress skills example must keep verification in the profile instead of prompt boilerplate.' );
+$assert( ! str_contains( $skills_example, 'prompt:' ), 'build-with-wordpress skills example must use canonical runner inputs instead of prompt boilerplate.' );
 
 fwrite( STDOUT, "Docs Agent bundle validation passed.\n" );
