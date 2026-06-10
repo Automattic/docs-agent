@@ -16,11 +16,8 @@ jobs:
     uses: Automattic/docs-agent/.github/workflows/maintain-docs.yml@main
     with:
       audience: skills
-      base_ref: main
+      base_ref: trunk
       docs_branch: docs-agent/build-with-wordpress-skills
       writable_paths: skills/**,plugins/**/skills/**,plugins/**/README.md
-      prompt: |
-        Run the skills maintenance lane for Automattic/build-with-wordpress.
-
-        Maintain live skill instructions and generated packaged copies separately from technical docs upkeep. Inspect skills/**, plugins/**/skills/**, build scripts, package manifests, and generated outputs for drift against current Studio MCP and Studio CLI behavior. Run pnpm build, pnpm verify, and a generated-output drift check after build before opening a pull request. Open one focused skills PR only if changes are needed; otherwise finish with no_changes.
+      context_profile: studio-wordpress-skills
     secrets: inherit

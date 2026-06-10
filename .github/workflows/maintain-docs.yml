@@ -19,6 +19,22 @@ name: Maintain Docs
         description: Comma-separated paths Docs Agent may edit.
         type: string
         default: README.md,docs/**
+      context_profile:
+        description: Named canonical runner context profile. Use studio-wordpress-skills for Studio-backed WordPress skill upkeep.
+        type: string
+        default: ""
+      context_repositories:
+        description: JSON array of canonical read-only runner context repositories. Overrides profile context repositories when non-empty.
+        type: string
+        default: "[]"
+      verification_commands:
+        description: JSON array of canonical runner verification commands executed in the target workspace.
+        type: string
+        default: "[]"
+      drift_checks:
+        description: JSON array of canonical runner drift checks executed after verification.
+        type: string
+        default: "[]"
       prompt:
         description: Optional maintenance instruction appended to the default Docs Agent prompt.
         type: string
@@ -60,11 +76,19 @@ jobs:
       docs_agent_ref: ${{ steps.config.outputs.docs_agent_ref }}
       fallback_pr_title: ${{ steps.config.outputs.fallback_pr_title }}
       default_prompt: ${{ steps.config.outputs.default_prompt }}
+      context_profile: ${{ steps.config.outputs.context_profile }}
+      context_repositories: ${{ steps.config.outputs.context_repositories }}
+      verification_commands: ${{ steps.config.outputs.verification_commands }}
+      drift_checks: ${{ steps.config.outputs.drift_checks }}
     steps:
       - name: Resolve Docs Agent settings
         id: config
         env:
           AUDIENCE: ${{ inputs.audience }}
+          CONTEXT_PROFILE: ${{ inputs.context_profile }}
+          INPUT_CONTEXT_REPOSITORIES: ${{ inputs.context_repositories }}
+          INPUT_VERIFICATION_COMMANDS: ${{ inputs.verification_commands }}
+          INPUT_DRIFT_CHECKS: ${{ inputs.drift_checks }}
           DOCS_AGENT_WORKFLOW_REF: ${{ github.workflow_ref }}
         run: |
           set -euo pipefail
@@ -105,6 +129,32 @@ jobs:
               ;;
           esac
 
+          context_repositories="$INPUT_CONTEXT_REPOSITORIES"
+          verification_commands="$INPUT_VERIFICATION_COMMANDS"
+          drift_checks="$INPUT_DRIFT_CHECKS"
+
+          case "$CONTEXT_PROFILE" in
+            "")
+              resolved_context_profile=""
+              ;;
+            studio-wordpress-skills)
+              resolved_context_profile="studio-wordpress-skills"
+              if [ "$context_repositories" = "[]" ]; then
+                context_repositories='[{"repo":"Automattic/studio","ref":"trunk","alias":"studio","paths":["apps/cli/ai/tools/**","apps/cli/ai/system-prompt.ts","apps/cli/commands/mcp.ts","eval/promptfoo.config.yaml"]},{"repo":"WordPress/agent-skills","ref":"trunk","alias":"wordpress-agent-skills","paths":["skills/**","docs/packaging.md",".github/workflows/ai-skill-maintenance.yml"]}]'
+              fi
+              if [ "$verification_commands" = "[]" ]; then
+                verification_commands='["pnpm build","pnpm verify"]'
+              fi
+              if [ "$drift_checks" = "[]" ]; then
+                drift_checks='[{"command":"git diff --exit-code","description":"Generated skill package outputs are committed after build"}]'
+              fi
+              ;;
+            *)
+              printf 'Unsupported context_profile: %s. Use studio-wordpress-skills or leave empty.\n' "$CONTEXT_PROFILE" >&2
+              exit 1
+              ;;
+          esac
+
           {
             printf 'bundle_path=%s\n' "$bundle_path"
             printf 'agent_slug=%s\n' "$agent_slug"
@@ -113,6 +163,10 @@ jobs:
             printf 'docs_agent_ref=%s\n' "$docs_agent_ref"
             printf 'fallback_pr_title=%s\n' "$fallback_pr_title"
             printf 'default_prompt<<EOF\n%s\nEOF\n' "$default_prompt"
+            printf 'context_profile=%s\n' "$resolved_context_profile"
+            printf 'context_repositories<<EOF\n%s\nEOF\n' "$context_repositories"
+            printf 'verification_commands<<EOF\n%s\nEOF\n' "$verification_commands"
+            printf 'drift_checks<<EOF\n%s\nEOF\n' "$drift_checks"
           } >> "$GITHUB_OUTPUT"
 
   docs_agent:
@@ -139,10 +193,16 @@ jobs:
         Base ref: ${{ inputs.base_ref }}
         Canonical branch: ${{ inputs.docs_branch }}
         Writable paths: ${{ inputs.writable_paths }}
+        Context profile: ${{ needs.prepare.outputs.context_profile }}
+
+        If the runner provides context repository aliases, treat them as read-only source evidence for the target workspace. Refer to aliases by name in findings and PR summaries instead of describing checkout mechanics.
 
         Open or update one focused pull request only if source evidence shows the selected surface is stale, missing, fragmented, or misleading. If the selected surface is already aligned, finish cleanly without changing files or opening a pull request.
       run_agent: ${{ inputs.run_agent }}
       model: ${{ inputs.model }}
+      context_repositories: ${{ needs.prepare.outputs.context_repositories }}
+      verification_commands: ${{ needs.prepare.outputs.verification_commands }}
+      drift_checks: ${{ needs.prepare.outputs.drift_checks }}
       validation_dependencies: Automattic/docs-agent@${{ needs.prepare.outputs.docs_agent_ref }}
       runner_workspace: |
         {
@@ -161,7 +221,7 @@ jobs:
           "title": "${{ needs.prepare.outputs.fallback_pr_title }}",
           "head": "${{ inputs.docs_branch }}",
           "base": "${{ inputs.base_ref }}",
-          "body": "## Summary\n- Maintain the configured Docs Agent lane.\n- Keep writes inside `${{ inputs.writable_paths }}`.\n- Reuse the canonical Docs Agent branch `${{ inputs.docs_branch }}`.\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via OpenCode (GPT-5.5)\n- **Used for:** Generated maintenance updates from repository source for human review."
+          "body": "## Summary\n- Maintain the configured Docs Agent lane.\n- Keep writes inside `${{ inputs.writable_paths }}`.\n- Reuse the canonical Docs Agent branch `${{ inputs.docs_branch }}`.\n- Include runner-provided verification and drift-check summaries when available.\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via OpenCode (GPT-5.5)\n- **Used for:** Generated maintenance updates from repository source for human review."
         }
       extra_wp_config_defines: |
         {

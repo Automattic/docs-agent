@@ -26,6 +26,9 @@
   "github_profile_id": "docs-agent-ci",
   "target_repo": "OWNER/REPO",
   "allowed_repos": ["OWNER/REPO"],
+  "context_repositories": [],
+  "verification_commands": [],
+  "drift_checks": [],
   "runner_workspace": {
     "enabled": true,
     "repo": "REPO",
