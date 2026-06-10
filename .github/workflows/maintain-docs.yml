@@ -19,6 +19,18 @@ name: Maintain Docs
         description: Comma-separated paths Docs Agent may edit.
         type: string
         default: README.md,docs/**
+      context_repositories:
+        description: JSON array of canonical read-only runner context repositories.
+        type: string
+        default: "[]"
+      verification_commands:
+        description: JSON array of canonical runner verification commands executed in the target workspace.
+        type: string
+        default: "[]"
+      drift_checks:
+        description: JSON array of canonical runner drift checks executed after verification.
+        type: string
+        default: "[]"
       prompt:
         description: Optional maintenance instruction appended to the default Docs Agent prompt.
         type: string
@@ -60,11 +72,17 @@ jobs:
       docs_agent_ref: ${{ steps.config.outputs.docs_agent_ref }}
       fallback_pr_title: ${{ steps.config.outputs.fallback_pr_title }}
       default_prompt: ${{ steps.config.outputs.default_prompt }}
+      context_repositories: ${{ steps.config.outputs.context_repositories }}
+      verification_commands: ${{ steps.config.outputs.verification_commands }}
+      drift_checks: ${{ steps.config.outputs.drift_checks }}
     steps:
       - name: Resolve Docs Agent settings
         id: config
         env:
           AUDIENCE: ${{ inputs.audience }}
+          INPUT_CONTEXT_REPOSITORIES: ${{ inputs.context_repositories }}
+          INPUT_VERIFICATION_COMMANDS: ${{ inputs.verification_commands }}
+          INPUT_DRIFT_CHECKS: ${{ inputs.drift_checks }}
           DOCS_AGENT_WORKFLOW_REF: ${{ github.workflow_ref }}
         run: |
           set -euo pipefail
@@ -113,6 +131,9 @@ jobs:
             printf 'docs_agent_ref=%s\n' "$docs_agent_ref"
             printf 'fallback_pr_title=%s\n' "$fallback_pr_title"
             printf 'default_prompt<<EOF\n%s\nEOF\n' "$default_prompt"
+            printf 'context_repositories<<EOF\n%s\nEOF\n' "$INPUT_CONTEXT_REPOSITORIES"
+            printf 'verification_commands<<EOF\n%s\nEOF\n' "$INPUT_VERIFICATION_COMMANDS"
+            printf 'drift_checks<<EOF\n%s\nEOF\n' "$INPUT_DRIFT_CHECKS"
           } >> "$GITHUB_OUTPUT"
 
   docs_agent:
@@ -140,9 +161,14 @@ jobs:
         Canonical branch: ${{ inputs.docs_branch }}
         Writable paths: ${{ inputs.writable_paths }}
 
+        If the runner provides context repository aliases, treat them as read-only source evidence for the target workspace. Refer to aliases by name in findings and PR summaries instead of describing checkout mechanics.
+
         Open or update one focused pull request only if source evidence shows the selected surface is stale, missing, fragmented, or misleading. If the selected surface is already aligned, finish cleanly without changing files or opening a pull request.
       run_agent: ${{ inputs.run_agent }}
       model: ${{ inputs.model }}
+      context_repositories: ${{ needs.prepare.outputs.context_repositories }}
+      verification_commands: ${{ needs.prepare.outputs.verification_commands }}
+      drift_checks: ${{ needs.prepare.outputs.drift_checks }}
       validation_dependencies: Automattic/docs-agent@${{ needs.prepare.outputs.docs_agent_ref }}
       runner_workspace: |
         {
@@ -161,7 +187,7 @@ jobs:
           "title": "${{ needs.prepare.outputs.fallback_pr_title }}",
           "head": "${{ inputs.docs_branch }}",
           "base": "${{ inputs.base_ref }}",
-          "body": "## Summary\n- Maintain the configured Docs Agent lane.\n- Keep writes inside `${{ inputs.writable_paths }}`.\n- Reuse the canonical Docs Agent branch `${{ inputs.docs_branch }}`.\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via OpenCode (GPT-5.5)\n- **Used for:** Generated maintenance updates from repository source for human review."
+          "body": "## Summary\n- Maintain the configured Docs Agent lane.\n- Keep writes inside `${{ inputs.writable_paths }}`.\n- Reuse the canonical Docs Agent branch `${{ inputs.docs_branch }}`.\n- Include runner-provided verification and drift-check summaries when available.\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via OpenCode (GPT-5.5)\n- **Used for:** Generated maintenance updates from repository source for human review."
         }
       extra_wp_config_defines: |
         {

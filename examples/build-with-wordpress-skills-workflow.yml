@@ -16,11 +16,40 @@ jobs:
     uses: Automattic/docs-agent/.github/workflows/maintain-docs.yml@main
     with:
       audience: skills
-      base_ref: main
+      base_ref: trunk
       docs_branch: docs-agent/build-with-wordpress-skills
       writable_paths: skills/**,plugins/**/skills/**,plugins/**/README.md
-      prompt: |
-        Run the skills maintenance lane for Automattic/build-with-wordpress.
-
-        Maintain live skill instructions and generated packaged copies separately from technical docs upkeep. Inspect skills/**, plugins/**/skills/**, build scripts, package manifests, and generated outputs for drift against current Studio MCP and Studio CLI behavior. Run pnpm build, pnpm verify, and a generated-output drift check after build before opening a pull request. Open one focused skills PR only if changes are needed; otherwise finish with no_changes.
+      context_repositories: |
+        [
+          {
+            "repo": "Automattic/studio",
+            "ref": "trunk",
+            "alias": "studio",
+            "paths": [
+              "apps/cli/ai/tools/**",
+              "apps/cli/ai/system-prompt.ts",
+              "apps/cli/commands/mcp.ts",
+              "eval/promptfoo.config.yaml"
+            ]
+          },
+          {
+            "repo": "WordPress/agent-skills",
+            "ref": "trunk",
+            "alias": "wordpress-agent-skills",
+            "paths": [
+              "skills/**",
+              "docs/packaging.md",
+              ".github/workflows/ai-skill-maintenance.yml"
+            ]
+          }
+        ]
+      verification_commands: |
+        ["pnpm build", "pnpm verify"]
+      drift_checks: |
+        [
+          {
+            "command": "git diff --exit-code",
+            "description": "Generated skill package outputs are committed after build"
+          }
+        ]
     secrets: inherit

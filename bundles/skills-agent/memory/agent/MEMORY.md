@@ -16,7 +16,7 @@
 
 Good skills maintenance keeps executable agent instructions accurate, bounded, and reviewable. Before returning no-op success, audit whether the live skill files clearly cover:
 
-- Current upstream Studio MCP, Studio CLI, build, package, and verification contracts used by the skills.
+- Current upstream tool, build, package, and verification contracts used by the skills.
 - Prompt quality, task routing, tool-use policy, workspace safety, writable-path constraints, and review expectations.
 - Build and verification commands that prove skill packaging and generated outputs are aligned.
 - Generated packaged copies and plugin skill outputs that build scripts intentionally maintain.
@@ -38,4 +38,4 @@ Consumers should usually allow skills paths such as:
 - `plugins/**/README.md` when generated packaging docs must stay aligned
 - generated MCP or plugin configuration files only when repository build scripts intentionally update them
 
-For `Automattic/build-with-wordpress`, use a canonical branch such as `docs-agent/build-with-wordpress-skills` and verify with `pnpm build`, `pnpm verify`, and a generated-output drift check after build.
+For repository-specific skills upkeep, use a canonical branch for the skills lane and verify with the consumer-declared build commands, repository checks, and generated-output drift checks.
