@@ -1,0 +1,178 @@
+name: Maintain Docs
+
+'on':
+  workflow_call:
+    inputs:
+      audience:
+        description: Documentation audience to maintain. Use technical for developer docs or user for product docs.
+        type: string
+        default: technical
+      base_ref:
+        description: Base branch or ref for the documentation pull request.
+        type: string
+        default: main
+      docs_branch:
+        description: Stable branch reused for the canonical documentation pull request.
+        type: string
+        default: docs-agent/docs-upkeep
+      writable_paths:
+        description: Comma-separated documentation paths Docs Agent may edit.
+        type: string
+        default: README.md,docs/**
+      prompt:
+        description: Optional maintenance instruction appended to the default Docs Agent prompt.
+        type: string
+        default: ""
+      model:
+        description: Model used by Docs Agent.
+        type: string
+        default: gpt-5.5
+      run_agent:
+        description: Set false to record a deterministic skip after a caller preflight decides docs are already current.
+        type: boolean
+        default: true
+    outputs:
+      job_status:
+        description: Runner job status, or skipped when run_agent is false.
+        value: ${{ jobs.docs_agent.outputs.job_status }}
+      transcript_json:
+        description: Machine-readable Docs Agent transcript JSON.
+        value: ${{ jobs.docs_agent.outputs.transcript_json }}
+      transcript_summary:
+        description: Human-readable Docs Agent transcript summary.
+        value: ${{ jobs.docs_agent.outputs.transcript_summary }}
+      engine_data_json:
+        description: Projected Docs Agent engine data, including PR URL fields when available.
+        value: ${{ jobs.docs_agent.outputs.engine_data_json }}
+      auth_mode:
+        description: Authentication mode used by the underlying runner.
+        value: ${{ jobs.docs_agent.outputs.auth_mode }}
+
+jobs:
+  prepare:
+    name: Prepare Docs Agent
+    runs-on: ubuntu-latest
+    outputs:
+      bundle_path: ${{ steps.config.outputs.bundle_path }}
+      agent_slug: ${{ steps.config.outputs.agent_slug }}
+      pipeline_slug: ${{ steps.config.outputs.pipeline_slug }}
+      flow_slug: ${{ steps.config.outputs.flow_slug }}
+      docs_agent_ref: ${{ steps.config.outputs.docs_agent_ref }}
+      fallback_pr_title: ${{ steps.config.outputs.fallback_pr_title }}
+      default_prompt: ${{ steps.config.outputs.default_prompt }}
+    steps:
+      - name: Resolve Docs Agent settings
+        id: config
+        env:
+          AUDIENCE: ${{ inputs.audience }}
+          DOCS_AGENT_WORKFLOW_REF: ${{ github.workflow_ref }}
+        run: |
+          set -euo pipefail
+
+          docs_agent_ref="${DOCS_AGENT_WORKFLOW_REF#*@}"
+          if [ -z "$docs_agent_ref" ] || [ "$docs_agent_ref" = "$DOCS_AGENT_WORKFLOW_REF" ]; then
+            docs_agent_ref="main"
+          fi
+
+          case "$AUDIENCE" in
+            technical)
+              bundle_path="bundles/technical-docs-agent"
+              agent_slug="technical-docs-agent"
+              pipeline_slug="technical-docs-pipeline"
+              flow_slug="technical-docs-maintenance-flow"
+              fallback_pr_title="Update developer documentation"
+              default_prompt="Maintain source-grounded developer documentation for architecture, APIs, extension points, setup, tests, operations, and contributor workflows. Add an adoption-oriented introduction path that explains project names, concepts, and where to start before deep reference material. Preserve technical precision and useful architecture/reference depth."
+              ;;
+            user)
+              bundle_path="bundles/user-docs-agent"
+              agent_slug="user-docs-agent"
+              pipeline_slug="user-docs-pipeline"
+              flow_slug="user-docs-maintenance-flow"
+              fallback_pr_title="Update product documentation"
+              default_prompt="Maintain source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs. Add an adoption-oriented introduction path that explains product names, concepts, and where to start before detailed task/reference material. Preserve factual depth without turning the docs shallow."
+              ;;
+            *)
+              printf 'Unsupported audience: %s. Use technical or user.\n' "$AUDIENCE" >&2
+              exit 1
+              ;;
+          esac
+
+          {
+            printf 'bundle_path=%s\n' "$bundle_path"
+            printf 'agent_slug=%s\n' "$agent_slug"
+            printf 'pipeline_slug=%s\n' "$pipeline_slug"
+            printf 'flow_slug=%s\n' "$flow_slug"
+            printf 'docs_agent_ref=%s\n' "$docs_agent_ref"
+            printf 'fallback_pr_title=%s\n' "$fallback_pr_title"
+            printf 'default_prompt<<EOF\n%s\nEOF\n' "$default_prompt"
+          } >> "$GITHUB_OUTPUT"
+
+  docs_agent:
+    name: Maintain Docs
+    needs: prepare
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@wordpress-v2.108.3
+    with:
+      bundle_path: .ci/docs-agent/${{ needs.prepare.outputs.bundle_path }}
+      bundle_repo: https://github.com/Automattic/docs-agent.git
+      bundle_ref: ${{ needs.prepare.outputs.docs_agent_ref }}
+      bundle_path_in_repo: ${{ needs.prepare.outputs.bundle_path }}
+      agent_slug: ${{ needs.prepare.outputs.agent_slug }}
+      pipeline_slug: ${{ needs.prepare.outputs.pipeline_slug }}
+      flow_slug: ${{ needs.prepare.outputs.flow_slug }}
+      target_repo: ${{ github.repository }}
+      prompt: |
+        ${{ needs.prepare.outputs.default_prompt }}
+
+        ${{ inputs.prompt }}
+
+        Target repository: ${{ github.repository }}
+        Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        Documentation audience: ${{ inputs.audience }}
+        Base ref: ${{ inputs.base_ref }}
+        Canonical docs branch: ${{ inputs.docs_branch }}
+        Writable documentation paths: ${{ inputs.writable_paths }}
+
+        Open or update one focused documentation pull request only if source evidence shows docs are stale, missing, fragmented, or misleading. If the docs are already aligned, finish cleanly without changing files or opening a pull request.
+      run_agent: ${{ inputs.run_agent }}
+      model: ${{ inputs.model }}
+      validation_dependencies: Automattic/docs-agent@${{ needs.prepare.outputs.docs_agent_ref }}
+      runner_workspace: |
+        {
+          "enabled": true,
+          "repo": "${{ github.repository }}",
+          "clone_url": "https://github.com/${{ github.repository }}.git",
+          "branch": "${{ inputs.docs_branch }}",
+          "from": "origin/${{ inputs.base_ref }}",
+          "bootstrap": false,
+          "allow_stale": true,
+          "rebase_base": true
+        }
+      fallback_pull_request: |
+        {
+          "repo": "${{ github.repository }}",
+          "title": "${{ needs.prepare.outputs.fallback_pr_title }}",
+          "head": "${{ inputs.docs_branch }}",
+          "base": "${{ inputs.base_ref }}",
+          "body": "## Summary\n- Maintain documentation for the configured audience.\n- Keep writes inside `${{ inputs.writable_paths }}`.\n- Reuse the canonical Docs Agent branch `${{ inputs.docs_branch }}`.\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via OpenCode (GPT-5.5)\n- **Used for:** Generated documentation updates from repository source for human review."
+        }
+      extra_wp_config_defines: |
+        {
+          "DOCS_AGENT_TARGET_REPO": "${{ github.repository }}",
+          "DOCS_AGENT_WRITABLE_PATHS": "${{ inputs.writable_paths }}"
+        }
+      extra_wp_codebox_mounts: |
+        [
+          {
+            "type": "file",
+            "source": ".ci/docs-agent/ci/docs-agent-workspace-policy.php",
+            "target": "/wordpress/wp-content/mu-plugins/docs-agent-workspace-policy.php",
+            "mode": "readonly"
+          }
+        ]
+      success_requires_pr: false
+      allowed_repos: '["${{ github.repository }}"]'
+      app_token_repos: ${{ github.repository }}
+      engine_data_outputs: '{"docs_agent_pr_url":"metadata.engine_data.docs_agent.pr.url","fallback_pr_url":"metadata.fallback_pull_request.url","success_status":"metadata.success_status"}'
+      transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
+      bundle_validator_spec: .ci/docs-agent/tests/docs-agent.validate-bundle-spec.json
+    secrets: inherit

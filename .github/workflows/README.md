@@ -1,8 +1,7 @@
-# Docs Agent CI
+# Docs Agent Workflows
 
-`docs-agent.yml` runs the Docs Agent bundle against any target repository passed as `target_repo`.
+`maintain-docs.yml` is the consumer-facing reusable workflow for scheduled documentation upkeep. Consumer repositories pass product-level inputs such as `audience`, `base_ref`, `docs_branch`, `writable_paths`, `prompt`, `model`, and `run_agent`.
 
-The target repository must have the Homeboy GitHub App installed so the workflow can authenticate, inspect source, write documentation updates, and open pull requests.
+`docs-agent.yml` is a maintainer/debug workflow for central dispatch against an arbitrary `target_repo`. It exposes lower-level runner details and should not be the starting point for consumer repositories.
 
-- Reusable workflow internals: https://github.com/Extra-Chill/homeboy-extensions/pull/500
-- Bundle internals: https://github.com/Automattic/docs-agent/pull/1
+The target repository needs a token path that can inspect source, write the configured documentation paths, push the canonical docs branch, and open or update the pull request.
