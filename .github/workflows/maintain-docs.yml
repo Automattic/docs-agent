@@ -39,6 +39,10 @@ name: Maintain Docs
         description: Model used by Docs Agent.
         type: string
         default: gpt-5.5
+      docs_agent_ref:
+        description: Ref of Automattic/docs-agent to use for the agent bundle and validation dependency.
+        type: string
+        default: main
       run_agent:
         description: Set false to record a deterministic skip after a caller preflight decides docs are already current.
         type: boolean
@@ -83,12 +87,12 @@ jobs:
           INPUT_CONTEXT_REPOSITORIES: ${{ inputs.context_repositories }}
           INPUT_VERIFICATION_COMMANDS: ${{ inputs.verification_commands }}
           INPUT_DRIFT_CHECKS: ${{ inputs.drift_checks }}
-          DOCS_AGENT_WORKFLOW_REF: ${{ github.workflow_ref }}
+          INPUT_DOCS_AGENT_REF: ${{ inputs.docs_agent_ref }}
         run: |
           set -euo pipefail
 
-          docs_agent_ref="${DOCS_AGENT_WORKFLOW_REF#*@}"
-          if [ -z "$docs_agent_ref" ] || [ "$docs_agent_ref" = "$DOCS_AGENT_WORKFLOW_REF" ]; then
+          docs_agent_ref="$(printf '%s' "$INPUT_DOCS_AGENT_REF" | xargs)"
+          if [ -z "$docs_agent_ref" ]; then
             docs_agent_ref="main"
           fi
 
