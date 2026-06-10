@@ -1,0 +1,59 @@
+{
+  "bundle_dir": "../bundles/technical-docs-agent",
+  "bundle_slug": "technical-docs-agent",
+  "agent_slug": "technical-docs-agent",
+  "expected_pipelines": ["technical-docs-pipeline"],
+  "expected_flows": [
+    "technical-docs-bootstrap-flow",
+    "technical-docs-maintenance-flow",
+    "technical-docs-flow"
+  ],
+  "memory_files": ["SOUL.md", "MEMORY.md"],
+  "flow_assertions": {
+    "technical-docs-bootstrap-flow": {
+      "pipeline_slug": "technical-docs-pipeline",
+      "ai_step_required_tools": [
+        "get_github_file",
+        "workspace_read",
+        "workspace_grep",
+        "workspace_write",
+        "workspace_git_commit",
+        "workspace_git_push",
+        "create_github_pull_request"
+      ]
+    },
+    "technical-docs-maintenance-flow": {
+      "pipeline_slug": "technical-docs-pipeline",
+      "ai_step_required_tools": [
+        "get_github_file",
+        "workspace_read",
+        "workspace_grep",
+        "workspace_edit",
+        "workspace_git_commit",
+        "workspace_git_push",
+        "create_github_pull_request"
+      ],
+      "completion_assertions_empty": true,
+      "prompt_must_contain": ["Future coverage", "documentation backlog", "remove the satisfied deferred items", "docs/ is the default technical documentation surface"]
+    },
+    "technical-docs-flow": {
+      "pipeline_slug": "technical-docs-pipeline",
+      "ai_step_required_tools": [
+        "get_github_file",
+        "workspace_read",
+        "workspace_grep",
+        "workspace_edit",
+        "workspace_git_commit",
+        "workspace_git_push",
+        "create_github_pull_request"
+      ],
+      "completion_assertions_empty": true,
+      "prompt_must_contain": ["Future coverage", "documentation backlog", "remove the satisfied deferred items", "docs/ is the default technical documentation surface"]
+    }
+  },
+  "pipeline_assertions": {
+    "technical-docs-pipeline": {
+      "system_prompt_must_contain": "source code"
+    }
+  }
+}
