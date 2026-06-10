@@ -47,6 +47,23 @@ name: Maintain Docs
         description: Set false to record a deterministic skip after a caller preflight decides docs are already current.
         type: boolean
         default: true
+    secrets:
+      HOMEBOY_APP_ID:
+        required: false
+      HOMEBOY_APP_PRIVATE_KEY:
+        required: false
+      OPENAI_API_KEY:
+        required: false
+      PROVIDER_SECRET_1:
+        required: false
+      PROVIDER_SECRET_2:
+        required: false
+      PROVIDER_SECRET_3:
+        required: false
+      PROVIDER_SECRET_4:
+        required: false
+      PROVIDER_SECRET_5:
+        required: false
     outputs:
       job_status:
         description: Runner job status, or skipped when run_agent is false.
@@ -218,4 +235,12 @@ jobs:
       engine_data_outputs: '{"docs_agent_pr_url":"metadata.engine_data.docs_agent.pr.url","fallback_pr_url":"metadata.fallback_pull_request.url","success_status":"metadata.success_status"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
       bundle_validator_spec: ${{ needs.prepare.outputs.bundle_validator_spec }}
-    secrets: inherit
+    secrets:
+      HOMEBOY_APP_ID: ${{ secrets.HOMEBOY_APP_ID }}
+      HOMEBOY_APP_PRIVATE_KEY: ${{ secrets.HOMEBOY_APP_PRIVATE_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PROVIDER_SECRET_1: ${{ secrets.PROVIDER_SECRET_1 }}
+      PROVIDER_SECRET_2: ${{ secrets.PROVIDER_SECRET_2 }}
+      PROVIDER_SECRET_3: ${{ secrets.PROVIDER_SECRET_3 }}
+      PROVIDER_SECRET_4: ${{ secrets.PROVIDER_SECRET_4 }}
+      PROVIDER_SECRET_5: ${{ secrets.PROVIDER_SECRET_5 }}
