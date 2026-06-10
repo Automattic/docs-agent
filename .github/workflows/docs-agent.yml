@@ -33,7 +33,7 @@ on:
 
 jobs:
   run-docs-agent:
-    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@06cc67ae6bd6ef82216906736f783fc5ec93b127 # wordpress-v2.108.3
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@wordpress-v2.117.0
     with:
       bundle_path: ${{ contains(inputs.flow_kind, 'skills') && 'bundles/skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'bundles/technical-docs-agent' || 'bundles/user-docs-agent') }}
       agent_slug: ${{ contains(inputs.flow_kind, 'skills') && 'skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-agent' || 'user-docs-agent') }}
