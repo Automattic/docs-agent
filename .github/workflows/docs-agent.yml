@@ -59,9 +59,9 @@ jobs:
       wp_codebox_ref: 62a348d98fb4f4e6a929c12f93973cdcf1e74664
       agents_api_ref: a61461da12ccdc90eb1a844714761b6c19360bfe
       data_machine_ref: cde6bc0dab754bc831092ab522c08cb773dc9f64
-      data_machine_code_ref: e061c592ad6849bfd22509117b6bda1a3cedbe5d
+      data_machine_code_ref: 4b0c630804568e2377fd57d1c49edca8b5423e19
       openai_provider_ref: a400c158707e3d0b6fcd0f1502f6aa1085b01b9b
-      validation_dependencies: Automattic/agents-api@a61461da12ccdc90eb1a844714761b6c19360bfe,Extra-Chill/data-machine@cde6bc0dab754bc831092ab522c08cb773dc9f64,Extra-Chill/data-machine-code@e061c592ad6849bfd22509117b6bda1a3cedbe5d
+      validation_dependencies: Automattic/agents-api@a61461da12ccdc90eb1a844714761b6c19360bfe,Extra-Chill/data-machine@cde6bc0dab754bc831092ab522c08cb773dc9f64,Extra-Chill/data-machine-code@4b0c630804568e2377fd57d1c49edca8b5423e19
       runner_workspace: |
         {
           "enabled": true,
