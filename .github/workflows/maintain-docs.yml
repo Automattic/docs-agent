@@ -235,9 +235,9 @@ jobs:
         Canonical branch: ${{ inputs.docs_branch }}
         Writable paths: ${{ inputs.writable_paths }}
 
-        If the runner provides context repository aliases, treat them as read-only source evidence for the target workspace. Refer to aliases by name in findings and PR summaries instead of describing checkout mechanics.
+        If context repository aliases are available, treat them as read-only source evidence for the target workspace. Refer to aliases by name in findings and summaries instead of describing checkout mechanics.
 
-        For the selected lane, write files in the runner workspace and leave remaining workspace changes for the runner to commit, push, and publish as a pull request. If the selected surface is already aligned, finish cleanly without changing files.
+        For the selected lane, write files in the provided workspace. If the selected surface is already aligned, finish cleanly without changing files.
       run_agent: ${{ inputs.run_agent }}
       model: ${{ inputs.model }}
       context_repositories: ${{ needs.prepare.outputs.context_repositories }}

@@ -62,10 +62,10 @@ foreach ( $spec['bundles'] ?? array() as $bundle_name => $bundle_spec ) {
 			$assert( ! str_contains( $system_prompt, (string) $forbidden ), "Pipeline {$pipeline_slug} system prompt must not contain: {$forbidden}" );
 		}
 		if ( str_contains( $pipeline_slug, 'docs-' ) || str_contains( $pipeline_slug, 'skills-' ) ) {
-			foreach ( array( 'workspace_git_add', 'workspace_git_commit', 'workspace_git_push', 'create_github_pull_request', 'commit, push, then open' ) as $forbidden_prompt_text ) {
+			foreach ( array( 'runner', 'workspace_git_add', 'workspace_git_commit', 'workspace_git_push', 'create_github_pull_request', 'commit, push', 'open one reviewable pull request' ) as $forbidden_prompt_text ) {
 				$assert( ! str_contains( $system_prompt, $forbidden_prompt_text ), "Pipeline {$pipeline_slug} system prompt must not reference agent-owned publication: {$forbidden_prompt_text}" );
 			}
-			$assert( str_contains( $system_prompt, 'runner to commit, push, and publish' ) || str_contains( $system_prompt, 'selected flow' ), "Pipeline {$pipeline_slug} must leave publication to the runner or selected flow." );
+			$assert( str_contains( $system_prompt, 'provided workspace' ) || str_contains( $system_prompt, 'selected flow' ), "Pipeline {$pipeline_slug} must keep agent instructions scoped to workspace editing." );
 		}
 		$assert( str_contains( strtolower( $system_prompt ), 'living documentation' ), "Pipeline {$pipeline_slug} must describe living documentation." );
 	}
@@ -96,10 +96,9 @@ foreach ( $spec['bundles'] ?? array() as $bundle_name => $bundle_spec ) {
 		}
 		if ( str_contains( $flow_slug, 'bootstrap' ) ) {
 			$completion_assertions = $step['completion_assertions'] ?? array();
-			$assert( empty( $completion_assertions['required_tool_names'] ?? array() ), "Bootstrap flow {$flow_slug} must not require runner-owned publication tools." );
+			$assert( empty( $completion_assertions['required_tool_names'] ?? array() ), "Bootstrap flow {$flow_slug} must not require publication tools." );
 			$assert( 6 === ( $completion_assertions['minimum_successful_tool_counts']['workspace_write'] ?? null ), "Bootstrap flow {$flow_slug} must require at least six workspace file writes." );
-			$assert( str_contains( $flow_prompt, 'runner-provided workspace handle' ), "Bootstrap flow {$flow_slug} must direct agents to use the runner workspace." );
-			$assert( str_contains( $flow_prompt, 'runner can commit, push, and publish the pull request' ), "Bootstrap flow {$flow_slug} must leave publication to the runner." );
+			$assert( str_contains( $flow_prompt, 'provided workspace' ), "Bootstrap flow {$flow_slug} must direct agents to use the provided workspace." );
 			foreach ( array( 'workspace_git_add', 'workspace_git_commit', 'workspace_git_push', 'create_github_pull_request', 'comment_github_pull_request' ) as $forbidden_tool ) {
 				$assert( ! in_array( $forbidden_tool, $tools, true ), "Bootstrap flow {$flow_slug} must not enable {$forbidden_tool}." );
 			}
@@ -121,12 +120,12 @@ foreach ( $spec['bundles'] ?? array() as $bundle_name => $bundle_spec ) {
 		}
 		if ( str_contains( $flow_slug, 'docs-' ) || str_contains( $flow_slug, 'skills-' ) ) {
 			foreach ( array( 'workspace_git_add', 'workspace_git_commit', 'workspace_git_push', 'create_github_pull_request', 'comment_github_pull_request' ) as $forbidden_tool ) {
-				$assert( ! in_array( $forbidden_tool, $tools, true ), "Runner-published flow {$flow_slug} must not enable {$forbidden_tool}." );
+				$assert( ! in_array( $forbidden_tool, $tools, true ), "Workspace-editing flow {$flow_slug} must not enable {$forbidden_tool}." );
 			}
-			foreach ( array( 'workspace_git_add', 'workspace_git_commit', 'workspace_git_push', 'create_github_pull_request' ) as $forbidden_prompt_text ) {
-				$assert( ! str_contains( $flow_prompt, $forbidden_prompt_text ), "Runner-published flow {$flow_slug} prompt must not reference {$forbidden_prompt_text}." );
+			foreach ( array( 'runner', 'workspace_git_add', 'workspace_git_commit', 'workspace_git_push', 'create_github_pull_request', 'commit, push', 'publish the pull request', 'open one' ) as $forbidden_prompt_text ) {
+				$assert( ! str_contains( $flow_prompt, $forbidden_prompt_text ), "Workspace-editing flow {$flow_slug} prompt must not reference {$forbidden_prompt_text}." );
 			}
-			$assert( str_contains( $flow_prompt, 'runner can commit, push, and publish the pull request' ), "Runner-published flow {$flow_slug} must leave publication to the runner." );
+			$assert( str_contains( $flow_prompt, 'workspace_git_status' ) && str_contains( $flow_prompt, 'workspace_git_diff' ), "Workspace-editing flow {$flow_slug} must end by inspecting status and diff." );
 		}
 	}
 }
