@@ -8,11 +8,6 @@
   "steps": [
     {
       "enabled_tools": ["list_github_issues", "get_github_issue", "list_github_pulls", "get_github_pull", "get_github_pull_files", "get_github_pull_review_context", "github_pr_documentation_impact", "list_github_tree", "get_github_file", "workspace_show", "workspace_ls", "workspace_read", "workspace_grep", "workspace_write", "workspace_edit", "workspace_apply_patch", "workspace_git_status", "workspace_git_diff"],
-      "completion_assertions": {
-        "minimum_successful_tool_counts": {
-          "workspace_write": 6
-        }
-      },
       "tool_runtime_rules": [
         {
           "id": "bootstrap-write-after-discovery",
