@@ -16,9 +16,8 @@
         "workspace_read",
         "workspace_grep",
         "workspace_write",
-        "workspace_git_commit",
-        "workspace_git_push",
-        "create_github_pull_request"
+        "workspace_git_status",
+        "workspace_git_diff"
       ],
       "prompt_must_contain": ["source-code GitHub repositories", "docs/ is already the technical documentation surface", "docs/user/", "explicitly user-docs-only"],
       "prompt_forbidden": ["source code", "commands", "configuration examples", "CLI", "code snippets"]
@@ -30,9 +29,8 @@
         "workspace_read",
         "workspace_grep",
         "workspace_edit",
-        "workspace_git_commit",
-        "workspace_git_push",
-        "create_github_pull_request"
+        "workspace_git_status",
+        "workspace_git_diff"
       ],
       "completion_assertions_empty": true,
       "prompt_must_contain": ["source-code GitHub repositories", "docs/ is already the technical documentation surface", "docs/user/", "explicitly user-docs-only"],

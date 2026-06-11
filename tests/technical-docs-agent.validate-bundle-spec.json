@@ -16,9 +16,8 @@
         "workspace_read",
         "workspace_grep",
         "workspace_write",
-        "workspace_git_commit",
-        "workspace_git_push",
-        "create_github_pull_request"
+        "workspace_git_status",
+        "workspace_git_diff"
       ]
     },
     "technical-docs-maintenance-flow": {
@@ -28,9 +27,8 @@
         "workspace_read",
         "workspace_grep",
         "workspace_edit",
-        "workspace_git_commit",
-        "workspace_git_push",
-        "create_github_pull_request"
+        "workspace_git_status",
+        "workspace_git_diff"
       ],
       "completion_assertions_empty": true,
       "prompt_must_contain": ["Future coverage", "documentation backlog", "remove the satisfied deferred items", "docs/ is the default technical documentation surface"]
