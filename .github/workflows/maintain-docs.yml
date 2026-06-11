@@ -237,7 +237,7 @@ jobs:
 
         If the runner provides context repository aliases, treat them as read-only source evidence for the target workspace. Refer to aliases by name in findings and PR summaries instead of describing checkout mechanics.
 
-        For bootstrap runs, write the documentation files in the runner workspace and leave the remaining workspace changes for the runner to commit, push, and publish as a pull request. For maintenance runs, open or update one focused pull request only if source evidence shows the selected surface is stale, missing, fragmented, or misleading. If the selected surface is already aligned, finish cleanly without changing files or opening a pull request.
+        For the selected lane, write files in the runner workspace and leave remaining workspace changes for the runner to commit, push, and publish as a pull request. If the selected surface is already aligned, finish cleanly without changing files.
       run_agent: ${{ inputs.run_agent }}
       model: ${{ inputs.model }}
       context_repositories: ${{ needs.prepare.outputs.context_repositories }}

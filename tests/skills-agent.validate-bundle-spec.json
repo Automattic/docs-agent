@@ -15,9 +15,8 @@
         "workspace_read",
         "workspace_grep",
         "workspace_edit",
-        "workspace_git_commit",
-        "workspace_git_push",
-        "create_github_pull_request"
+        "workspace_git_status",
+        "workspace_git_diff"
       ],
       "completion_assertions_empty": true,
       "prompt_must_contain": ["skills maintenance lane", "technical docs document skills", "read-only context repository aliases", "consumer-declared writable paths", "build commands", "repository checks", "generated-output drift checks"]
