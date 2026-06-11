@@ -30,7 +30,6 @@ Write for frontend consumers. Use product names, feature names, visible labels, 
 
 - `user-docs-bootstrap-flow`: first-run non-technical product documentation.
 - `user-docs-maintenance-flow`: ongoing non-technical product documentation maintenance.
-- `user-docs-flow`: maintenance alias for existing consumers.
 
 ## Default Writable Scope
 

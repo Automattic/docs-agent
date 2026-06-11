@@ -4,26 +4,11 @@
   "agent_slug": "skills-agent",
   "expected_pipelines": ["skills-pipeline"],
   "expected_flows": [
-    "skills-maintenance-flow",
-    "skills-flow"
+    "skills-maintenance-flow"
   ],
   "memory_files": ["SOUL.md", "MEMORY.md"],
   "flow_assertions": {
     "skills-maintenance-flow": {
-      "pipeline_slug": "skills-pipeline",
-      "ai_step_required_tools": [
-        "get_github_file",
-        "workspace_read",
-        "workspace_grep",
-        "workspace_edit",
-        "workspace_git_commit",
-        "workspace_git_push",
-        "create_github_pull_request"
-      ],
-      "completion_assertions_empty": true,
-      "prompt_must_contain": ["skills maintenance lane", "technical docs document skills", "read-only context repository aliases", "consumer-declared writable paths", "build commands", "repository checks", "generated-output drift checks"]
-    },
-    "skills-flow": {
       "pipeline_slug": "skills-pipeline",
       "ai_step_required_tools": [
         "get_github_file",

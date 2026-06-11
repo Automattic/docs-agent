@@ -12,12 +12,9 @@ on:
         options:
           - technical-docs-bootstrap-flow
           - technical-docs-maintenance-flow
-          - technical-docs-flow
           - user-docs-bootstrap-flow
           - user-docs-maintenance-flow
-          - user-docs-flow
           - skills-maintenance-flow
-          - skills-flow
         default: technical-docs-maintenance-flow
       prompt:
         description: Override the default prompt (optional).

@@ -32,8 +32,7 @@
     "memory": ["MEMORY.md", "SOUL.md"],
     "pipelines": ["skills-pipeline"],
     "flows": [
-      "skills-maintenance-flow",
-      "skills-flow"
+      "skills-maintenance-flow"
     ],
     "prompts": [],
     "rubrics": [],

@@ -33,8 +33,7 @@
     "pipelines": ["technical-docs-pipeline"],
     "flows": [
       "technical-docs-bootstrap-flow",
-      "technical-docs-maintenance-flow",
-      "technical-docs-flow"
+      "technical-docs-maintenance-flow"
     ],
     "prompts": [],
     "rubrics": [],
