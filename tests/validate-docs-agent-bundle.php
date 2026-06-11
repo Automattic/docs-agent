@@ -90,13 +90,19 @@ foreach ( $spec['bundles'] ?? array() as $bundle_name => $bundle_spec ) {
 		}
 		if ( str_contains( $flow_slug, 'bootstrap' ) ) {
 			$completion_assertions = $step['completion_assertions'] ?? array();
-			$assert( array( 'create_github_pull_request' ) === ( $completion_assertions['required_tool_names'] ?? null ), "Bootstrap flow {$flow_slug} must require pull request creation." );
+			$assert( empty( $completion_assertions['required_tool_names'] ?? array() ), "Bootstrap flow {$flow_slug} must not require runner-owned publication tools." );
 			$assert( 6 === ( $completion_assertions['minimum_successful_tool_counts']['workspace_write'] ?? null ), "Bootstrap flow {$flow_slug} must require at least six workspace file writes." );
 			$assert( str_contains( $flow_prompt, 'runner-provided workspace handle' ), "Bootstrap flow {$flow_slug} must direct agents to use the runner workspace." );
-			$assert( str_contains( $flow_prompt, 'workspace_git_push' ), "Bootstrap flow {$flow_slug} must direct agents through the workspace git workflow." );
+			$assert( str_contains( $flow_prompt, 'runner can commit, push, and open the pull request' ), "Bootstrap flow {$flow_slug} must leave publication to the runner." );
+			foreach ( array( 'workspace_git_add', 'workspace_git_commit', 'workspace_git_push', 'create_github_pull_request', 'comment_github_pull_request' ) as $forbidden_tool ) {
+				$assert( ! in_array( $forbidden_tool, $tools, true ), "Bootstrap flow {$flow_slug} must not enable {$forbidden_tool}." );
+			}
+			foreach ( array( 'workspace_git_add', 'workspace_git_commit', 'workspace_git_push', 'create_github_pull_request' ) as $forbidden_prompt_text ) {
+				$assert( ! str_contains( $flow_prompt, $forbidden_prompt_text ), "Bootstrap flow {$flow_slug} prompt must not reference {$forbidden_prompt_text}." );
+			}
 			$assert( ! str_contains( $flow_prompt, 'create_or_update_github_file' ), "Bootstrap flow {$flow_slug} must not reference direct GitHub file writes." );
 
-			$required_phrases = array( 'clean documentation surface', 'documentation information architecture', 'committed scope that fits the run budget', 'future coverage section as plain text', 'separate', 'digestible', 'hierarchy mirrors', 'parent/child relationships', 'cross-links', 'committed documentation scope', 'write topic pages first', 'index last', 'write every linked documentation page', 'future coverage with the reason' );
+			$required_phrases = array( 'clean documentation surface', 'documentation information architecture', 'written scope that fits the run budget', 'future coverage section as plain text', 'separate', 'digestible', 'hierarchy mirrors', 'parent/child relationships', 'cross-links', 'written documentation scope', 'write topic pages first', 'index last', 'write every linked documentation page', 'future coverage with the reason' );
 			$required_phrases = array_merge( $required_phrases, str_starts_with( $flow_slug, 'technical-' ) ? array( 'source inventory', 'preserve or improve', 'reference-level details', 'representative payloads or examples', 'reconcile the written docs against the source inventory' ) : array( 'private inventory', 'frontend users', 'user docs index', 'docs/user/', 'practical product details', 'reconcile the written docs against the private product inventory' ) );
 			foreach ( $required_phrases as $phrase ) {
 				$assert( str_contains( $flow_prompt, strtolower( $phrase ) ), "Bootstrap flow {$flow_slug} missing phrase: {$phrase}" );
