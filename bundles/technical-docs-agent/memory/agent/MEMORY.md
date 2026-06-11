@@ -30,7 +30,6 @@ Prefer one clean, navigable documentation surface with useful cross-links over s
 
 - `technical-docs-bootstrap-flow`: first-run developer-facing documentation from source code.
 - `technical-docs-maintenance-flow`: ongoing developer-facing documentation maintenance from source code.
-- `technical-docs-flow`: maintenance alias for existing consumers.
 
 ## Default Writable Scope
 

@@ -33,8 +33,7 @@
     "pipelines": ["user-docs-pipeline"],
     "flows": [
       "user-docs-bootstrap-flow",
-      "user-docs-maintenance-flow",
-      "user-docs-flow"
+      "user-docs-maintenance-flow"
     ],
     "prompts": [],
     "rubrics": [],

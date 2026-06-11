@@ -27,7 +27,6 @@ The technical docs lane may explain how skills work. This skills lane maintains 
 ## Supported Workflows
 
 - `skills-maintenance-flow`: ongoing live skill instruction and packaged-output maintenance.
-- `skills-flow`: maintenance alias for consumers that prefer a short flow name.
 
 ## Default Writable Scope
 

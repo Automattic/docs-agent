@@ -8,7 +8,7 @@ name: Maintain Docs
         type: string
         default: technical
       run_kind:
-        description: 'Docs Agent flow kind to run: bootstrap, maintenance, or full.'
+        description: 'Docs Agent flow kind to run: bootstrap or maintenance.'
         type: string
         default: maintenance
       base_ref:
@@ -142,13 +142,8 @@ jobs:
                   fallback_pr_title="Update developer documentation"
                   default_prompt="Maintain source-grounded developer documentation for architecture, APIs, extension points, setup, tests, operations, and contributor workflows. Add an adoption-oriented introduction path that explains project names, concepts, and where to start before deep reference material. Preserve technical precision and useful architecture/reference depth."
                   ;;
-                full)
-                  flow_slug="technical-docs-flow"
-                  fallback_pr_title="Update developer documentation"
-                  default_prompt="Run the full source-grounded developer documentation flow for architecture, APIs, extension points, setup, tests, operations, and contributor workflows. Refresh the developer documentation surface from repository source and configured context evidence while preserving technical precision and useful architecture/reference depth."
-                  ;;
                 *)
-                  printf 'Unsupported run_kind for technical docs: %s. Use bootstrap, maintenance, or full.\n' "$run_kind" >&2
+                  printf 'Unsupported run_kind for technical docs: %s. Use bootstrap or maintenance.\n' "$run_kind" >&2
                   exit 1
                   ;;
               esac
@@ -169,31 +164,24 @@ jobs:
                   fallback_pr_title="Update product documentation"
                   default_prompt="Maintain source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs. Add an adoption-oriented introduction path that explains product names, concepts, and where to start before detailed task/reference material. Preserve factual depth without turning the docs shallow."
                   ;;
-                full)
-                  flow_slug="user-docs-flow"
-                  fallback_pr_title="Update product documentation"
-                  default_prompt="Run the full source-grounded product documentation flow for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs. Refresh the user documentation surface from product-facing evidence while preserving factual depth."
-                  ;;
                 *)
-                  printf 'Unsupported run_kind for user docs: %s. Use bootstrap, maintenance, or full.\n' "$run_kind" >&2
+                  printf 'Unsupported run_kind for user docs: %s. Use bootstrap or maintenance.\n' "$run_kind" >&2
                   exit 1
                   ;;
               esac
               ;;
             skills)
               if [ "$run_kind" = "bootstrap" ]; then
-                printf 'Unsupported run_kind for skills: bootstrap. Use maintenance or full.\n' >&2
+                printf 'Unsupported run_kind for skills: bootstrap. Use maintenance.\n' >&2
                 exit 1
               fi
               bundle_path="bundles/skills-agent"
               agent_slug="skills-agent"
               pipeline_slug="skills-pipeline"
-              if [ "$run_kind" = "full" ]; then
-                flow_slug="skills-flow"
-              elif [ "$run_kind" = "maintenance" ]; then
+              if [ "$run_kind" = "maintenance" ]; then
                 flow_slug="skills-maintenance-flow"
               else
-                printf 'Unsupported run_kind for skills: %s. Use maintenance or full.\n' "$run_kind" >&2
+                printf 'Unsupported run_kind for skills: %s. Use maintenance.\n' "$run_kind" >&2
                 exit 1
               fi
               bundle_validator_spec=".ci/docs-agent/tests/skills-agent.validate-bundle-spec.json"
