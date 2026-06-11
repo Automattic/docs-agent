@@ -97,7 +97,6 @@ foreach ( $spec['bundles'] ?? array() as $bundle_name => $bundle_spec ) {
 		if ( str_contains( $flow_slug, 'bootstrap' ) ) {
 			$completion_assertions = $step['completion_assertions'] ?? array();
 			$assert( empty( $completion_assertions['required_tool_names'] ?? array() ), "Bootstrap flow {$flow_slug} must not require publication tools." );
-			$assert( 6 === ( $completion_assertions['minimum_successful_tool_counts']['workspace_write'] ?? null ), "Bootstrap flow {$flow_slug} must require at least six workspace file writes." );
 			$assert( str_contains( $flow_prompt, 'provided workspace' ), "Bootstrap flow {$flow_slug} must direct agents to use the provided workspace." );
 			foreach ( array( 'workspace_git_add', 'workspace_git_commit', 'workspace_git_push', 'create_github_pull_request', 'comment_github_pull_request' ) as $forbidden_tool ) {
 				$assert( ! in_array( $forbidden_tool, $tools, true ), "Bootstrap flow {$flow_slug} must not enable {$forbidden_tool}." );

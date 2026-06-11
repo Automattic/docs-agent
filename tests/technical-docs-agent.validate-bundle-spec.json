@@ -18,7 +18,8 @@
         "workspace_write",
         "workspace_git_status",
         "workspace_git_diff"
-      ]
+      ],
+      "completion_assertions_empty": true
     },
     "technical-docs-maintenance-flow": {
       "pipeline_slug": "technical-docs-pipeline",
