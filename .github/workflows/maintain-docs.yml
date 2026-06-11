@@ -255,13 +255,10 @@ jobs:
           "allow_stale": true,
           "rebase_base": true
         }
-      fallback_pull_request: |
+      artifact_export_config: |
         {
-          "repo": "${{ github.repository }}",
-          "title": "${{ needs.prepare.outputs.fallback_pr_title }}",
-          "head": "${{ inputs.docs_branch }}",
-          "base": "${{ inputs.base_ref }}",
-          "body": "## Summary\n- Maintain the configured Docs Agent lane.\n- Keep writes inside `${{ inputs.writable_paths }}`.\n- Reuse the canonical Docs Agent branch `${{ inputs.docs_branch }}`.\n- Include runner-provided verification and drift-check summaries when available.\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via OpenCode (GPT-5.5)\n- **Used for:** Generated maintenance updates from repository source for human review."
+          "pr_title_template": "${{ needs.prepare.outputs.fallback_pr_title }}",
+          "pr_body_template": "## Summary\n- Maintain the configured Docs Agent lane.\n- Keep writes inside `${{ inputs.writable_paths }}`.\n- Reuse the canonical Docs Agent branch `${{ inputs.docs_branch }}`.\n- Include runner-provided verification and drift-check summaries when available.\n\n## Result\n{result_table}\n\n## Checks\n{checks_table}\n\n## Review Artifacts\n{links_table}\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via OpenCode (GPT-5.5)\n- **Used for:** Generated maintenance updates from repository source for human review."
         }
       extra_wp_config_defines: |
         {
@@ -280,7 +277,7 @@ jobs:
       success_requires_pr: false
       allowed_repos: '["${{ github.repository }}"]'
       app_token_repos: ${{ github.repository }}
-      engine_data_outputs: '{"docs_agent_pr_url":"metadata.engine_data.docs_agent.pr.url","fallback_pr_url":"metadata.fallback_pull_request.url","success_status":"metadata.success_status"}'
+      engine_data_outputs: '{"docs_agent_pr_url":"metadata.engine_data.docs_agent.pr.url","runner_workspace_pr_url":"metadata.runner_workspace_publication.url","success_status":"metadata.success_status"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
       bundle_validator_spec: ${{ needs.prepare.outputs.bundle_validator_spec }}
     secrets:
