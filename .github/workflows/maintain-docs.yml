@@ -212,7 +212,7 @@ jobs:
   docs_agent:
     name: Maintain Docs
     needs: prepare
-    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@a822fca1daa31cba0e0169a5da7a0cb402a824f3
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@e1884acdb9d98dba9be5ce5212b80e182c2f24e1
     with:
       bundle_path: .ci/docs-agent/${{ needs.prepare.outputs.bundle_path }}
       bundle_repo: https://github.com/Automattic/docs-agent.git
@@ -240,6 +240,11 @@ jobs:
         For the selected lane, write files in the provided workspace. If the selected surface is already aligned, finish cleanly without changing files.
       run_agent: ${{ inputs.run_agent }}
       model: ${{ inputs.model }}
+      wp_codebox_ref: 51fa177ae1e585dc9fa29fa1a62241358699f26c
+      agents_api_ref: a61461da12ccdc90eb1a844714761b6c19360bfe
+      data_machine_ref: cde6bc0dab754bc831092ab522c08cb773dc9f64
+      data_machine_code_ref: e061c592ad6849bfd22509117b6bda1a3cedbe5d
+      openai_provider_ref: a400c158707e3d0b6fcd0f1502f6aa1085b01b9b
       context_repositories: ${{ needs.prepare.outputs.context_repositories }}
       verification_commands: ${{ needs.prepare.outputs.verification_commands }}
       drift_checks: ${{ needs.prepare.outputs.drift_checks }}
