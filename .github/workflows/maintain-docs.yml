@@ -7,6 +7,10 @@ name: Maintain Docs
         description: Maintenance lane to run. Use technical for developer docs, user for product docs, or skills for live skill upkeep.
         type: string
         default: technical
+      run_kind:
+        description: 'Docs Agent flow kind to run: bootstrap, maintenance, or full.'
+        type: string
+        default: maintenance
       base_ref:
         description: Base branch or ref for the documentation pull request.
         type: string
@@ -90,6 +94,7 @@ jobs:
       agent_slug: ${{ steps.config.outputs.agent_slug }}
       pipeline_slug: ${{ steps.config.outputs.pipeline_slug }}
       flow_slug: ${{ steps.config.outputs.flow_slug }}
+      run_kind: ${{ steps.config.outputs.run_kind }}
       docs_agent_ref: ${{ steps.config.outputs.docs_agent_ref }}
       bundle_validator_spec: ${{ steps.config.outputs.bundle_validator_spec }}
       fallback_pr_title: ${{ steps.config.outputs.fallback_pr_title }}
@@ -102,6 +107,7 @@ jobs:
         id: config
         env:
           AUDIENCE: ${{ inputs.audience }}
+          RUN_KIND: ${{ inputs.run_kind }}
           INPUT_CONTEXT_REPOSITORIES: ${{ inputs.context_repositories }}
           INPUT_VERIFICATION_COMMANDS: ${{ inputs.verification_commands }}
           INPUT_DRIFT_CHECKS: ${{ inputs.drift_checks }}
@@ -114,30 +120,82 @@ jobs:
             docs_agent_ref="main"
           fi
 
+          run_kind="$(printf '%s' "$RUN_KIND" | xargs)"
+          if [ -z "$run_kind" ]; then
+            run_kind="maintenance"
+          fi
+
           case "$AUDIENCE" in
             technical)
               bundle_path="bundles/technical-docs-agent"
               agent_slug="technical-docs-agent"
               pipeline_slug="technical-docs-pipeline"
-              flow_slug="technical-docs-maintenance-flow"
               bundle_validator_spec=".ci/docs-agent/tests/technical-docs-agent.validate-bundle-spec.json"
-              fallback_pr_title="Update developer documentation"
-              default_prompt="Maintain source-grounded developer documentation for architecture, APIs, extension points, setup, tests, operations, and contributor workflows. Add an adoption-oriented introduction path that explains project names, concepts, and where to start before deep reference material. Preserve technical precision and useful architecture/reference depth."
+              case "$run_kind" in
+                bootstrap)
+                  flow_slug="technical-docs-bootstrap-flow"
+                  fallback_pr_title="Bootstrap developer documentation"
+                  default_prompt="Bootstrap source-grounded developer documentation for architecture, APIs, extension points, setup, tests, operations, and contributor workflows. Build the broadest useful initial developer documentation surface from repository source and configured context evidence. Add an adoption-oriented introduction path that explains project names, concepts, and where to start before deep reference material. Preserve technical precision and useful architecture/reference depth."
+                  ;;
+                maintenance)
+                  flow_slug="technical-docs-maintenance-flow"
+                  fallback_pr_title="Update developer documentation"
+                  default_prompt="Maintain source-grounded developer documentation for architecture, APIs, extension points, setup, tests, operations, and contributor workflows. Add an adoption-oriented introduction path that explains project names, concepts, and where to start before deep reference material. Preserve technical precision and useful architecture/reference depth."
+                  ;;
+                full)
+                  flow_slug="technical-docs-flow"
+                  fallback_pr_title="Update developer documentation"
+                  default_prompt="Run the full source-grounded developer documentation flow for architecture, APIs, extension points, setup, tests, operations, and contributor workflows. Refresh the developer documentation surface from repository source and configured context evidence while preserving technical precision and useful architecture/reference depth."
+                  ;;
+                *)
+                  printf 'Unsupported run_kind for technical docs: %s. Use bootstrap, maintenance, or full.\n' "$run_kind" >&2
+                  exit 1
+                  ;;
+              esac
               ;;
             user)
               bundle_path="bundles/user-docs-agent"
               agent_slug="user-docs-agent"
               pipeline_slug="user-docs-pipeline"
-              flow_slug="user-docs-maintenance-flow"
               bundle_validator_spec=".ci/docs-agent/tests/user-docs-agent.validate-bundle-spec.json"
-              fallback_pr_title="Update product documentation"
-              default_prompt="Maintain source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs. Add an adoption-oriented introduction path that explains product names, concepts, and where to start before detailed task/reference material. Preserve factual depth without turning the docs shallow."
+              case "$run_kind" in
+                bootstrap)
+                  flow_slug="user-docs-bootstrap-flow"
+                  fallback_pr_title="Bootstrap product documentation"
+                  default_prompt="Bootstrap source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs. Build the broadest useful initial user documentation surface from product-facing evidence. Add an adoption-oriented introduction path that explains product names, concepts, and where to start before detailed task/reference material. Preserve factual depth without turning the docs shallow."
+                  ;;
+                maintenance)
+                  flow_slug="user-docs-maintenance-flow"
+                  fallback_pr_title="Update product documentation"
+                  default_prompt="Maintain source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs. Add an adoption-oriented introduction path that explains product names, concepts, and where to start before detailed task/reference material. Preserve factual depth without turning the docs shallow."
+                  ;;
+                full)
+                  flow_slug="user-docs-flow"
+                  fallback_pr_title="Update product documentation"
+                  default_prompt="Run the full source-grounded product documentation flow for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs. Refresh the user documentation surface from product-facing evidence while preserving factual depth."
+                  ;;
+                *)
+                  printf 'Unsupported run_kind for user docs: %s. Use bootstrap, maintenance, or full.\n' "$run_kind" >&2
+                  exit 1
+                  ;;
+              esac
               ;;
             skills)
+              if [ "$run_kind" = "bootstrap" ]; then
+                printf 'Unsupported run_kind for skills: bootstrap. Use maintenance or full.\n' >&2
+                exit 1
+              fi
               bundle_path="bundles/skills-agent"
               agent_slug="skills-agent"
               pipeline_slug="skills-pipeline"
-              flow_slug="skills-maintenance-flow"
+              if [ "$run_kind" = "full" ]; then
+                flow_slug="skills-flow"
+              elif [ "$run_kind" = "maintenance" ]; then
+                flow_slug="skills-maintenance-flow"
+              else
+                printf 'Unsupported run_kind for skills: %s. Use maintenance or full.\n' "$run_kind" >&2
+                exit 1
+              fi
               bundle_validator_spec=".ci/docs-agent/tests/skills-agent.validate-bundle-spec.json"
               fallback_pr_title="Update live agent skills"
               default_prompt="Maintain live agent skill instructions and generated packaged skill outputs. Keep the skills lane separate from technical docs upkeep: technical docs document skills, while this lane maintains executable skill instructions themselves. Preserve prompt quality, routing behavior, tool-use policy, writable-path safety, packaging consistency, and focused review of behavior changes. Run consumer-required verification such as pnpm build, pnpm verify, and generated-output drift checks when requested by the target repository."
@@ -153,6 +211,7 @@ jobs:
             printf 'agent_slug=%s\n' "$agent_slug"
             printf 'pipeline_slug=%s\n' "$pipeline_slug"
             printf 'flow_slug=%s\n' "$flow_slug"
+            printf 'run_kind=%s\n' "$run_kind"
             printf 'docs_agent_ref=%s\n' "$docs_agent_ref"
             printf 'bundle_validator_spec=%s\n' "$bundle_validator_spec"
             printf 'fallback_pr_title=%s\n' "$fallback_pr_title"
@@ -183,6 +242,7 @@ jobs:
         Target repository: ${{ github.repository }}
         Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         Docs Agent lane: ${{ inputs.audience }}
+        Docs Agent run kind: ${{ needs.prepare.outputs.run_kind }}
         Base ref: ${{ inputs.base_ref }}
         Canonical branch: ${{ inputs.docs_branch }}
         Writable paths: ${{ inputs.writable_paths }}
