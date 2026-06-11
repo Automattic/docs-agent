@@ -212,7 +212,7 @@ jobs:
   docs_agent:
     name: Maintain Docs
     needs: prepare
-    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@8c73d4ea279cec19d83869d890b91c588e37f042
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@9b6890d1ee62a5feca0816d369661327a8d4aab4
     with:
       bundle_path: .ci/docs-agent/${{ needs.prepare.outputs.bundle_path }}
       bundle_repo: https://github.com/Automattic/docs-agent.git
