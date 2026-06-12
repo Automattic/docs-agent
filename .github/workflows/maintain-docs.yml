@@ -212,7 +212,7 @@ jobs:
   docs_agent:
     name: Maintain Docs
     needs: prepare
-    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@9e18460f23ee26e581569fa7a8cc195c64d571f7
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@a345301c8ba3d0c4ba674afc761219acc9b31678
     with:
       bundle_path: .ci/docs-agent/${{ needs.prepare.outputs.bundle_path }}
       bundle_repo: https://github.com/Automattic/docs-agent.git
@@ -248,6 +248,7 @@ jobs:
       context_repositories: ${{ needs.prepare.outputs.context_repositories }}
       verification_commands: ${{ needs.prepare.outputs.verification_commands }}
       drift_checks: ${{ needs.prepare.outputs.drift_checks }}
+      writable_paths: ${{ inputs.writable_paths }}
       validation_dependencies: Automattic/docs-agent@${{ needs.prepare.outputs.docs_agent_ref }}
       runner_workspace: |
         {
