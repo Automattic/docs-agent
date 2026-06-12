@@ -14,7 +14,7 @@
 
 ## Technical Documentation Rubric
 
-Good technical documentation should make it easy for developers, site owners, operators, contributors, and integrators to work on, use, and extend a codebase. Before returning no-op success, audit whether existing docs clearly cover:
+Good technical documentation should make it easy for developers to understand, use, and extend the code in the repository. Before returning no-op success, audit whether existing docs clearly cover:
 
 - Public APIs, exported interfaces, commands, abilities, hooks, filters, events, and configuration.
 - Internal processes, lifecycle, scheduling, queues, workflows, state transitions, and failure handling.
@@ -25,6 +25,10 @@ Good technical documentation should make it easy for developers, site owners, op
 - Software philosophy, ownership boundaries, constraints, and design principles that guide contributors.
 
 Prefer one clean, navigable documentation surface with useful cross-links over scattered fragments. `no_changes` means the docs are accurate, sufficiently broad, and easy to use across the rubric, not merely that some README exists.
+
+Use repository-native product names and source-grounded terminology. A technical docs run should explain generated outputs as part of the repository's architecture, build, verification, and maintenance contract.
+
+For repositories that package agent-facing or tool-facing outputs, document the generator inputs, output layout, generated artifact responsibilities, build pipeline, verification contract, and contributor workflow as repository documentation.
 
 ## Supported Workflows
 
