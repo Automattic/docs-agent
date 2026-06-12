@@ -240,7 +240,7 @@ jobs:
         For the selected lane, write files in the provided workspace. If the selected surface is already aligned, finish cleanly without changing files.
       run_agent: ${{ inputs.run_agent }}
       model: ${{ inputs.model }}
-      wp_codebox_ref: 62a348d98fb4f4e6a929c12f93973cdcf1e74664
+      wp_codebox_ref: 7cabcec8c033865721c73fe2616e8668b41395aa
       agents_api_ref: a61461da12ccdc90eb1a844714761b6c19360bfe
       data_machine_ref: cde6bc0dab754bc831092ab522c08cb773dc9f64
       data_machine_code_ref: 4b0c630804568e2377fd57d1c49edca8b5423e19
