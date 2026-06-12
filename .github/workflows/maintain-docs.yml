@@ -135,12 +135,12 @@ jobs:
                 bootstrap)
                   flow_slug="technical-docs-bootstrap-flow"
                   fallback_pr_title="Bootstrap developer documentation"
-                  default_prompt="Bootstrap source-grounded developer documentation that helps developers understand, use, and extend the code in the repository. Cover repository architecture, generated-output contracts, APIs, extension points, setup, tests, operations, and contributor workflows. Build the broadest useful initial developer documentation surface from repository source and configured context evidence. Add an adoption-oriented introduction path that uses repository-native product names, explains core concepts, and tells maintainers where to start before deep reference material. Preserve technical precision and useful architecture/reference depth."
+                  default_prompt="Bootstrap source-grounded developer documentation that helps developers understand, use, and extend the code in the repository. Cover repository architecture, generated-output contracts, APIs, extension points, setup, tests, operations, and contributor workflows. Build the complete initial developer documentation system from repository source and configured context evidence in this run. Add an adoption-oriented introduction path that uses repository-native product names, explains core concepts, and tells maintainers where to start before deep reference material. Preserve technical precision and useful architecture/reference depth."
                   ;;
                 maintenance)
                   flow_slug="technical-docs-maintenance-flow"
                   fallback_pr_title="Update developer documentation"
-                  default_prompt="Maintain source-grounded developer documentation that helps developers understand, use, and extend the code in the repository. Cover repository architecture, generated-output contracts, APIs, extension points, setup, tests, operations, and contributor workflows. Add an adoption-oriented introduction path that uses repository-native product names, explains core concepts, and tells maintainers where to start before deep reference material. Preserve technical precision and useful architecture/reference depth."
+                  default_prompt="Maintain source-grounded developer documentation that helps developers understand, use, and extend the code in the repository. Update docs for newly shipped source behavior, changed generated-output contracts, APIs, extension points, setup, tests, operations, and contributor workflows. Correct documentation drift where existing docs no longer match source evidence. Preserve technical precision, repository-native product names, useful architecture/reference depth, and the existing documentation information architecture."
                   ;;
                 *)
                   printf 'Unsupported run_kind for technical docs: %s. Use bootstrap or maintenance.\n' "$run_kind" >&2
@@ -157,7 +157,7 @@ jobs:
                 bootstrap)
                   flow_slug="user-docs-bootstrap-flow"
                   fallback_pr_title="Bootstrap product documentation"
-                  default_prompt="Bootstrap source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs. Build the broadest useful initial user documentation surface from product-facing evidence. Add an adoption-oriented introduction path that explains product names, concepts, and where to start before detailed task/reference material. Preserve factual depth without turning the docs shallow."
+                  default_prompt="Bootstrap source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs. Build the complete initial user documentation system from product-facing evidence in this run. Add an adoption-oriented introduction path that explains product names, concepts, and where to start before detailed task/reference material. Preserve factual depth without turning the docs shallow."
                   ;;
                 maintenance)
                   flow_slug="user-docs-maintenance-flow"

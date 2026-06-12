@@ -106,7 +106,7 @@ foreach ( $spec['bundles'] ?? array() as $bundle_name => $bundle_spec ) {
 			}
 			$assert( ! str_contains( $flow_prompt, 'create_or_update_github_file' ), "Bootstrap flow {$flow_slug} must not reference direct GitHub file writes." );
 
-			$required_phrases = array( 'clean documentation surface', 'documentation information architecture', 'written scope that fits the run budget', 'future coverage section as plain text', 'separate', 'digestible', 'hierarchy mirrors', 'parent/child relationships', 'cross-links', 'written documentation scope', 'write topic pages first', 'index last', 'write every linked documentation page', 'future coverage with the reason' );
+			$required_phrases = array( 'complete initial documentation system', 'documentation information architecture', 'separate', 'digestible', 'hierarchy mirrors', 'parent/child relationships', 'cross-links', 'completed written documentation system', 'write topic pages first', 'index last', 'link to pages that exist in the repository' );
 			$required_phrases = array_merge( $required_phrases, str_starts_with( $flow_slug, 'technical-' ) ? array( 'source inventory', 'preserve or improve', 'reference-level details', 'representative payloads or examples', 'reconcile the written docs against the source inventory' ) : array( 'private inventory', 'frontend users', 'user docs index', 'docs/user/', 'practical product details', 'reconcile the written docs against the private product inventory' ) );
 			foreach ( $required_phrases as $phrase ) {
 				$assert( str_contains( $flow_prompt, strtolower( $phrase ) ), "Bootstrap flow {$flow_slug} missing phrase: {$phrase}" );

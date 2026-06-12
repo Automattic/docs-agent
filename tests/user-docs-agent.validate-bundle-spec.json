@@ -20,7 +20,7 @@
         "workspace_git_diff"
       ],
       "completion_assertions_empty": true,
-      "prompt_must_contain": ["source-code GitHub repositories", "docs/ is already the technical documentation surface", "docs/user/", "explicitly user-docs-only"],
+      "prompt_must_contain": ["one-shot first-run user documentation generation pass", "complete initial documentation system", "source-code GitHub repositories", "docs/ is already the technical documentation surface", "docs/user/", "explicitly user-docs-only"],
       "prompt_forbidden": ["source code", "commands", "configuration examples", "CLI", "code snippets"]
     },
     "user-docs-maintenance-flow": {

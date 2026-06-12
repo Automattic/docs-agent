@@ -56,7 +56,7 @@
         "workspace_git_diff"
       ],
       "completion_assertions_empty": true,
-      "prompt_must_contain": ["Future coverage", "documentation backlog", "remove the satisfied deferred items", "README.md and docs/ are the default technical documentation surfaces", "plugin README.md pages"]
+      "prompt_must_contain": ["documentation drift", "newly shipped behavior", "changed public surfaces", "changed generated-output contracts", "documentation changed without corresponding source behavior changes", "README.md and docs/ are the default technical documentation surfaces", "plugin README.md pages"]
     },
     "user-docs-bootstrap-flow": {
       "pipeline_slug": "user-docs-pipeline",
@@ -68,7 +68,7 @@
         "workspace_git_status",
         "workspace_git_diff"
       ],
-      "prompt_must_contain": ["source-code GitHub repositories", "docs/ is already the technical documentation surface", "docs/user/", "explicitly user-docs-only"],
+      "prompt_must_contain": ["one-shot first-run user documentation generation pass", "complete initial documentation system", "source-code GitHub repositories", "docs/ is already the technical documentation surface", "docs/user/", "explicitly user-docs-only"],
       "prompt_forbidden": ["source code", "commands", "configuration examples", "CLI", "code snippets"]
     },
     "user-docs-maintenance-flow": {
