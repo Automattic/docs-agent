@@ -56,7 +56,7 @@
         "workspace_git_diff"
       ],
       "completion_assertions_empty": true,
-      "prompt_must_contain": ["Future coverage", "documentation backlog", "remove the satisfied deferred items", "docs/ is the default technical documentation surface"]
+      "prompt_must_contain": ["Future coverage", "documentation backlog", "remove the satisfied deferred items", "README.md and docs/ are the default technical documentation surfaces", "plugin README.md pages"]
     },
     "user-docs-bootstrap-flow": {
       "pipeline_slug": "user-docs-pipeline",
