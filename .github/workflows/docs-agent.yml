@@ -30,7 +30,7 @@ on:
 
 jobs:
   run-docs-agent:
-    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@1a0a2fcb33bf5294709fff3afd5e4fe353d20172
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@3495ba5f5c002241c2ca84331f6cd192a0943569
     with:
       bundle_path: ${{ contains(inputs.flow_kind, 'skills') && 'bundles/skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'bundles/technical-docs-agent' || 'bundles/user-docs-agent') }}
       agent_slug: ${{ contains(inputs.flow_kind, 'skills') && 'skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-agent' || 'user-docs-agent') }}
