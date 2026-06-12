@@ -243,7 +243,7 @@ jobs:
       wp_codebox_ref: 84fc33216b3026c43caf9ac1c33c2ebe4be06bf2
       agents_api_ref: a61461da12ccdc90eb1a844714761b6c19360bfe
       data_machine_ref: 4fc462fafe748f1278426c01ed0480e2aa94a934
-      data_machine_code_ref: 4b0c630804568e2377fd57d1c49edca8b5423e19
+      data_machine_code_ref: cd053751fa7a9aba072af95f2aaee9d5b51979fa
       openai_provider_ref: a400c158707e3d0b6fcd0f1502f6aa1085b01b9b
       context_repositories: ${{ needs.prepare.outputs.context_repositories }}
       verification_commands: ${{ needs.prepare.outputs.verification_commands }}
