@@ -135,12 +135,12 @@ jobs:
                 bootstrap)
                   flow_slug="technical-docs-bootstrap-flow"
                   fallback_pr_title="Bootstrap developer documentation"
-                  default_prompt="Bootstrap source-grounded developer documentation for architecture, APIs, extension points, setup, tests, operations, and contributor workflows. Build the broadest useful initial developer documentation surface from repository source and configured context evidence. Add an adoption-oriented introduction path that explains project names, concepts, and where to start before deep reference material. Preserve technical precision and useful architecture/reference depth."
+                  default_prompt="Bootstrap source-grounded developer documentation that helps developers understand, use, and extend the code in the repository. Cover repository architecture, generated-output contracts, APIs, extension points, setup, tests, operations, and contributor workflows. Build the broadest useful initial developer documentation surface from repository source and configured context evidence. Add an adoption-oriented introduction path that uses repository-native product names, explains core concepts, and tells maintainers where to start before deep reference material. Preserve technical precision and useful architecture/reference depth."
                   ;;
                 maintenance)
                   flow_slug="technical-docs-maintenance-flow"
                   fallback_pr_title="Update developer documentation"
-                  default_prompt="Maintain source-grounded developer documentation for architecture, APIs, extension points, setup, tests, operations, and contributor workflows. Add an adoption-oriented introduction path that explains project names, concepts, and where to start before deep reference material. Preserve technical precision and useful architecture/reference depth."
+                  default_prompt="Maintain source-grounded developer documentation that helps developers understand, use, and extend the code in the repository. Cover repository architecture, generated-output contracts, APIs, extension points, setup, tests, operations, and contributor workflows. Add an adoption-oriented introduction path that uses repository-native product names, explains core concepts, and tells maintainers where to start before deep reference material. Preserve technical precision and useful architecture/reference depth."
                   ;;
                 *)
                   printf 'Unsupported run_kind for technical docs: %s. Use bootstrap or maintenance.\n' "$run_kind" >&2

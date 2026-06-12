@@ -19,7 +19,8 @@
         "workspace_git_status",
         "workspace_git_diff"
       ],
-      "completion_assertions_empty": true
+      "completion_assertions_empty": true,
+      "prompt_must_contain": ["understand, use, and extend the code in this repository", "repository-native product names", "generated-output contracts", "generator inputs", "output layout", "verification contract"]
     },
     "technical-docs-maintenance-flow": {
       "pipeline_slug": "technical-docs-pipeline",
@@ -32,7 +33,7 @@
         "workspace_git_diff"
       ],
       "completion_assertions_empty": true,
-      "prompt_must_contain": ["Future coverage", "documentation backlog", "remove the satisfied deferred items", "docs/ is the default technical documentation surface"]
+      "prompt_must_contain": ["understand, use, and extend the code in the repository", "Future coverage", "documentation backlog", "remove the satisfied deferred items", "docs/ is the default technical documentation surface", "repository-native product names", "generated-output contracts", "generator inputs", "output layout", "verification contract"]
     }
   },
   "pipeline_assertions": {
