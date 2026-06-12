@@ -30,7 +30,7 @@ on:
 
 jobs:
   run-docs-agent:
-    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@9b6890d1ee62a5feca0816d369661327a8d4aab4
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@d1a379e324c2c80c359054dbcdd5218a6a3cbd8a
     with:
       bundle_path: ${{ contains(inputs.flow_kind, 'skills') && 'bundles/skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'bundles/technical-docs-agent' || 'bundles/user-docs-agent') }}
       agent_slug: ${{ contains(inputs.flow_kind, 'skills') && 'skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-agent' || 'user-docs-agent') }}
@@ -56,7 +56,7 @@ jobs:
 
         Writable paths: ${{ inputs.writable_paths }}
       model: ${{ inputs.openai_model }}
-      wp_codebox_ref: 7cabcec8c033865721c73fe2616e8668b41395aa
+      wp_codebox_ref: 0be1bee9088c0b62f5ad565368631a5dca4f0466
       agents_api_ref: a61461da12ccdc90eb1a844714761b6c19360bfe
       data_machine_ref: cde6bc0dab754bc831092ab522c08cb773dc9f64
       data_machine_code_ref: 4b0c630804568e2377fd57d1c49edca8b5423e19
