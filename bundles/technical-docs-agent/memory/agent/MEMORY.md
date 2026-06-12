@@ -41,6 +41,7 @@ Consumers should usually allow technical docs paths such as:
 
 - `README.md`
 - `docs/**`
+- `plugins/**/README.md` when plugin-specific developer contracts need local coverage
 
 Consumers may narrow or expand this list explicitly.
 
@@ -49,3 +50,4 @@ Consumers may narrow or expand this list explicitly.
 - Always inventory the repository's existing documentation information architecture before writing files.
 - Preserve or improve the existing docs taxonomy, index convention, and topic grouping.
 - Prefer a `docs/README.md` or existing docs index that links focused topic pages by architecture, API, runtime, operations, and integration areas when the repo has no stronger convention.
+- Treat README.md, docs indexes, docs topic pages, and plugin README.md files as the written technical documentation surface.
