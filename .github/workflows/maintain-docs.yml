@@ -242,7 +242,7 @@ jobs:
       model: ${{ inputs.model }}
       wp_codebox_ref: 84fc33216b3026c43caf9ac1c33c2ebe4be06bf2
       agents_api_ref: a61461da12ccdc90eb1a844714761b6c19360bfe
-      data_machine_ref: 05c34236762d3e50b73ba71e8fcf5eb0a30c7b12
+      data_machine_ref: 4fc462fafe748f1278426c01ed0480e2aa94a934
       data_machine_code_ref: 4b0c630804568e2377fd57d1c49edca8b5423e19
       openai_provider_ref: a400c158707e3d0b6fcd0f1502f6aa1085b01b9b
       context_repositories: ${{ needs.prepare.outputs.context_repositories }}
