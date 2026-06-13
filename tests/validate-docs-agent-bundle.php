@@ -147,6 +147,8 @@ $maintain_docs_workflow = (string) file_get_contents( $root . '/.github/workflow
 foreach ( array( 'context_repositories:', 'verification_commands:', 'drift_checks:', 'bootstrap_contract:', 'workspace_contract_checks:', 'Bootstrap contract success criteria:', 'paths_exist:', 'glob_min_count:', 'required_paths', 'required_globs' ) as $required_workflow_text ) {
 	$assert( str_contains( $maintain_docs_workflow, $required_workflow_text ), "maintain-docs.yml missing required text: {$required_workflow_text}" );
 }
+$assert( str_contains( $maintain_docs_workflow, 'WORKFLOW_REF: ${{ github.workflow_ref }}' ), 'maintain-docs.yml must expose the reusable workflow ref to provenance resolution.' );
+$assert( str_contains( $maintain_docs_workflow, 'docs_agent_ref="${workflow_ref##*@}"' ), 'maintain-docs.yml must default docs_agent_ref from the pinned reusable workflow ref.' );
 $assert( str_contains( $maintain_docs_workflow, 'context_repositories: ${{ needs.prepare.outputs.context_repositories }}' ), 'maintain-docs.yml must pass context_repositories through to the canonical runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'verification_commands: ${{ needs.prepare.outputs.verification_commands }}' ), 'maintain-docs.yml must pass verification_commands through to the canonical runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'drift_checks: ${{ needs.prepare.outputs.drift_checks }}' ), 'maintain-docs.yml must pass drift_checks through to the canonical runner.' );

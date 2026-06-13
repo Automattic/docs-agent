@@ -132,12 +132,18 @@ jobs:
           INPUT_DRIFT_CHECKS: ${{ inputs.drift_checks }}
           INPUT_BOOTSTRAP_CONTRACT: ${{ inputs.bootstrap_contract }}
           INPUT_DOCS_AGENT_REF: ${{ inputs.docs_agent_ref }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
         run: |
           set -euo pipefail
 
           docs_agent_ref="$(printf '%s' "$INPUT_DOCS_AGENT_REF" | xargs)"
           if [ -z "$docs_agent_ref" ]; then
-            docs_agent_ref="main"
+            workflow_ref="$(printf '%s' "$WORKFLOW_REF" | xargs)"
+            if [[ "$workflow_ref" == *@* ]]; then
+              docs_agent_ref="${workflow_ref##*@}"
+            else
+              docs_agent_ref="main"
+            fi
           fi
 
           run_kind="$(printf '%s' "$RUN_KIND" | xargs)"
@@ -294,7 +300,7 @@ jobs:
   docs_agent:
     name: Maintain Docs
     needs: prepare
-    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@155a61ad6c19aafd55c56eeacb6dd8fde3139afb
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@0353479ff381c21b86f2e01328ccd61ea7b1ca1b
     with:
       bundle_path: .ci/docs-agent/${{ needs.prepare.outputs.bundle_path }}
       bundle_repo: https://github.com/Automattic/docs-agent.git
