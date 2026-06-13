@@ -144,13 +144,13 @@ $assert( 'docs/agent-run' === ( $runner_workspace['branch_prefix'] ?? null ), 'E
 $assert( is_file( $root . '/scripts/repair-docs-links.php' ), 'Docs link repair script must be available to consumer workflows.' );
 
 $maintain_docs_workflow = (string) file_get_contents( $root . '/.github/workflows/maintain-docs.yml' );
-foreach ( array( 'context_repositories:', 'verification_commands:', 'drift_checks:', 'bootstrap_contract:', 'post_run_workspace_checks:', 'Bootstrap contract success criteria:', 'paths_exist:', 'glob_min_count:', 'required_paths', 'required_globs' ) as $required_workflow_text ) {
+foreach ( array( 'context_repositories:', 'verification_commands:', 'drift_checks:', 'bootstrap_contract:', 'workspace_contract_checks:', 'Bootstrap contract success criteria:', 'paths_exist:', 'glob_min_count:', 'required_paths', 'required_globs' ) as $required_workflow_text ) {
 	$assert( str_contains( $maintain_docs_workflow, $required_workflow_text ), "maintain-docs.yml missing required text: {$required_workflow_text}" );
 }
 $assert( str_contains( $maintain_docs_workflow, 'context_repositories: ${{ needs.prepare.outputs.context_repositories }}' ), 'maintain-docs.yml must pass context_repositories through to the canonical runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'verification_commands: ${{ needs.prepare.outputs.verification_commands }}' ), 'maintain-docs.yml must pass verification_commands through to the canonical runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'drift_checks: ${{ needs.prepare.outputs.drift_checks }}' ), 'maintain-docs.yml must pass drift_checks through to the canonical runner.' );
-$assert( str_contains( $maintain_docs_workflow, 'post_run_workspace_checks: ${{ needs.prepare.outputs.post_run_workspace_checks }}' ), 'maintain-docs.yml must pass post_run_workspace_checks through to the canonical runner.' );
+$assert( str_contains( $maintain_docs_workflow, 'workspace_contract_checks: ${{ needs.prepare.outputs.workspace_contract_checks }}' ), 'maintain-docs.yml must pass workspace_contract_checks through to the canonical runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'allowed_repos: \'["${{ github.repository }}"]\'' ), 'maintain-docs.yml must keep the target repository as the only Docs Agent writable repository boundary.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'Automattic/studio' ), 'maintain-docs.yml must not hardcode downstream Studio context.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'WordPress/agent-skills' ), 'maintain-docs.yml must not hardcode downstream skills context.' );

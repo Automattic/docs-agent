@@ -108,7 +108,7 @@ jobs:
       drift_checks: ${{ steps.config.outputs.drift_checks }}
       bootstrap_contract: ${{ steps.config.outputs.bootstrap_contract }}
       bootstrap_contract_prompt: ${{ steps.config.outputs.bootstrap_contract_prompt }}
-      post_run_workspace_checks: ${{ steps.config.outputs.post_run_workspace_checks }}
+      workspace_contract_checks: ${{ steps.config.outputs.workspace_contract_checks }}
     steps:
       - name: Resolve Docs Agent settings
         id: config
@@ -163,7 +163,7 @@ jobs:
           ' >/dev/null
 
           if [ "$run_kind" = "bootstrap" ]; then
-            post_run_workspace_checks="$(printf '%s' "$bootstrap_contract" | jq -c '{
+            workspace_contract_checks="$(printf '%s' "$bootstrap_contract" | jq -c '{
               paths_exist: .required_paths,
               glob_min_count: (.required_globs | map({ pattern: .pattern, min: (.min // .min_count) })),
               entry_points: .entry_points,
@@ -188,7 +188,7 @@ jobs:
               end
             ')"
           else
-            post_run_workspace_checks="{}"
+            workspace_contract_checks="{}"
             bootstrap_contract_prompt=""
           fi
 
@@ -276,7 +276,7 @@ jobs:
             printf 'drift_checks<<EOF\n%s\nEOF\n' "$INPUT_DRIFT_CHECKS"
             printf 'bootstrap_contract<<EOF\n%s\nEOF\n' "$bootstrap_contract"
             printf 'bootstrap_contract_prompt<<EOF\n%s\nEOF\n' "$bootstrap_contract_prompt"
-            printf 'post_run_workspace_checks<<EOF\n%s\nEOF\n' "$post_run_workspace_checks"
+            printf 'workspace_contract_checks<<EOF\n%s\nEOF\n' "$workspace_contract_checks"
           } >> "$GITHUB_OUTPUT"
 
   docs_agent:
@@ -320,7 +320,7 @@ jobs:
       context_repositories: ${{ needs.prepare.outputs.context_repositories }}
       verification_commands: ${{ needs.prepare.outputs.verification_commands }}
       drift_checks: ${{ needs.prepare.outputs.drift_checks }}
-      post_run_workspace_checks: ${{ needs.prepare.outputs.post_run_workspace_checks }}
+      workspace_contract_checks: ${{ needs.prepare.outputs.workspace_contract_checks }}
       writable_paths: ${{ inputs.writable_paths }}
       validation_dependencies: Automattic/docs-agent@${{ needs.prepare.outputs.docs_agent_ref }}
       runner_workspace: |
