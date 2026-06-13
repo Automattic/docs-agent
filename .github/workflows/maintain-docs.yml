@@ -132,12 +132,18 @@ jobs:
           INPUT_DRIFT_CHECKS: ${{ inputs.drift_checks }}
           INPUT_BOOTSTRAP_CONTRACT: ${{ inputs.bootstrap_contract }}
           INPUT_DOCS_AGENT_REF: ${{ inputs.docs_agent_ref }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
         run: |
           set -euo pipefail
 
           docs_agent_ref="$(printf '%s' "$INPUT_DOCS_AGENT_REF" | xargs)"
           if [ -z "$docs_agent_ref" ]; then
-            docs_agent_ref="main"
+            workflow_ref="$(printf '%s' "$WORKFLOW_REF" | xargs)"
+            if [[ "$workflow_ref" == *@* ]]; then
+              docs_agent_ref="${workflow_ref##*@}"
+            else
+              docs_agent_ref="main"
+            fi
           fi
 
           run_kind="$(printf '%s' "$RUN_KIND" | xargs)"
