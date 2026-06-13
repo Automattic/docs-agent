@@ -20,7 +20,7 @@
         "workspace_git_diff"
       ],
       "completion_assertions_empty": true,
-      "prompt_must_contain": ["understand, use, and extend the code in this repository", "one-shot first-run documentation generation pass", "complete initial documentation system", "open and recently closed issues and pull requests", "accepted decisions", "recently shipped behavior", "repository-native product names", "generated-output contracts", "README.md for entry points", "docs/README.md for the technical docs index", "plugin README.md pages", "generator inputs", "output layout", "verification contract"]
+      "prompt_must_contain": ["understand, use, and extend the code in this repository", "one-shot first-run documentation generation pass", "complete initial documentation system", "open and recently closed issues and pull requests", "accepted decisions", "recently shipped behavior", "repository-native product names", "generated-output contracts", "README.md for entry points", "docs/README.md for the technical docs index", "plugin README.md pages", "generator inputs", "output layout", "verification contract", "bootstrap contract", "required paths", "required glob counts", "entry point links", "positive completion criteria"]
     },
     "technical-docs-maintenance-flow": {
       "pipeline_slug": "technical-docs-pipeline",
@@ -38,7 +38,8 @@
   },
   "pipeline_assertions": {
     "technical-docs-pipeline": {
-      "system_prompt_must_contain": "source code"
+      "system_prompt_must_contain": "source code",
+      "system_prompt_must_contain_all": ["caller-declared bootstrap contract", "required paths", "required glob counts", "entry point links", "positive completion criteria"]
     }
   }
 }

@@ -20,7 +20,7 @@
         "workspace_git_diff"
       ],
       "completion_assertions_empty": true,
-      "prompt_must_contain": ["one-shot first-run user documentation generation pass", "complete initial documentation system", "source-code GitHub repositories", "docs/ is already the technical documentation surface", "docs/user/", "explicitly user-docs-only"],
+      "prompt_must_contain": ["one-shot first-run user documentation generation pass", "complete initial documentation system", "source-code GitHub repositories", "docs/ is already the technical documentation surface", "docs/user/", "explicitly user-docs-only", "bootstrap contract", "required paths", "required glob counts", "entry point links", "positive completion criteria"],
       "prompt_forbidden": ["source code", "commands", "configuration examples", "CLI", "code snippets"]
     },
     "user-docs-maintenance-flow": {
@@ -41,7 +41,7 @@
   "pipeline_assertions": {
     "user-docs-pipeline": {
       "system_prompt_must_contain": "frontend users",
-      "system_prompt_must_contain_all": ["source-code GitHub repositories", "docs/ is already the technical documentation surface", "docs/user/", "explicitly user-docs-only"],
+      "system_prompt_must_contain_all": ["source-code GitHub repositories", "docs/ is already the technical documentation surface", "docs/user/", "explicitly user-docs-only", "caller-declared bootstrap contract", "required paths", "required glob counts", "entry point links", "positive completion criteria"],
       "system_prompt_forbidden": ["source code", "commands", "configuration examples", "CLI", "code snippets"]
     }
   }
