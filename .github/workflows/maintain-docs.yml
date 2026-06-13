@@ -55,6 +55,18 @@ name: Maintain Docs
         description: Set false to record a deterministic skip after a caller preflight decides docs are already current.
         type: boolean
         default: true
+      max_turns:
+        description: Maximum model turns for one Docs Agent run.
+        type: number
+        default: 48
+      step_budget:
+        description: Maximum runner step budget for one Docs Agent run.
+        type: number
+        default: 64
+      time_budget_ms:
+        description: Maximum wall-clock budget in milliseconds for one Docs Agent run.
+        type: number
+        default: 1200000
     secrets:
       HOMEBOY_APP_ID:
         required: false
@@ -312,6 +324,9 @@ jobs:
         For the selected lane, write files in the provided workspace. If the selected surface is already aligned, finish cleanly without changing files.
       run_agent: ${{ inputs.run_agent }}
       model: ${{ inputs.model }}
+      max_turns: ${{ inputs.max_turns }}
+      step_budget: ${{ inputs.step_budget }}
+      time_budget_ms: ${{ inputs.time_budget_ms }}
       wp_codebox_ref: 84fc33216b3026c43caf9ac1c33c2ebe4be06bf2
       agents_api_ref: a61461da12ccdc90eb1a844714761b6c19360bfe
       data_machine_ref: 4fc462fafe748f1278426c01ed0480e2aa94a934

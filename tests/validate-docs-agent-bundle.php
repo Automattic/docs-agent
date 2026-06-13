@@ -151,6 +151,16 @@ $assert( str_contains( $maintain_docs_workflow, 'context_repositories: ${{ needs
 $assert( str_contains( $maintain_docs_workflow, 'verification_commands: ${{ needs.prepare.outputs.verification_commands }}' ), 'maintain-docs.yml must pass verification_commands through to the canonical runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'drift_checks: ${{ needs.prepare.outputs.drift_checks }}' ), 'maintain-docs.yml must pass drift_checks through to the canonical runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'workspace_contract_checks: ${{ needs.prepare.outputs.workspace_contract_checks }}' ), 'maintain-docs.yml must pass workspace_contract_checks through to the canonical runner.' );
+$assert( str_contains( $maintain_docs_workflow, 'max_turns: ${{ inputs.max_turns }}' ), 'maintain-docs.yml must pass max_turns through to the canonical runner.' );
+$assert( str_contains( $maintain_docs_workflow, 'step_budget: ${{ inputs.step_budget }}' ), 'maintain-docs.yml must pass step_budget through to the canonical runner.' );
+$assert( str_contains( $maintain_docs_workflow, 'time_budget_ms: ${{ inputs.time_budget_ms }}' ), 'maintain-docs.yml must pass time_budget_ms through to the canonical runner.' );
+
+$assert( preg_match( '/max_turns:\s*\n\s+description:[^\n]*\n\s+type:\s*number\n\s+default:\s*(\d+)/', $maintain_docs_workflow, $max_turns_match ) === 1, 'maintain-docs.yml must declare a numeric max_turns default.' );
+$assert( (int) $max_turns_match[1] >= 48, 'maintain-docs.yml max_turns default must be at least 48 for multi-file bootstrap contracts.' );
+$assert( preg_match( '/step_budget:\s*\n\s+description:[^\n]*\n\s+type:\s*number\n\s+default:\s*(\d+)/', $maintain_docs_workflow, $step_budget_match ) === 1, 'maintain-docs.yml must declare a numeric step_budget default.' );
+$assert( (int) $step_budget_match[1] >= 64, 'maintain-docs.yml step_budget default must be at least 64 for multi-file bootstrap contracts.' );
+$assert( preg_match( '/time_budget_ms:\s*\n\s+description:[^\n]*\n\s+type:\s*number\n\s+default:\s*(\d+)/', $maintain_docs_workflow, $time_budget_match ) === 1, 'maintain-docs.yml must declare a numeric time_budget_ms default.' );
+$assert( (int) $time_budget_match[1] >= 1200000, 'maintain-docs.yml time_budget_ms default must be at least 1200000 for multi-file bootstrap contracts.' );
 $assert( str_contains( $maintain_docs_workflow, 'allowed_repos: \'["${{ github.repository }}"]\'' ), 'maintain-docs.yml must keep the target repository as the only Docs Agent writable repository boundary.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'Automattic/studio' ), 'maintain-docs.yml must not hardcode downstream Studio context.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'WordPress/agent-skills' ), 'maintain-docs.yml must not hardcode downstream skills context.' );
