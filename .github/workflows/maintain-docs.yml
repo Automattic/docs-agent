@@ -35,6 +35,10 @@ name: Maintain Docs
         description: JSON array of canonical runner drift checks executed after verification.
         type: string
         default: "[]"
+      bootstrap_contract:
+        description: JSON object declaring required bootstrap documentation paths, glob minimums, entry point links, and completion phrase checks.
+        type: string
+        default: "{}"
       prompt:
         description: Optional maintenance instruction appended to the default Docs Agent prompt.
         type: string
@@ -102,6 +106,9 @@ jobs:
       context_repositories: ${{ steps.config.outputs.context_repositories }}
       verification_commands: ${{ steps.config.outputs.verification_commands }}
       drift_checks: ${{ steps.config.outputs.drift_checks }}
+      bootstrap_contract: ${{ steps.config.outputs.bootstrap_contract }}
+      bootstrap_contract_prompt: ${{ steps.config.outputs.bootstrap_contract_prompt }}
+      post_run_workspace_checks: ${{ steps.config.outputs.post_run_workspace_checks }}
     steps:
       - name: Resolve Docs Agent settings
         id: config
@@ -111,6 +118,7 @@ jobs:
           INPUT_CONTEXT_REPOSITORIES: ${{ inputs.context_repositories }}
           INPUT_VERIFICATION_COMMANDS: ${{ inputs.verification_commands }}
           INPUT_DRIFT_CHECKS: ${{ inputs.drift_checks }}
+          INPUT_BOOTSTRAP_CONTRACT: ${{ inputs.bootstrap_contract }}
           INPUT_DOCS_AGENT_REF: ${{ inputs.docs_agent_ref }}
         run: |
           set -euo pipefail
@@ -123,6 +131,65 @@ jobs:
           run_kind="$(printf '%s' "$RUN_KIND" | xargs)"
           if [ -z "$run_kind" ]; then
             run_kind="maintenance"
+          fi
+
+          bootstrap_contract_input="$INPUT_BOOTSTRAP_CONTRACT"
+          if [ -z "$bootstrap_contract_input" ]; then
+            bootstrap_contract_input="{}"
+          fi
+
+          bootstrap_contract="$(printf '%s' "$bootstrap_contract_input" | jq -c '
+            if type != "object" then
+              error("bootstrap_contract must be a JSON object")
+            else
+              . + {
+                required_paths: (.required_paths // []),
+                required_globs: (.required_globs // []),
+                entry_points: (.entry_points // []),
+                forbidden_phrases: (.forbidden_phrases // [])
+              }
+            end
+          ')"
+
+          printf '%s' "$bootstrap_contract" | jq -e '
+            (.required_paths | type == "array") and
+            (all(.required_paths[]; type == "string" and length > 0)) and
+            (.required_globs | type == "array") and
+            (all(.required_globs[]; type == "object" and (.pattern | type == "string" and length > 0) and (((.min // .min_count) | type) == "number") and ((.min // .min_count) >= 0))) and
+            (.entry_points | type == "array") and
+            (all(.entry_points[]; type == "object" and (.path | type == "string" and length > 0) and ((.must_link_to // []) | type == "array") and all((.must_link_to // [])[]; type == "string" and length > 0))) and
+            (.forbidden_phrases | type == "array") and
+            (all(.forbidden_phrases[]; type == "string" and length > 0))
+          ' >/dev/null
+
+          if [ "$run_kind" = "bootstrap" ]; then
+            post_run_workspace_checks="$(printf '%s' "$bootstrap_contract" | jq -c '{
+              paths_exist: .required_paths,
+              glob_min_count: (.required_globs | map({ pattern: .pattern, min: (.min // .min_count) })),
+              entry_points: .entry_points,
+              forbidden_phrases: .forbidden_phrases
+            }')"
+            bootstrap_contract_prompt="$(printf '%s' "$bootstrap_contract" | jq -r '
+              if ((.required_paths | length) + (.required_globs | length) + (.entry_points | length) + (.forbidden_phrases | length)) == 0 then
+                ""
+              else
+                ([
+                  "Bootstrap contract success criteria:",
+                  "- Treat the JSON contract below as required completion criteria for this bootstrap run.",
+                  "- Create or preserve every required path before reporting success.",
+                  "- Create or preserve enough files for every required glob minimum before reporting success.",
+                  "- Connect each declared entry point to its declared target pages before reporting success.",
+                  "- Keep declared forbidden phrases out of the completed documentation surface.",
+                  "- Use no_changes only when the existing documentation surface already satisfies this contract and the complete bootstrap scope.",
+                  "```json",
+                  (tojson),
+                  "```"
+                ] | join("\n"))
+              end
+            ')"
+          else
+            post_run_workspace_checks="{}"
+            bootstrap_contract_prompt=""
           fi
 
           case "$AUDIENCE" in
@@ -207,12 +274,15 @@ jobs:
             printf 'context_repositories<<EOF\n%s\nEOF\n' "$INPUT_CONTEXT_REPOSITORIES"
             printf 'verification_commands<<EOF\n%s\nEOF\n' "$INPUT_VERIFICATION_COMMANDS"
             printf 'drift_checks<<EOF\n%s\nEOF\n' "$INPUT_DRIFT_CHECKS"
+            printf 'bootstrap_contract<<EOF\n%s\nEOF\n' "$bootstrap_contract"
+            printf 'bootstrap_contract_prompt<<EOF\n%s\nEOF\n' "$bootstrap_contract_prompt"
+            printf 'post_run_workspace_checks<<EOF\n%s\nEOF\n' "$post_run_workspace_checks"
           } >> "$GITHUB_OUTPUT"
 
   docs_agent:
     name: Maintain Docs
     needs: prepare
-    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@5992d5052cee0e2266a3969ee45bbeab633f5ae5
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@0d602b8065cea5cc11f416feb5b4a26e6cb14528
     with:
       bundle_path: .ci/docs-agent/${{ needs.prepare.outputs.bundle_path }}
       bundle_repo: https://github.com/Automattic/docs-agent.git
@@ -226,6 +296,8 @@ jobs:
         ${{ needs.prepare.outputs.default_prompt }}
 
         ${{ inputs.prompt }}
+
+        ${{ needs.prepare.outputs.bootstrap_contract_prompt }}
 
         Target repository: ${{ github.repository }}
         Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -248,6 +320,7 @@ jobs:
       context_repositories: ${{ needs.prepare.outputs.context_repositories }}
       verification_commands: ${{ needs.prepare.outputs.verification_commands }}
       drift_checks: ${{ needs.prepare.outputs.drift_checks }}
+      post_run_workspace_checks: ${{ needs.prepare.outputs.post_run_workspace_checks }}
       writable_paths: ${{ inputs.writable_paths }}
       validation_dependencies: Automattic/docs-agent@${{ needs.prepare.outputs.docs_agent_ref }}
       runner_workspace: |

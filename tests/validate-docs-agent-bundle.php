@@ -105,8 +105,11 @@ foreach ( $spec['bundles'] ?? array() as $bundle_name => $bundle_spec ) {
 				$assert( ! str_contains( $flow_prompt, $forbidden_prompt_text ), "Bootstrap flow {$flow_slug} prompt must not reference {$forbidden_prompt_text}." );
 			}
 			$assert( ! str_contains( $flow_prompt, 'create_or_update_github_file' ), "Bootstrap flow {$flow_slug} must not reference direct GitHub file writes." );
+			foreach ( array( 'future coverage', 'deferred', 'saved for later', 'backlog' ) as $backlog_phrase ) {
+				$assert( ! str_contains( $flow_prompt, $backlog_phrase ), "Bootstrap flow {$flow_slug} must avoid backlog language: {$backlog_phrase}" );
+			}
 
-			$required_phrases = array( 'complete initial documentation system', 'documentation information architecture', 'separate', 'digestible', 'hierarchy mirrors', 'parent/child relationships', 'cross-links', 'completed written documentation system', 'write topic pages first', 'index last', 'link to pages that exist in the repository' );
+			$required_phrases = array( 'complete initial documentation system', 'documentation information architecture', 'separate', 'digestible', 'hierarchy mirrors', 'parent/child relationships', 'cross-links', 'completed written documentation system', 'write topic pages first', 'index last', 'link to pages that exist in the repository', 'bootstrap contract', 'required paths', 'required glob counts', 'entry point links', 'positive completion criteria' );
 			$required_phrases = array_merge( $required_phrases, str_starts_with( $flow_slug, 'technical-' ) ? array( 'source inventory', 'preserve or improve', 'reference-level details', 'representative payloads or examples', 'reconcile the written docs against the source inventory' ) : array( 'private inventory', 'frontend users', 'user docs index', 'docs/user/', 'practical product details', 'reconcile the written docs against the private product inventory' ) );
 			foreach ( $required_phrases as $phrase ) {
 				$assert( str_contains( $flow_prompt, strtolower( $phrase ) ), "Bootstrap flow {$flow_slug} missing phrase: {$phrase}" );
@@ -141,12 +144,13 @@ $assert( 'docs/agent-run' === ( $runner_workspace['branch_prefix'] ?? null ), 'E
 $assert( is_file( $root . '/scripts/repair-docs-links.php' ), 'Docs link repair script must be available to consumer workflows.' );
 
 $maintain_docs_workflow = (string) file_get_contents( $root . '/.github/workflows/maintain-docs.yml' );
-foreach ( array( 'context_repositories:', 'verification_commands:', 'drift_checks:' ) as $required_workflow_text ) {
+foreach ( array( 'context_repositories:', 'verification_commands:', 'drift_checks:', 'bootstrap_contract:', 'post_run_workspace_checks:', 'Bootstrap contract success criteria:', 'paths_exist:', 'glob_min_count:', 'required_paths', 'required_globs' ) as $required_workflow_text ) {
 	$assert( str_contains( $maintain_docs_workflow, $required_workflow_text ), "maintain-docs.yml missing required text: {$required_workflow_text}" );
 }
 $assert( str_contains( $maintain_docs_workflow, 'context_repositories: ${{ needs.prepare.outputs.context_repositories }}' ), 'maintain-docs.yml must pass context_repositories through to the canonical runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'verification_commands: ${{ needs.prepare.outputs.verification_commands }}' ), 'maintain-docs.yml must pass verification_commands through to the canonical runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'drift_checks: ${{ needs.prepare.outputs.drift_checks }}' ), 'maintain-docs.yml must pass drift_checks through to the canonical runner.' );
+$assert( str_contains( $maintain_docs_workflow, 'post_run_workspace_checks: ${{ needs.prepare.outputs.post_run_workspace_checks }}' ), 'maintain-docs.yml must pass post_run_workspace_checks through to the canonical runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'allowed_repos: \'["${{ github.repository }}"]\'' ), 'maintain-docs.yml must keep the target repository as the only Docs Agent writable repository boundary.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'Automattic/studio' ), 'maintain-docs.yml must not hardcode downstream Studio context.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'WordPress/agent-skills' ), 'maintain-docs.yml must not hardcode downstream skills context.' );
