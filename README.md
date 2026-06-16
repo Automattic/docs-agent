@@ -95,6 +95,8 @@ Docs Agent declares the review artifacts it expects the runner to materialize as
 
 During the migration, existing transcript upload and `engine_data_outputs` remain the compatibility path. `maintain-docs.yml` forwards `expected_artifacts` and `artifact_declarations` to the Homeboy Extensions runner, and exposes the same declaration objects as `declared_artifacts_json`. The reusable runner support landed in [Extra-Chill/homeboy-extensions#1422](https://github.com/Extra-Chill/homeboy-extensions/pull/1422).
 
+The next runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent will switch workflow call sites from WP Codebox-specific inputs to Homeboy runtime-neutral inputs after [Extra-Chill/homeboy-extensions#1430](https://github.com/Extra-Chill/homeboy-extensions/issues/1430) lands and the pinned reusable workflow ref is advanced. Until then, the workflows intentionally keep the current `wp_codebox_ref` and `extra_wp_codebox_mounts` inputs because the current pinned workflow does not accept the proposed aliases.
+
 ## Pull Request Behavior
 
 Docs Agent opens or updates one canonical PR for the configured branch.

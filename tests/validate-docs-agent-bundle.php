@@ -182,9 +182,21 @@ $assert( str_contains( $maintain_docs_workflow, 'homeboy_extensions_ref: c132556
 $assert( str_contains( $maintain_docs_workflow, 'expected_artifacts: ${{ needs.prepare.outputs.expected_artifacts }}' ), 'maintain-docs.yml must pass expected_artifacts through to the canonical runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations: ${{ needs.prepare.outputs.artifact_declarations }}' ), 'maintain-docs.yml must pass artifact_declarations through to the canonical runner.' );
 
+foreach ( array( 'wp_codebox_ref:', 'extra_wp_codebox_mounts:' ) as $legacy_runtime_input ) {
+	$assert( str_contains( $maintain_docs_workflow, $legacy_runtime_input ), "maintain-docs.yml must keep {$legacy_runtime_input} until the pinned Homeboy Extensions workflow accepts runtime-neutral aliases." );
+}
+
+$workflow_readme = (string) file_get_contents( $root . '/.github/workflows/README.md' );
+foreach ( array( 'Runtime-Neutral Input Migration', 'Extra-Chill/homeboy-extensions#1430', 'Automattic/docs-agent#100', 'agent_runtime', 'runtime_mounts', 'wp_codebox_ref' ) as $migration_note_text ) {
+	$assert( str_contains( $workflow_readme, $migration_note_text ), "Workflow README missing runtime-neutral migration note: {$migration_note_text}" );
+}
+
 $docs_agent_workflow = (string) file_get_contents( $root . '/.github/workflows/docs-agent.yml' );
 foreach ( array( 'engine_data_outputs:', 'transcript_artifact_name:', 'expected_artifacts:', 'artifact_declarations:', 'homeboy_extensions_ref: c1325569d6e6cc9d783681d34600ae5a76671d90' ) as $required_central_workflow_text ) {
 	$assert( str_contains( $docs_agent_workflow, $required_central_workflow_text ), "docs-agent.yml missing existing compatibility output: {$required_central_workflow_text}" );
+}
+foreach ( array( 'wp_codebox_ref:', 'extra_wp_codebox_mounts:' ) as $legacy_central_runtime_input ) {
+	$assert( str_contains( $docs_agent_workflow, $legacy_central_runtime_input ), "docs-agent.yml must keep {$legacy_central_runtime_input} until the pinned Homeboy Extensions workflow accepts runtime-neutral aliases." );
 }
 
 $declared_artifact_names = array_keys( $expected_artifact_schemas );
