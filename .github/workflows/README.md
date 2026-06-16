@@ -14,16 +14,8 @@ The reusable workflow declares the expected typed review artifacts for Docs Agen
 
 The target repository needs a token path that can inspect source, write the configured paths, push the canonical branch, and open or update the pull request.
 
-## Runtime-Neutral Input Migration
+## Agent Runtime Inputs
 
-Docs Agent is waiting on Homeboy Extensions runtime-neutral Data Machine agent CI inputs before changing workflow call sites. Track the upstream work in Extra-Chill/homeboy-extensions#1430 and the Docs Agent migration in Automattic/docs-agent#100.
+Docs Agent workflow call sites use Homeboy agent runtime inputs: `agent_runtime`, `agent_runtime_ref`, and `runtime_mounts`. This migration is tracked in Automattic/docs-agent#100 and depends on Extra-Chill/homeboy-extensions#1430, which defines those inputs on the reusable Data Machine agent CI workflow.
 
-Until the pinned Homeboy Extensions workflow accepts aliases such as `agent_runtime`, `agent_runtime_ref` or `runtime_ref`, and `runtime_mounts`, keep the existing `wp_codebox_ref` and `extra_wp_codebox_mounts` workflow call inputs. The pinned workflow also still exposes `wp_codebox_wordpress_version` for callers that need to override its default. Passing only the proposed aliases to the current pinned reusable workflow would fail GitHub Actions input validation before the runner starts.
-
-Migration patch plan after the upstream aliases land:
-
-1. Advance the Homeboy Extensions workflow pin and matching `homeboy_extensions_ref` together.
-2. Add `agent_runtime: wp-codebox` and replace `wp_codebox_ref` with the accepted runtime ref alias.
-3. Replace `extra_wp_codebox_mounts` with the accepted runtime mounts alias.
-4. Keep `runner_workspace`, typed artifacts, context repositories, verification commands, drift checks, and writable-path boundaries unchanged unless the upstream contract changes.
-5. Update validation expectations and examples in the same patch as the workflow input rename.
+When updating the reusable workflow ref, advance `uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@...` and `homeboy_extensions_ref` together, then run `php tests/validate-docs-agent-bundle.php` so workflow routing and runner config stay aligned.
