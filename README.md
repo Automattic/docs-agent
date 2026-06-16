@@ -81,6 +81,20 @@ The consumer API is product-level. Consumer repositories do not need to configur
 
 `context_repositories`, `verification_commands`, and `drift_checks` are passed to the Homeboy Extensions runner as canonical runner inputs. Docs Agent does not define extra checkout, allowed-repository, or writable-workspace policy for context repositories; the runner owns that API and keeps the target repository as the only writable PR boundary.
 
+## Review Artifacts
+
+Docs Agent declares the review artifacts it expects the runner to materialize as typed artifacts:
+
+| Artifact | Schema | Purpose |
+| --- | --- | --- |
+| `docs_agent_transcript` | `docs-agent/transcript/v1` | Machine-readable run transcript. |
+| `docs_agent_change_summary` | `docs-agent/change-summary/v1` | Reviewable summary of documentation or skill changes. |
+| `docs_agent_verification_report` | `docs-agent/verification-report/v1` | Verification command results for the target workspace. |
+| `docs_agent_drift_report` | `docs-agent/drift-report/v1` | Drift-check results for generated docs, skills, or packaged outputs. |
+| `docs_agent_workspace_publication` | `docs-agent/workspace-publication/v1` | Canonical branch and pull request links published by the runner workspace. |
+
+During the migration, existing transcript upload and `engine_data_outputs` remain the compatibility path. `maintain-docs.yml` forwards `expected_artifacts` and `artifact_declarations` to the Homeboy Extensions runner, and exposes the same declaration objects as `declared_artifacts_json`. The reusable runner support landed in [Extra-Chill/homeboy-extensions#1422](https://github.com/Extra-Chill/homeboy-extensions/pull/1422).
+
 ## Pull Request Behavior
 
 Docs Agent opens or updates one canonical PR for the configured branch.
@@ -88,7 +102,7 @@ Docs Agent opens or updates one canonical PR for the configured branch.
 - If the selected surface is current, the run succeeds with no changes.
 - If maintenance is needed, changes are written only under `writable_paths`.
 - If the canonical PR is already open, later runs reuse the same `docs_branch` and PR instead of creating duplicates.
-- Transcript and projected engine data are exposed as reusable workflow outputs, and the transcript is uploaded as a workflow artifact for review/debugging.
+- Transcript and projected engine data are exposed as reusable workflow outputs, the typed artifact declarations are exposed as `declared_artifacts_json`, and the transcript is uploaded as a workflow artifact for review/debugging.
 
 ## Quality Bar
 

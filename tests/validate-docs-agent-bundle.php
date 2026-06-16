@@ -28,6 +28,14 @@ $assert = static function ( bool $condition, string $message ): void {
 	}
 };
 
+$expected_artifact_schemas = array(
+	'docs_agent_transcript'             => 'docs-agent/transcript/v1',
+	'docs_agent_change_summary'        => 'docs-agent/change-summary/v1',
+	'docs_agent_verification_report'   => 'docs-agent/verification-report/v1',
+	'docs_agent_drift_report'          => 'docs-agent/drift-report/v1',
+	'docs_agent_workspace_publication' => 'docs-agent/workspace-publication/v1',
+);
+
 $spec = $read_json( $root . '/tests/docs-agent.validate-bundle-spec.json' );
 
 foreach ( $spec['bundles'] ?? array() as $bundle_name => $bundle_spec ) {
@@ -166,11 +174,49 @@ $assert( (int) $time_budget_match[1] >= 1200000, 'maintain-docs.yml time_budget_
 $assert( str_contains( $maintain_docs_workflow, 'allowed_repos: \'["${{ github.repository }}"]\'' ), 'maintain-docs.yml must keep the target repository as the only Docs Agent writable repository boundary.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'Automattic/studio' ), 'maintain-docs.yml must not hardcode downstream Studio context.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'WordPress/agent-skills' ), 'maintain-docs.yml must not hardcode downstream skills context.' );
+$assert( str_contains( $maintain_docs_workflow, 'declared_artifacts_json:' ), 'maintain-docs.yml must expose typed artifact declarations as a reusable workflow output.' );
+$assert( str_contains( $maintain_docs_workflow, 'expected_artifacts<<EOF' ), 'maintain-docs.yml must prepare typed artifact declarations without caller-specific projections.' );
+$assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 'maintain-docs.yml must prepare typed artifact declarations without caller-specific projections.' );
+$assert( str_contains( $maintain_docs_workflow, 'uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@c1325569d6e6cc9d783681d34600ae5a76671d90' ), 'maintain-docs.yml must pin the reusable workflow to the typed artifact support commit.' );
+$assert( str_contains( $maintain_docs_workflow, 'homeboy_extensions_ref: c1325569d6e6cc9d783681d34600ae5a76671d90' ), 'maintain-docs.yml must run matching Homeboy Extensions scripts for typed artifact support.' );
+$assert( str_contains( $maintain_docs_workflow, 'expected_artifacts: ${{ needs.prepare.outputs.expected_artifacts }}' ), 'maintain-docs.yml must pass expected_artifacts through to the canonical runner.' );
+$assert( str_contains( $maintain_docs_workflow, 'artifact_declarations: ${{ needs.prepare.outputs.artifact_declarations }}' ), 'maintain-docs.yml must pass artifact_declarations through to the canonical runner.' );
+
+$docs_agent_workflow = (string) file_get_contents( $root . '/.github/workflows/docs-agent.yml' );
+foreach ( array( 'engine_data_outputs:', 'transcript_artifact_name:', 'expected_artifacts:', 'artifact_declarations:', 'homeboy_extensions_ref: c1325569d6e6cc9d783681d34600ae5a76671d90' ) as $required_central_workflow_text ) {
+	$assert( str_contains( $docs_agent_workflow, $required_central_workflow_text ), "docs-agent.yml missing existing compatibility output: {$required_central_workflow_text}" );
+}
+
+$declared_artifact_names = array_keys( $expected_artifact_schemas );
+foreach ( $declared_artifact_names as $artifact_name ) {
+	$assert( str_contains( $maintain_docs_workflow, $artifact_name ), "maintain-docs.yml missing typed artifact declaration {$artifact_name}." );
+}
 
 $skills_example = (string) file_get_contents( $root . '/examples/build-with-wordpress-skills-workflow.yml' );
 foreach ( array( 'audience: skills', 'base_ref: trunk', 'docs_branch: docs-agent/build-with-wordpress-skills', 'context_repositories:', 'Automattic/studio', 'WordPress/agent-skills', 'verification_commands:', 'drift_checks:' ) as $required_example_text ) {
 	$assert( str_contains( $skills_example, $required_example_text ), "build-with-wordpress skills example missing required text: {$required_example_text}" );
 }
 $assert( ! str_contains( $skills_example, 'prompt:' ), 'build-with-wordpress skills example must use canonical runner inputs instead of prompt boilerplate.' );
+
+$example_text = (string) file_get_contents( $example_path );
+foreach ( array( '/path/to', '/Users/', 'localhost', '127.0.0.1' ) as $local_path_fragment ) {
+	$assert( ! str_contains( $example_text, $local_path_fragment ), "Example runner config must not contain local-only path or host fragment: {$local_path_fragment}" );
+}
+
+$example_artifacts = $example['expected_artifacts'] ?? null;
+$assert( is_array( $example_artifacts ), 'Example runner config must include expected artifact names.' );
+$example_declarations = $example['artifact_declarations'] ?? null;
+$assert( is_array( $example_declarations ), 'Example runner config must include typed artifact declarations.' );
+$example_artifacts_by_name = array();
+foreach ( $example_declarations as $artifact ) {
+	$assert( is_array( $artifact ), 'Example runner config typed artifact entries must be objects.' );
+	$example_artifacts_by_name[ (string) ( $artifact['name'] ?? '' ) ] = $artifact;
+}
+foreach ( $expected_artifact_schemas as $name => $schema ) {
+	$assert( in_array( $name, $example_artifacts, true ), "Example runner config expected_artifacts missing {$name}." );
+	$assert( isset( $example_artifacts_by_name[ $name ] ), "Example runner config missing typed artifact {$name}." );
+	$assert( 'wp-codebox/artifact-declaration/v1' === ( $example_artifacts_by_name[ $name ]['schema'] ?? '' ), "Example runner config typed artifact {$name} declaration schema mismatch." );
+	$assert( $schema === ( $example_artifacts_by_name[ $name ]['artifact_schema'] ?? '' ), "Example runner config typed artifact {$name} schema mismatch." );
+}
 
 fwrite( STDOUT, "Docs Agent bundle validation passed.\n" );

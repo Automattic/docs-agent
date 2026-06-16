@@ -97,6 +97,9 @@ name: Maintain Docs
       engine_data_json:
         description: Projected Docs Agent engine data, including PR URL fields when available.
         value: ${{ jobs.docs_agent.outputs.engine_data_json }}
+      declared_artifacts_json:
+        description: Docs Agent typed artifact declarations prepared for upstream runner support.
+        value: ${{ jobs.prepare.outputs.artifact_declarations }}
       auth_mode:
         description: Authentication mode used by the underlying runner.
         value: ${{ jobs.docs_agent.outputs.auth_mode }}
@@ -121,6 +124,8 @@ jobs:
       bootstrap_contract: ${{ steps.config.outputs.bootstrap_contract }}
       bootstrap_contract_prompt: ${{ steps.config.outputs.bootstrap_contract_prompt }}
       workspace_contract_checks: ${{ steps.config.outputs.workspace_contract_checks }}
+      expected_artifacts: ${{ steps.config.outputs.expected_artifacts }}
+      artifact_declarations: ${{ steps.config.outputs.artifact_declarations }}
     steps:
       - name: Resolve Docs Agent settings
         id: config
@@ -279,6 +284,55 @@ jobs:
               ;;
           esac
 
+          artifact_declarations="$(jq -cn '[
+            {
+              schema: "wp-codebox/artifact-declaration/v1",
+              name: "docs_agent_transcript",
+              type: "DocsAgentTranscript",
+              artifact_schema: "docs-agent/transcript/v1",
+              description: "Machine-readable transcript for the Docs Agent run.",
+              required: false,
+              egress: ["artifact", "workflow-output", "review-link"]
+            },
+            {
+              schema: "wp-codebox/artifact-declaration/v1",
+              name: "docs_agent_change_summary",
+              type: "DocsAgentChangeSummary",
+              artifact_schema: "docs-agent/change-summary/v1",
+              description: "Reviewable summary of documentation or skill changes made by the run.",
+              required: false,
+              egress: ["pr-body", "workflow-output", "review-link"]
+            },
+            {
+              schema: "wp-codebox/artifact-declaration/v1",
+              name: "docs_agent_verification_report",
+              type: "DocsAgentVerificationReport",
+              artifact_schema: "docs-agent/verification-report/v1",
+              description: "Runner verification command results for the target workspace.",
+              required: false,
+              egress: ["pr-body", "workflow-output", "review-link"]
+            },
+            {
+              schema: "wp-codebox/artifact-declaration/v1",
+              name: "docs_agent_drift_report",
+              type: "DocsAgentDriftReport",
+              artifact_schema: "docs-agent/drift-report/v1",
+              description: "Drift-check results for generated documentation, skills, or packaged outputs.",
+              required: false,
+              egress: ["pr-body", "workflow-output", "review-link"]
+            },
+            {
+              schema: "wp-codebox/artifact-declaration/v1",
+              name: "docs_agent_workspace_publication",
+              type: "DocsAgentWorkspacePublication",
+              artifact_schema: "docs-agent/workspace-publication/v1",
+              description: "Canonical branch and pull request links published by the runner workspace.",
+              required: false,
+              egress: ["pr-body", "workflow-output", "review-link"]
+            }
+          ]')"
+          expected_artifacts="$(printf '%s' "$artifact_declarations" | jq -c 'map(.name)')"
+
           {
             printf 'bundle_path=%s\n' "$bundle_path"
             printf 'agent_slug=%s\n' "$agent_slug"
@@ -295,13 +349,16 @@ jobs:
             printf 'bootstrap_contract<<EOF\n%s\nEOF\n' "$bootstrap_contract"
             printf 'bootstrap_contract_prompt<<EOF\n%s\nEOF\n' "$bootstrap_contract_prompt"
             printf 'workspace_contract_checks<<EOF\n%s\nEOF\n' "$workspace_contract_checks"
+            printf 'expected_artifacts<<EOF\n%s\nEOF\n' "$expected_artifacts"
+            printf 'artifact_declarations<<EOF\n%s\nEOF\n' "$artifact_declarations"
           } >> "$GITHUB_OUTPUT"
 
   docs_agent:
     name: Maintain Docs
     needs: prepare
-    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@155a61ad6c19aafd55c56eeacb6dd8fde3139afb
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@c1325569d6e6cc9d783681d34600ae5a76671d90
     with:
+      homeboy_extensions_ref: c1325569d6e6cc9d783681d34600ae5a76671d90
       bundle_path: .ci/docs-agent/${{ needs.prepare.outputs.bundle_path }}
       bundle_repo: https://github.com/Automattic/docs-agent.git
       bundle_ref: ${{ needs.prepare.outputs.docs_agent_ref }}
@@ -379,6 +436,8 @@ jobs:
       app_token_repos: ${{ github.repository }}
       engine_data_outputs: '{"docs_agent_pr_url":"metadata.engine_data.docs_agent.pr.url","runner_workspace_pr_url":"metadata.runner_workspace_publication.url","success_status":"metadata.success_status"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
+      expected_artifacts: ${{ needs.prepare.outputs.expected_artifacts }}
+      artifact_declarations: ${{ needs.prepare.outputs.artifact_declarations }}
       bundle_validator_spec: ${{ needs.prepare.outputs.bundle_validator_spec }}
     secrets:
       HOMEBOY_APP_ID: ${{ secrets.HOMEBOY_APP_ID }}

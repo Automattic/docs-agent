@@ -10,4 +10,6 @@ For `Automattic/build-with-wordpress`, schedule skills upkeep separately from do
 
 When context repositories, verification commands, or drift checks are needed, pass them through the reusable workflow inputs above. Do not add checkout, allowed-repository, or workspace-policy plumbing to consumer workflows; the canonical runner owns those details.
 
+The reusable workflow declares the expected typed review artifacts for Docs Agent runs: transcript, change summary, verification report, drift report, and workspace publication links. `maintain-docs.yml` forwards those declarations through the Homeboy Extensions `expected_artifacts` and `artifact_declarations` inputs, exposes the declaration objects through `declared_artifacts_json`, and keeps the existing transcript artifact upload and engine-data outputs during the migration.
+
 The target repository needs a token path that can inspect source, write the configured paths, push the canonical branch, and open or update the pull request.
