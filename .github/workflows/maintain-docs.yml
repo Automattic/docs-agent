@@ -284,7 +284,6 @@ jobs:
               ;;
           esac
 
-          expected_artifacts='["docs_agent_transcript","docs_agent_change_summary","docs_agent_verification_report","docs_agent_drift_report","docs_agent_workspace_publication"]'
           artifact_declarations="$(jq -cn '[
             {
               schema: "wp-codebox/artifact-declaration/v1",
@@ -332,6 +331,7 @@ jobs:
               egress: ["pr-body", "workflow-output", "review-link"]
             }
           ]')"
+          expected_artifacts="$(printf '%s' "$artifact_declarations" | jq -c 'map(.name)')"
 
           {
             printf 'bundle_path=%s\n' "$bundle_path"

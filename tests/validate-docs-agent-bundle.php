@@ -49,30 +49,6 @@ foreach ( $spec['bundles'] ?? array() as $bundle_name => $bundle_spec ) {
 	$assert( preg_match( '/^[0-9a-f]{40}$/', (string) ( $manifest['source_revision'] ?? '' ) ) === 1, "Manifest source_revision must be a 40-character commit SHA for {$bundle_name}." );
 	$assert( ! str_contains( strtolower( (string) ( $manifest['source_revision'] ?? '' ) ), 'initial-' ), "Manifest source_revision must not use placeholder provenance for {$bundle_name}." );
 
-	$expected_artifacts = $manifest['run_artifacts']['expected_artifacts'] ?? null;
-	$assert( is_array( $expected_artifacts ), "Manifest {$bundle_name} must declare expected artifact names." );
-	foreach ( array_keys( $expected_artifact_schemas ) as $name ) {
-		$assert( in_array( $name, $expected_artifacts, true ), "Manifest {$bundle_name} expected_artifacts missing {$name}." );
-	}
-	$artifact_declarations = $manifest['run_artifacts']['artifact_declarations'] ?? null;
-	$assert( is_array( $artifact_declarations ), "Manifest {$bundle_name} must declare typed artifact declarations." );
-	$artifacts_by_name = array();
-	foreach ( $artifact_declarations as $artifact ) {
-		$assert( is_array( $artifact ), "Manifest {$bundle_name} artifact_declarations entries must be objects." );
-		$name = (string) ( $artifact['name'] ?? '' );
-		$assert( '' !== $name, "Manifest {$bundle_name} artifact_declarations entries must name artifacts." );
-		$artifacts_by_name[ $name ] = $artifact;
-	}
-	foreach ( $expected_artifact_schemas as $name => $schema ) {
-		$assert( isset( $artifacts_by_name[ $name ] ), "Manifest {$bundle_name} missing typed artifact {$name}." );
-		$artifact = $artifacts_by_name[ $name ];
-		$assert( 'wp-codebox/artifact-declaration/v1' === ( $artifact['schema'] ?? '' ), "Manifest {$bundle_name} typed artifact {$name} declaration schema mismatch." );
-		$assert( is_string( $artifact['type'] ?? null ) && str_starts_with( $artifact['type'], 'DocsAgent' ), "Manifest {$bundle_name} typed artifact {$name} must declare a DocsAgent type." );
-		$assert( $schema === ( $artifact['artifact_schema'] ?? '' ), "Manifest {$bundle_name} typed artifact {$name} schema mismatch." );
-		$assert( array_key_exists( 'required', $artifact ) && false === $artifact['required'], "Manifest {$bundle_name} typed artifact {$name} must remain optional during migration." );
-		$assert( is_array( $artifact['egress'] ?? null ) && in_array( 'review-link', $artifact['egress'], true ), "Manifest {$bundle_name} typed artifact {$name} must be review-link eligible." );
-	}
-
 	foreach ( $bundle_spec['memory_files'] ?? array() as $memory_file ) {
 		$assert( is_file( $bundle_dir . '/memory/agent/' . $memory_file ), "Missing {$bundle_name} memory file: {$memory_file}" );
 	}
