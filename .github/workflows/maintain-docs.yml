@@ -356,9 +356,9 @@ jobs:
   docs_agent:
     name: Maintain Docs
     needs: prepare
-    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@c1325569d6e6cc9d783681d34600ae5a76671d90
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@main
     with:
-      homeboy_extensions_ref: c1325569d6e6cc9d783681d34600ae5a76671d90
+      homeboy_extensions_ref: main
       bundle_path: .ci/docs-agent/${{ needs.prepare.outputs.bundle_path }}
       bundle_repo: https://github.com/Automattic/docs-agent.git
       bundle_ref: ${{ needs.prepare.outputs.docs_agent_ref }}
@@ -390,7 +390,8 @@ jobs:
       max_turns: ${{ inputs.max_turns }}
       step_budget: ${{ inputs.step_budget }}
       time_budget_ms: ${{ inputs.time_budget_ms }}
-      wp_codebox_ref: 84fc33216b3026c43caf9ac1c33c2ebe4be06bf2
+      agent_runtime: wp-codebox
+      agent_runtime_ref: 84fc33216b3026c43caf9ac1c33c2ebe4be06bf2
       agents_api_ref: a61461da12ccdc90eb1a844714761b6c19360bfe
       data_machine_ref: 4fc462fafe748f1278426c01ed0480e2aa94a934
       data_machine_code_ref: cd053751fa7a9aba072af95f2aaee9d5b51979fa
@@ -422,7 +423,7 @@ jobs:
           "DOCS_AGENT_TARGET_REPO": "${{ github.repository }}",
           "DOCS_AGENT_WRITABLE_PATHS": "${{ inputs.writable_paths }}"
         }
-      extra_wp_codebox_mounts: |
+      runtime_mounts: |
         [
           {
             "type": "file",
