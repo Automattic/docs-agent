@@ -16,6 +16,6 @@ The target repository needs a token path that can inspect source, write the conf
 
 ## Agent Runtime Inputs
 
-Docs Agent workflow call sites use Homeboy agent runtime inputs: `agent_runtime`, `agent_runtime_ref`, and `runtime_mounts`. This migration is tracked in Automattic/docs-agent#100 and depends on Extra-Chill/homeboy-extensions#1430, which defines those inputs on the reusable Data Machine agent CI workflow.
+Docs Agent workflow call sites use Homeboy agent runtime inputs: `agent_runtime`, `agent_runtime_ref`, and `runtime_mounts`. This migration is tracked in Automattic/docs-agent#100 and depends on Extra-Chill/homeboy-extensions#1440, which emits clean `runtime_*` runner config for the reusable Data Machine agent CI workflow.
 
 When updating the reusable workflow ref, advance `uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@...` and `homeboy_extensions_ref` together, then run `php tests/validate-docs-agent-bundle.php` so workflow routing and runner config stay aligned.

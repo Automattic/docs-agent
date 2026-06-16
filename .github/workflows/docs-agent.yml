@@ -64,7 +64,6 @@ jobs:
       data_machine_ref: 4fc462fafe748f1278426c01ed0480e2aa94a934
       data_machine_code_ref: cd053751fa7a9aba072af95f2aaee9d5b51979fa
       openai_provider_ref: a400c158707e3d0b6fcd0f1502f6aa1085b01b9b
-      validation_dependencies: Automattic/agents-api@a61461da12ccdc90eb1a844714761b6c19360bfe,Extra-Chill/data-machine@4fc462fafe748f1278426c01ed0480e2aa94a934,Extra-Chill/data-machine-code@cd053751fa7a9aba072af95f2aaee9d5b51979fa
       runner_workspace: |
         {
           "enabled": true,

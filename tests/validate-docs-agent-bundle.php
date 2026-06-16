@@ -189,7 +189,7 @@ $assert( ! str_contains( $maintain_docs_workflow, 'wp_codebox_ref:' ), 'maintain
 $assert( ! str_contains( $maintain_docs_workflow, 'extra_wp_codebox_mounts:' ), 'maintain-docs.yml must not use extra_wp_codebox_mounts.' );
 
 $workflow_readme = (string) file_get_contents( $root . '/.github/workflows/README.md' );
-foreach ( array( 'Agent Runtime Inputs', 'Extra-Chill/homeboy-extensions#1430', 'Automattic/docs-agent#100', 'agent_runtime', 'runtime_mounts' ) as $migration_note_text ) {
+foreach ( array( 'Agent Runtime Inputs', 'Extra-Chill/homeboy-extensions#1440', 'Automattic/docs-agent#100', 'agent_runtime', 'runtime_mounts' ) as $migration_note_text ) {
 	$assert( str_contains( $workflow_readme, $migration_note_text ), "Workflow README missing agent runtime note: {$migration_note_text}" );
 }
 
@@ -202,6 +202,7 @@ foreach ( array( 'agent_runtime: wp-codebox', 'agent_runtime_ref:', 'runtime_mou
 }
 $assert( ! str_contains( $docs_agent_workflow, 'wp_codebox_ref:' ), 'docs-agent.yml must not use wp_codebox_ref.' );
 $assert( ! str_contains( $docs_agent_workflow, 'extra_wp_codebox_mounts:' ), 'docs-agent.yml must not use extra_wp_codebox_mounts.' );
+$assert( ! str_contains( $docs_agent_workflow, 'validation_dependencies: Automattic/agents-api@' ), 'docs-agent.yml must let Homeboy runtime inputs supply runtime validation dependencies.' );
 
 $declared_artifact_names = array_keys( $expected_artifact_schemas );
 foreach ( $declared_artifact_names as $artifact_name ) {
