@@ -93,7 +93,7 @@ Docs Agent declares the review artifacts it expects the runner to materialize as
 | `docs_agent_drift_report` | `docs-agent/drift-report/v1` | Drift-check results for generated docs, skills, or packaged outputs. |
 | `docs_agent_workspace_publication` | `docs-agent/workspace-publication/v1` | Canonical branch and pull request links published by the runner workspace. |
 
-During the migration, existing transcript upload and `engine_data_outputs` remain the compatibility path. `maintain-docs.yml` exposes `declared_artifacts_json` for callers and future runner wiring, while Homeboy Extensions typed artifact forwarding is tracked in [Extra-Chill/homeboy-extensions#1421](https://github.com/Extra-Chill/homeboy-extensions/issues/1421).
+During the migration, existing transcript upload and `engine_data_outputs` remain the compatibility path. `maintain-docs.yml` forwards `expected_artifacts` and `artifact_declarations` to the Homeboy Extensions runner, and exposes the same declaration objects as `declared_artifacts_json`. The reusable runner support landed in [Extra-Chill/homeboy-extensions#1422](https://github.com/Extra-Chill/homeboy-extensions/pull/1422).
 
 ## Pull Request Behavior
 

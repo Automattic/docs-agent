@@ -28,36 +28,53 @@
       "egress": ["artifact"]
     },
     "expected_artifacts": [
+      "docs_agent_transcript",
+      "docs_agent_change_summary",
+      "docs_agent_verification_report",
+      "docs_agent_drift_report",
+      "docs_agent_workspace_publication"
+    ],
+    "artifact_declarations": [
       {
+        "schema": "wp-codebox/artifact-declaration/v1",
         "name": "docs_agent_transcript",
+        "type": "DocsAgentTranscript",
         "artifact_schema": "docs-agent/transcript/v1",
         "description": "Machine-readable transcript for the Docs Agent run.",
         "required": false,
         "egress": ["artifact", "workflow-output", "review-link"]
       },
       {
+        "schema": "wp-codebox/artifact-declaration/v1",
         "name": "docs_agent_change_summary",
+        "type": "DocsAgentChangeSummary",
         "artifact_schema": "docs-agent/change-summary/v1",
         "description": "Reviewable summary of documentation or skill changes made by the run.",
         "required": false,
         "egress": ["pr-body", "workflow-output", "review-link"]
       },
       {
+        "schema": "wp-codebox/artifact-declaration/v1",
         "name": "docs_agent_verification_report",
+        "type": "DocsAgentVerificationReport",
         "artifact_schema": "docs-agent/verification-report/v1",
         "description": "Runner verification command results for the target workspace.",
         "required": false,
         "egress": ["pr-body", "workflow-output", "review-link"]
       },
       {
+        "schema": "wp-codebox/artifact-declaration/v1",
         "name": "docs_agent_drift_report",
+        "type": "DocsAgentDriftReport",
         "artifact_schema": "docs-agent/drift-report/v1",
         "description": "Drift-check results for generated documentation, skills, or packaged outputs.",
         "required": false,
         "egress": ["pr-body", "workflow-output", "review-link"]
       },
       {
+        "schema": "wp-codebox/artifact-declaration/v1",
         "name": "docs_agent_workspace_publication",
+        "type": "DocsAgentWorkspacePublication",
         "artifact_schema": "docs-agent/workspace-publication/v1",
         "description": "Canonical branch and pull request links published by the runner workspace.",
         "required": false,

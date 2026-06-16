@@ -50,17 +50,24 @@ foreach ( $spec['bundles'] ?? array() as $bundle_name => $bundle_spec ) {
 	$assert( ! str_contains( strtolower( (string) ( $manifest['source_revision'] ?? '' ) ), 'initial-' ), "Manifest source_revision must not use placeholder provenance for {$bundle_name}." );
 
 	$expected_artifacts = $manifest['run_artifacts']['expected_artifacts'] ?? null;
-	$assert( is_array( $expected_artifacts ), "Manifest {$bundle_name} must declare expected typed artifacts." );
+	$assert( is_array( $expected_artifacts ), "Manifest {$bundle_name} must declare expected artifact names." );
+	foreach ( array_keys( $expected_artifact_schemas ) as $name ) {
+		$assert( in_array( $name, $expected_artifacts, true ), "Manifest {$bundle_name} expected_artifacts missing {$name}." );
+	}
+	$artifact_declarations = $manifest['run_artifacts']['artifact_declarations'] ?? null;
+	$assert( is_array( $artifact_declarations ), "Manifest {$bundle_name} must declare typed artifact declarations." );
 	$artifacts_by_name = array();
-	foreach ( $expected_artifacts as $artifact ) {
-		$assert( is_array( $artifact ), "Manifest {$bundle_name} expected_artifacts entries must be objects." );
+	foreach ( $artifact_declarations as $artifact ) {
+		$assert( is_array( $artifact ), "Manifest {$bundle_name} artifact_declarations entries must be objects." );
 		$name = (string) ( $artifact['name'] ?? '' );
-		$assert( '' !== $name, "Manifest {$bundle_name} expected_artifacts entries must name artifacts." );
+		$assert( '' !== $name, "Manifest {$bundle_name} artifact_declarations entries must name artifacts." );
 		$artifacts_by_name[ $name ] = $artifact;
 	}
 	foreach ( $expected_artifact_schemas as $name => $schema ) {
 		$assert( isset( $artifacts_by_name[ $name ] ), "Manifest {$bundle_name} missing typed artifact {$name}." );
 		$artifact = $artifacts_by_name[ $name ];
+		$assert( 'wp-codebox/artifact-declaration/v1' === ( $artifact['schema'] ?? '' ), "Manifest {$bundle_name} typed artifact {$name} declaration schema mismatch." );
+		$assert( is_string( $artifact['type'] ?? null ) && str_starts_with( $artifact['type'], 'DocsAgent' ), "Manifest {$bundle_name} typed artifact {$name} must declare a DocsAgent type." );
 		$assert( $schema === ( $artifact['artifact_schema'] ?? '' ), "Manifest {$bundle_name} typed artifact {$name} schema mismatch." );
 		$assert( array_key_exists( 'required', $artifact ) && false === $artifact['required'], "Manifest {$bundle_name} typed artifact {$name} must remain optional during migration." );
 		$assert( is_array( $artifact['egress'] ?? null ) && in_array( 'review-link', $artifact['egress'], true ), "Manifest {$bundle_name} typed artifact {$name} must be review-link eligible." );
@@ -193,10 +200,14 @@ $assert( ! str_contains( $maintain_docs_workflow, 'Automattic/studio' ), 'mainta
 $assert( ! str_contains( $maintain_docs_workflow, 'WordPress/agent-skills' ), 'maintain-docs.yml must not hardcode downstream skills context.' );
 $assert( str_contains( $maintain_docs_workflow, 'declared_artifacts_json:' ), 'maintain-docs.yml must expose typed artifact declarations as a reusable workflow output.' );
 $assert( str_contains( $maintain_docs_workflow, 'expected_artifacts<<EOF' ), 'maintain-docs.yml must prepare typed artifact declarations without caller-specific projections.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'expected_artifacts: ${{ needs.prepare.outputs.expected_artifacts }}' ), 'maintain-docs.yml must not pass unsupported expected_artifacts input before Homeboy Extensions #1421 lands.' );
+$assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 'maintain-docs.yml must prepare typed artifact declarations without caller-specific projections.' );
+$assert( str_contains( $maintain_docs_workflow, 'uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@c1325569d6e6cc9d783681d34600ae5a76671d90' ), 'maintain-docs.yml must pin the reusable workflow to the typed artifact support commit.' );
+$assert( str_contains( $maintain_docs_workflow, 'homeboy_extensions_ref: c1325569d6e6cc9d783681d34600ae5a76671d90' ), 'maintain-docs.yml must run matching Homeboy Extensions scripts for typed artifact support.' );
+$assert( str_contains( $maintain_docs_workflow, 'expected_artifacts: ${{ needs.prepare.outputs.expected_artifacts }}' ), 'maintain-docs.yml must pass expected_artifacts through to the canonical runner.' );
+$assert( str_contains( $maintain_docs_workflow, 'artifact_declarations: ${{ needs.prepare.outputs.artifact_declarations }}' ), 'maintain-docs.yml must pass artifact_declarations through to the canonical runner.' );
 
 $docs_agent_workflow = (string) file_get_contents( $root . '/.github/workflows/docs-agent.yml' );
-foreach ( array( 'engine_data_outputs:', 'transcript_artifact_name:' ) as $required_central_workflow_text ) {
+foreach ( array( 'engine_data_outputs:', 'transcript_artifact_name:', 'expected_artifacts:', 'artifact_declarations:', 'homeboy_extensions_ref: c1325569d6e6cc9d783681d34600ae5a76671d90' ) as $required_central_workflow_text ) {
 	$assert( str_contains( $docs_agent_workflow, $required_central_workflow_text ), "docs-agent.yml missing existing compatibility output: {$required_central_workflow_text}" );
 }
 
@@ -217,14 +228,18 @@ foreach ( array( '/path/to', '/Users/', 'localhost', '127.0.0.1' ) as $local_pat
 }
 
 $example_artifacts = $example['expected_artifacts'] ?? null;
-$assert( is_array( $example_artifacts ), 'Example runner config must include typed artifact declarations.' );
+$assert( is_array( $example_artifacts ), 'Example runner config must include expected artifact names.' );
+$example_declarations = $example['artifact_declarations'] ?? null;
+$assert( is_array( $example_declarations ), 'Example runner config must include typed artifact declarations.' );
 $example_artifacts_by_name = array();
-foreach ( $example_artifacts as $artifact ) {
+foreach ( $example_declarations as $artifact ) {
 	$assert( is_array( $artifact ), 'Example runner config typed artifact entries must be objects.' );
 	$example_artifacts_by_name[ (string) ( $artifact['name'] ?? '' ) ] = $artifact;
 }
 foreach ( $expected_artifact_schemas as $name => $schema ) {
+	$assert( in_array( $name, $example_artifacts, true ), "Example runner config expected_artifacts missing {$name}." );
 	$assert( isset( $example_artifacts_by_name[ $name ] ), "Example runner config missing typed artifact {$name}." );
+	$assert( 'wp-codebox/artifact-declaration/v1' === ( $example_artifacts_by_name[ $name ]['schema'] ?? '' ), "Example runner config typed artifact {$name} declaration schema mismatch." );
 	$assert( $schema === ( $example_artifacts_by_name[ $name ]['artifact_schema'] ?? '' ), "Example runner config typed artifact {$name} schema mismatch." );
 }
 

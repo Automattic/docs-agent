@@ -30,8 +30,9 @@ on:
 
 jobs:
   run-docs-agent:
-    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@155a61ad6c19aafd55c56eeacb6dd8fde3139afb
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@c1325569d6e6cc9d783681d34600ae5a76671d90
     with:
+      homeboy_extensions_ref: c1325569d6e6cc9d783681d34600ae5a76671d90
       bundle_path: ${{ contains(inputs.flow_kind, 'skills') && 'bundles/skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'bundles/technical-docs-agent' || 'bundles/user-docs-agent') }}
       agent_slug: ${{ contains(inputs.flow_kind, 'skills') && 'skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-agent' || 'user-docs-agent') }}
       pipeline_slug: ${{ contains(inputs.flow_kind, 'skills') && 'skills-pipeline' || (contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-pipeline' || 'user-docs-pipeline') }}
@@ -96,5 +97,54 @@ jobs:
       allowed_repos: '["${{ inputs.target_repo }}"]'
       engine_data_outputs: '{"docs_pr_url":"metadata.engine_data.docs_agent.pr_url"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
+      expected_artifacts: '["docs_agent_transcript","docs_agent_change_summary","docs_agent_verification_report","docs_agent_drift_report","docs_agent_workspace_publication"]'
+      artifact_declarations: |
+        [
+          {
+            "schema": "wp-codebox/artifact-declaration/v1",
+            "name": "docs_agent_transcript",
+            "type": "DocsAgentTranscript",
+            "artifact_schema": "docs-agent/transcript/v1",
+            "description": "Machine-readable transcript for the Docs Agent run.",
+            "required": false,
+            "egress": ["artifact", "workflow-output", "review-link"]
+          },
+          {
+            "schema": "wp-codebox/artifact-declaration/v1",
+            "name": "docs_agent_change_summary",
+            "type": "DocsAgentChangeSummary",
+            "artifact_schema": "docs-agent/change-summary/v1",
+            "description": "Reviewable summary of documentation or skill changes made by the run.",
+            "required": false,
+            "egress": ["pr-body", "workflow-output", "review-link"]
+          },
+          {
+            "schema": "wp-codebox/artifact-declaration/v1",
+            "name": "docs_agent_verification_report",
+            "type": "DocsAgentVerificationReport",
+            "artifact_schema": "docs-agent/verification-report/v1",
+            "description": "Runner verification command results for the target workspace.",
+            "required": false,
+            "egress": ["pr-body", "workflow-output", "review-link"]
+          },
+          {
+            "schema": "wp-codebox/artifact-declaration/v1",
+            "name": "docs_agent_drift_report",
+            "type": "DocsAgentDriftReport",
+            "artifact_schema": "docs-agent/drift-report/v1",
+            "description": "Drift-check results for generated documentation, skills, or packaged outputs.",
+            "required": false,
+            "egress": ["pr-body", "workflow-output", "review-link"]
+          },
+          {
+            "schema": "wp-codebox/artifact-declaration/v1",
+            "name": "docs_agent_workspace_publication",
+            "type": "DocsAgentWorkspacePublication",
+            "artifact_schema": "docs-agent/workspace-publication/v1",
+            "description": "Canonical branch and pull request links published by the runner workspace.",
+            "required": false,
+            "egress": ["pr-body", "workflow-output", "review-link"]
+          }
+        ]
       bundle_validator_spec: ${{ contains(inputs.flow_kind, 'skills') && 'tests/skills-agent.validate-bundle-spec.json' || (contains(inputs.flow_kind, 'technical-docs') && 'tests/technical-docs-agent.validate-bundle-spec.json' || 'tests/user-docs-agent.validate-bundle-spec.json') }}
     secrets: inherit
