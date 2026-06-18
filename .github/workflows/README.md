@@ -16,6 +16,8 @@ The target repository needs a token path that can inspect source, write the conf
 
 ## Agent Runtime Inputs
 
-Docs Agent workflow call sites use Homeboy agent runtime inputs: `agent_runtime`, `agent_runtime_ref`, `runtime_dependencies`, `runtime_components`, and `runtime_mounts`. This migration is tracked in Automattic/docs-agent#100 and depends on the generic runtime input support available on `Extra-Chill/homeboy-extensions@main`, which emits clean `runtime_*` runner config for the reusable Data Machine agent CI workflow.
+Docs Agent workflow call sites use the generic Homeboy full-run workflow: `Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main`. The call surface is provider-neutral where possible: `runtime_provider`, `runtime_ref`, `runtime_profile`, `runtime_profiles`, `runtime_execution`, `runtime_dependencies`, `runtime_components`, `runtime_mounts`, and `required_abilities`. This migration is tracked in Automattic/docs-agent#100 and depends on the generic full-run support available on `Extra-Chill/homeboy-extensions@main`.
 
-When updating the reusable workflow ref, advance `uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@...` and `homeboy_extensions_ref` together, then run `php tests/validate-docs-agent-bundle.php` so workflow routing and runner config stay aligned.
+Data Machine remains present only as the selected runtime profile/dependency stack for the current Docs Agent bundles, which still execute through `datamachine/run-agent-bundle`. Bundle selection is expressed through `runtime_execution` rather than legacy `bundle_path` inputs, and extra ability checks use `required_abilities`.
+
+When updating the reusable workflow ref, advance `uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@...` and `homeboy_extensions_ref` together, then run `php tests/validate-docs-agent-bundle.php` so workflow routing and runner config stay aligned.

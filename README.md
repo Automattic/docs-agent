@@ -95,7 +95,7 @@ Docs Agent declares the review artifacts it expects the runner to materialize as
 
 `maintain-docs.yml` forwards `expected_artifacts` and `artifact_declarations` to the Homeboy Extensions runner, keeps transcript upload and `runtime_output_projections` as first-class review outputs, and exposes the same declaration objects as `declared_artifacts_json`. The reusable runner support landed in [Extra-Chill/homeboy-extensions#1422](https://github.com/Extra-Chill/homeboy-extensions/pull/1422).
 
-The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites use Homeboy runtime inputs such as `agent_runtime`, `agent_runtime_ref`, `runtime_dependencies`, `runtime_components`, and `runtime_mounts`; this depends on the generic runtime input support now available on `Extra-Chill/homeboy-extensions@main`.
+The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites use the generic Homeboy full-run workflow with `runtime_provider`, `runtime_ref`, `runtime_execution`, `runtime_dependencies`, `runtime_components`, `runtime_mounts`, and `required_abilities`; this depends on the generic runtime support now available on `Extra-Chill/homeboy-extensions@main`.
 
 ## Pull Request Behavior
 
