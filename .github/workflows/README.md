@@ -10,12 +10,12 @@ For `Automattic/build-with-wordpress`, schedule skills upkeep separately from do
 
 When context repositories, verification commands, or drift checks are needed, pass them through the reusable workflow inputs above. Do not add checkout, allowed-repository, or workspace-policy plumbing to consumer workflows; the canonical runner owns those details.
 
-The reusable workflow declares the expected typed review artifacts for Docs Agent runs: transcript, change summary, verification report, drift report, and workspace publication links. `maintain-docs.yml` forwards those declarations through the Homeboy Extensions `expected_artifacts` and `artifact_declarations` inputs, exposes the declaration objects through `declared_artifacts_json`, and keeps the existing transcript artifact upload and engine-data outputs during the migration.
+The reusable workflow declares the expected typed review artifacts for Docs Agent runs: transcript, change summary, verification report, drift report, and workspace publication links. `maintain-docs.yml` forwards those declarations through the Homeboy Extensions `expected_artifacts` and `artifact_declarations` inputs, exposes the declaration objects through `declared_artifacts_json`, and keeps the existing transcript artifact upload and runtime output projections during the migration.
 
 The target repository needs a token path that can inspect source, write the configured paths, push the canonical branch, and open or update the pull request.
 
 ## Agent Runtime Inputs
 
-Docs Agent workflow call sites use Homeboy agent runtime inputs: `agent_runtime`, `agent_runtime_ref`, and `runtime_mounts`. This migration is tracked in Automattic/docs-agent#100 and depends on Extra-Chill/homeboy-extensions#1440, which emits clean `runtime_*` runner config for the reusable Data Machine agent CI workflow.
+Docs Agent workflow call sites use Homeboy agent runtime inputs: `agent_runtime`, `agent_runtime_ref`, `runtime_dependencies`, `runtime_components`, and `runtime_mounts`. This migration is tracked in Automattic/docs-agent#100 and depends on the generic runtime input support available on `Extra-Chill/homeboy-extensions@main`, which emits clean `runtime_*` runner config for the reusable Data Machine agent CI workflow.
 
 When updating the reusable workflow ref, advance `uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@...` and `homeboy_extensions_ref` together, then run `php tests/validate-docs-agent-bundle.php` so workflow routing and runner config stay aligned.

@@ -3,13 +3,18 @@
   "component_path": "consumer-repository-checkout",
   "workload_id": "technical-docs-generation",
   "workload_label": "Run Docs Agent",
-  "validation_dependencies": [
+  "runtime_dependencies": [
     "Automattic/agents-api@main",
     "Extra-Chill/data-machine@main",
     "Extra-Chill/data-machine-code@main",
     "WordPress/ai-provider-for-openai@trunk"
   ],
-  "playground_wordpress_version": "7.0",
+  "runtime_components": {
+    "agents_api": "/workspace/components/agents-api",
+    "data_machine": "/workspace/components/data-machine",
+    "data_machine_code": "/workspace/components/data-machine-code"
+  },
+  "runtime_wordpress_version": "7.0",
   "bundle_repo": "https://github.com/Automattic/docs-agent.git",
   "bundle_ref": "v0.1.0",
   "bundle_path_in_repo": "bundles/technical-docs-agent",
@@ -100,8 +105,7 @@
   "required_abilities": [
     "datamachine/import-agent",
     "datamachine/run-flow",
-    "datamachine/drain-job",
-    "datamachine/workspace-worktree-add"
+    "datamachine/drain-job"
   ],
   "tool_recorders": [
     {

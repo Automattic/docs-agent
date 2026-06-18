@@ -59,11 +59,20 @@ jobs:
       writable_paths: ${{ inputs.writable_paths }}
       model: ${{ inputs.openai_model }}
       agent_runtime: wp-codebox
-      agent_runtime_ref: 84fc33216b3026c43caf9ac1c33c2ebe4be06bf2
-      agents_api_ref: a61461da12ccdc90eb1a844714761b6c19360bfe
-      data_machine_ref: 4fc462fafe748f1278426c01ed0480e2aa94a934
-      data_machine_code_ref: cd053751fa7a9aba072af95f2aaee9d5b51979fa
-      openai_provider_ref: a400c158707e3d0b6fcd0f1502f6aa1085b01b9b
+      agent_runtime_ref: main
+      runtime_dependencies: |
+        [
+          "Automattic/agents-api@main",
+          "Extra-Chill/data-machine@main",
+          "Extra-Chill/data-machine-code@main"
+        ]
+      openai_provider_ref: trunk
+      runtime_components: |
+        {
+          "agents_api": "${{ github.workspace }}/.ci/agents-api",
+          "data_machine": "${{ github.workspace }}/.ci/data-machine",
+          "data_machine_code": "${{ github.workspace }}/.ci/data-machine-code"
+        }
       runner_workspace: |
         {
           "enabled": true,
@@ -88,14 +97,10 @@ jobs:
           }
         ]
       success_requires_pr: false
-      extra_required_abilities: |
-        [
-          "datamachine/workspace-worktree-add"
-        ]
       app_token_repos: ${{ inputs.target_repo }}
       require_homeboy_app_token: true
       allowed_repos: '["${{ inputs.target_repo }}"]'
-      engine_data_outputs: '{"docs_pr_url":"metadata.engine_data.docs_agent.pr_url"}'
+      runtime_output_projections: '{"docs_pr_url":"metadata.engine_data.docs_agent.pr_url"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
       expected_artifacts: '["docs_agent_transcript","docs_agent_change_summary","docs_agent_verification_report","docs_agent_drift_report","docs_agent_workspace_publication"]'
       artifact_declarations: |
