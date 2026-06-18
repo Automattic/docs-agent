@@ -30,13 +30,26 @@ on:
 
 jobs:
   run-docs-agent:
-    uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@main
+    uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main
     with:
       homeboy_extensions_ref: main
-      bundle_path: ${{ contains(inputs.flow_kind, 'skills') && 'bundles/skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'bundles/technical-docs-agent' || 'bundles/user-docs-agent') }}
-      agent_slug: ${{ contains(inputs.flow_kind, 'skills') && 'skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-agent' || 'user-docs-agent') }}
-      pipeline_slug: ${{ contains(inputs.flow_kind, 'skills') && 'skills-pipeline' || (contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-pipeline' || 'user-docs-pipeline') }}
-      flow_slug: ${{ inputs.flow_kind }}
+      runtime_provider: wp-codebox
+      runtime_ref: main
+      runtime_profile: datamachine-agent-ci
+      runtime_profiles: |
+        {
+          "datamachine-agent-ci": {
+            "id": "datamachine-agent-ci",
+            "runtime_task_ability": "datamachine/run-agent-bundle",
+            "runtime_bundle_ability": "datamachine/run-agent-bundle",
+            "runtime_workflow_ability": "datamachine/execute-workflow",
+            "ability_requirements": ["datamachine/run-agent-bundle"]
+          }
+        }
+      runtime_execution: ${{ format('{{"kind":"bundle","source":"{0}"}}', contains(inputs.flow_kind, 'skills') && 'bundles/skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'bundles/technical-docs-agent' || 'bundles/user-docs-agent')) }}
+      workload_id: ${{ inputs.flow_kind }}
+      workload_label: Run ${{ contains(inputs.flow_kind, 'skills') && 'skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-agent' || 'user-docs-agent') }} Docs Agent
+      component_id: docs-agent-ci-driver
       target_repo: ${{ inputs.target_repo }}
       prompt: |
         ${{
@@ -57,9 +70,8 @@ jobs:
 
         Writable paths: ${{ inputs.writable_paths }}
       writable_paths: ${{ inputs.writable_paths }}
+      provider: openai
       model: ${{ inputs.openai_model }}
-      agent_runtime: wp-codebox
-      agent_runtime_ref: main
       runtime_dependencies: |
         [
           "Automattic/agents-api@main",
@@ -87,6 +99,16 @@ jobs:
           "DOCS_AGENT_TARGET_REPO": "${{ inputs.target_repo }}",
           "DOCS_AGENT_WRITABLE_PATHS": "${{ inputs.writable_paths }}"
         }
+      runtime_config: |
+        {
+          "daily_memory_enabled": false,
+          "disable_datamachine_directives": false,
+          "enable_terminal_actions": false,
+          "wp_cli_tool_name": "run_wp_cli",
+          "pipeline_step_patches": [],
+          "flow_step_patches": [],
+          "wp_gym_eval": { "benchmark_mode": false }
+        }
       runtime_mounts: |
         [
           {
@@ -97,11 +119,15 @@ jobs:
           }
         ]
       success_requires_pr: false
+      success_completion_outcomes: '[]'
       app_token_repos: ${{ inputs.target_repo }}
       require_homeboy_app_token: true
       allowed_repos: '["${{ inputs.target_repo }}"]'
+      required_abilities: '["datamachine/import-agent","datamachine/run-flow","datamachine/drain-job"]'
+      tool_results_key: github_tool_results
       runtime_output_projections: '{"docs_pr_url":"metadata.engine_data.docs_agent.pr_url"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
+      replay_bundle_artifact_name: docs-agent-replay-${{ github.run_id }}
       expected_artifacts: '["docs_agent_transcript","docs_agent_change_summary","docs_agent_verification_report","docs_agent_drift_report","docs_agent_workspace_publication"]'
       artifact_declarations: |
         [
@@ -151,5 +177,5 @@ jobs:
             "egress": ["pr-body", "workflow-output", "review-link"]
           }
         ]
-      bundle_validator_spec: ${{ contains(inputs.flow_kind, 'skills') && 'tests/skills-agent.validate-bundle-spec.json' || (contains(inputs.flow_kind, 'technical-docs') && 'tests/technical-docs-agent.validate-bundle-spec.json' || 'tests/user-docs-agent.validate-bundle-spec.json') }}
+      callback_data: ${{ format('{{"agent_slug":"{0}","pipeline_slug":"{1}","flow_slug":"{2}","bundle_source":"{3}","target_repo":"{4}"}}', contains(inputs.flow_kind, 'skills') && 'skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-agent' || 'user-docs-agent'), contains(inputs.flow_kind, 'skills') && 'skills-pipeline' || (contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-pipeline' || 'user-docs-pipeline'), inputs.flow_kind, contains(inputs.flow_kind, 'skills') && 'bundles/skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'bundles/technical-docs-agent' || 'bundles/user-docs-agent'), inputs.target_repo) }}
     secrets: inherit

@@ -149,6 +149,9 @@ foreach ( $spec['example_assertions'] ?? array() as $key => $expected ) {
 $runner_workspace = $example['runner_workspace'] ?? array();
 $assert( ! empty( $runner_workspace['enabled'] ), 'Example config must enable runner-owned workspace provisioning.' );
 $assert( 'docs/agent-run' === ( $runner_workspace['branch_prefix'] ?? null ), 'Example config must declare the docs branch prefix.' );
+$assert( 'bundle' === ( $example['runtime_execution']['kind'] ?? null ), 'Example config must declare a bundle runtime_execution.' );
+$assert( '.ci/docs-agent/bundles/technical-docs-agent' === ( $example['runtime_execution']['source'] ?? null ), 'Example config must point runtime_execution at the Docs Agent bundle checkout.' );
+$assert( in_array( 'Automattic/docs-agent@v0.1.0', $example['validation_dependencies'] ?? array(), true ), 'Example config must keep Docs Agent as a validation dependency.' );
 $assert( is_file( $root . '/scripts/repair-docs-links.php' ), 'Docs link repair script must be available to consumer workflows.' );
 
 $maintain_docs_workflow = (string) file_get_contents( $root . '/.github/workflows/maintain-docs.yml' );
@@ -177,14 +180,24 @@ $assert( ! str_contains( $maintain_docs_workflow, 'WordPress/agent-skills' ), 'm
 $assert( str_contains( $maintain_docs_workflow, 'declared_artifacts_json:' ), 'maintain-docs.yml must expose typed artifact declarations as a reusable workflow output.' );
 $assert( str_contains( $maintain_docs_workflow, 'expected_artifacts<<EOF' ), 'maintain-docs.yml must prepare typed artifact declarations without caller-specific projections.' );
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 'maintain-docs.yml must prepare typed artifact declarations without caller-specific projections.' );
-$assert( str_contains( $maintain_docs_workflow, 'uses: Extra-Chill/homeboy-extensions/.github/workflows/datamachine-agent-ci.yml@main' ), 'maintain-docs.yml must follow the reusable workflow ref that contains agent runtime inputs.' );
+$assert( str_contains( $maintain_docs_workflow, 'uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main' ), 'maintain-docs.yml must use the generic runtime agent full-run workflow.' );
 $assert( str_contains( $maintain_docs_workflow, 'homeboy_extensions_ref: main' ), 'maintain-docs.yml must run matching Homeboy Extensions scripts for agent runtime inputs.' );
 $assert( str_contains( $maintain_docs_workflow, 'expected_artifacts: ${{ needs.prepare.outputs.expected_artifacts }}' ), 'maintain-docs.yml must pass expected_artifacts through to the canonical runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations: ${{ needs.prepare.outputs.artifact_declarations }}' ), 'maintain-docs.yml must pass artifact_declarations through to the canonical runner.' );
 
-foreach ( array( 'agent_runtime: wp-codebox', 'agent_runtime_ref:', 'runtime_dependencies:', 'runtime_components:', 'runtime_mounts:' ) as $runtime_input ) {
+foreach ( array( 'runtime_provider: wp-codebox', 'runtime_ref:', 'runtime_profile: datamachine-agent-ci', 'runtime_profiles:', 'runtime_execution:', 'runtime_dependencies:', 'runtime_components:', 'runtime_mounts:', 'required_abilities:', 'validation_dependencies:' ) as $runtime_input ) {
 	$assert( str_contains( $maintain_docs_workflow, $runtime_input ), "maintain-docs.yml must use {$runtime_input}." );
 }
+$assert( str_contains( $maintain_docs_workflow, 'replay_bundle_artifact_name:' ), 'maintain-docs.yml must upload replay bundle artifacts.' );
+$assert( str_contains( $maintain_docs_workflow, 'runtime_config:' ), 'maintain-docs.yml must preserve Data Machine runtime config explicitly.' );
+$assert( ! str_contains( $maintain_docs_workflow, 'datamachine-agent-ci.yml' ), 'maintain-docs.yml must not use the legacy Data Machine adapter workflow.' );
+$assert( ! str_contains( $maintain_docs_workflow, 'bundle_path: ' ), 'maintain-docs.yml must use runtime_execution instead of bundle_path.' );
+$assert( ! str_contains( $maintain_docs_workflow, 'bundle_repo:' ), 'maintain-docs.yml must use validation_dependencies instead of bundle_repo.' );
+$assert( ! str_contains( $maintain_docs_workflow, 'bundle_ref:' ), 'maintain-docs.yml must use validation_dependencies instead of bundle_ref.' );
+$assert( ! str_contains( $maintain_docs_workflow, 'bundle_path_in_repo:' ), 'maintain-docs.yml must use runtime_execution instead of bundle_path_in_repo.' );
+$assert( ! str_contains( $maintain_docs_workflow, 'agent_runtime:' ), 'maintain-docs.yml must use runtime_provider instead of agent_runtime.' );
+$assert( ! str_contains( $maintain_docs_workflow, 'agent_runtime_ref:' ), 'maintain-docs.yml must use runtime_ref instead of agent_runtime_ref.' );
+$assert( ! str_contains( $maintain_docs_workflow, 'extra_required_abilities:' ), 'maintain-docs.yml must use required_abilities instead of extra_required_abilities.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'wp_codebox_ref:' ), 'maintain-docs.yml must not use wp_codebox_ref.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'extra_wp_codebox_mounts:' ), 'maintain-docs.yml must not use extra_wp_codebox_mounts.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'agents_api_ref:' ), 'maintain-docs.yml must use runtime_dependencies instead of agents_api_ref.' );
@@ -193,7 +206,7 @@ $assert( ! str_contains( $maintain_docs_workflow, 'data_machine_code_ref:' ), 'm
 $assert( ! str_contains( $maintain_docs_workflow, 'engine_data_outputs:' ), 'maintain-docs.yml must use runtime_output_projections instead of engine_data_outputs.' );
 
 $workflow_readme = (string) file_get_contents( $root . '/.github/workflows/README.md' );
-foreach ( array( 'Agent Runtime Inputs', 'Extra-Chill/homeboy-extensions@main', 'Automattic/docs-agent#100', 'agent_runtime', 'runtime_dependencies', 'runtime_components', 'runtime_mounts' ) as $migration_note_text ) {
+foreach ( array( 'Agent Runtime Inputs', 'Extra-Chill/homeboy-extensions@main', 'Automattic/docs-agent#100', 'runtime-agent-full-run.yml', 'runtime_provider', 'runtime_execution', 'runtime_dependencies', 'runtime_components', 'runtime_mounts' ) as $migration_note_text ) {
 	$assert( str_contains( $workflow_readme, $migration_note_text ), "Workflow README missing agent runtime note: {$migration_note_text}" );
 }
 
@@ -201,9 +214,15 @@ $docs_agent_workflow = (string) file_get_contents( $root . '/.github/workflows/d
 foreach ( array( 'runtime_output_projections:', 'transcript_artifact_name:', 'expected_artifacts:', 'artifact_declarations:', 'homeboy_extensions_ref: main' ) as $required_central_workflow_text ) {
 	$assert( str_contains( $docs_agent_workflow, $required_central_workflow_text ), "docs-agent.yml missing existing compatibility output: {$required_central_workflow_text}" );
 }
-foreach ( array( 'agent_runtime: wp-codebox', 'agent_runtime_ref:', 'runtime_dependencies:', 'runtime_components:', 'runtime_mounts:' ) as $central_runtime_input ) {
+foreach ( array( 'uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main', 'runtime_provider: wp-codebox', 'runtime_ref:', 'runtime_profile: datamachine-agent-ci', 'runtime_profiles:', 'runtime_execution:', 'runtime_dependencies:', 'runtime_components:', 'runtime_mounts:', 'required_abilities:' ) as $central_runtime_input ) {
 	$assert( str_contains( $docs_agent_workflow, $central_runtime_input ), "docs-agent.yml must use {$central_runtime_input}." );
 }
+$assert( str_contains( $docs_agent_workflow, 'replay_bundle_artifact_name:' ), 'docs-agent.yml must upload replay bundle artifacts.' );
+$assert( ! str_contains( $docs_agent_workflow, 'datamachine-agent-ci.yml' ), 'docs-agent.yml must not use the legacy Data Machine adapter workflow.' );
+$assert( ! str_contains( $docs_agent_workflow, 'bundle_path: ' ), 'docs-agent.yml must use runtime_execution instead of bundle_path.' );
+$assert( ! str_contains( $docs_agent_workflow, 'extra_required_abilities:' ), 'docs-agent.yml must use required_abilities instead of extra_required_abilities.' );
+$assert( ! str_contains( $docs_agent_workflow, 'agent_runtime:' ), 'docs-agent.yml must use runtime_provider instead of agent_runtime.' );
+$assert( ! str_contains( $docs_agent_workflow, 'agent_runtime_ref:' ), 'docs-agent.yml must use runtime_ref instead of agent_runtime_ref.' );
 $assert( ! str_contains( $docs_agent_workflow, 'wp_codebox_ref:' ), 'docs-agent.yml must not use wp_codebox_ref.' );
 $assert( ! str_contains( $docs_agent_workflow, 'extra_wp_codebox_mounts:' ), 'docs-agent.yml must not use extra_wp_codebox_mounts.' );
 $assert( ! str_contains( $docs_agent_workflow, 'validation_dependencies: Automattic/agents-api@' ), 'docs-agent.yml must let Homeboy runtime inputs supply runtime validation dependencies.' );

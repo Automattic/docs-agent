@@ -117,9 +117,7 @@
   "example_runner_config": "../examples/homeboy-runner-config.example.json",
   "example_assertions": {
     "success_requires_pr": false,
-    "bundle_path_in_repo": "bundles/technical-docs-agent",
-    "agent_slug": "technical-docs-agent",
-    "pipeline_slug": "technical-docs-pipeline",
-    "flow_slug": "technical-docs-maintenance-flow"
+    "runtime_profile": "datamachine-agent-ci",
+    "provider": "openai"
   }
 }

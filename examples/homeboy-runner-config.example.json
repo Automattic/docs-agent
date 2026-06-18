@@ -15,12 +15,21 @@
     "data_machine_code": "/workspace/components/data-machine-code"
   },
   "runtime_wordpress_version": "7.0",
-  "bundle_repo": "https://github.com/Automattic/docs-agent.git",
-  "bundle_ref": "v0.1.0",
-  "bundle_path_in_repo": "bundles/technical-docs-agent",
-  "agent_slug": "technical-docs-agent",
-  "pipeline_slug": "technical-docs-pipeline",
-  "flow_slug": "technical-docs-maintenance-flow",
+  "runtime_profile": "datamachine-agent-ci",
+  "runtime_profiles": {
+    "datamachine-agent-ci": {
+      "id": "datamachine-agent-ci",
+      "runtime_task_ability": "datamachine/run-agent-bundle",
+      "runtime_bundle_ability": "datamachine/run-agent-bundle",
+      "runtime_workflow_ability": "datamachine/execute-workflow",
+      "ability_requirements": ["datamachine/run-agent-bundle"]
+    }
+  },
+  "runtime_execution": {
+    "kind": "bundle",
+    "source": ".ci/docs-agent/bundles/technical-docs-agent"
+  },
+  "validation_dependencies": ["Automattic/docs-agent@v0.1.0"],
   "provider": "openai",
   "model": "gpt-5.5",
   "provider_register_function": "WordPress\\OpenAiAiProvider\\register_provider",
@@ -102,25 +111,24 @@
   "step_budget": 16,
   "time_budget_ms": 600000,
   "transcript_dir": "docs-agent-transcript-artifacts",
+  "replay_bundle_dir": "docs-agent-replay-artifacts",
   "required_abilities": [
     "datamachine/import-agent",
     "datamachine/run-flow",
     "datamachine/drain-job"
   ],
-  "tool_recorders": [
-    {
-      "tool": "create_github_pull_request",
-      "record": {
-        "engine_key": "docs_agent",
-        "tool_results_key": "github_tool_results",
-        "event": {
-          "key": "pr",
-          "type": "pull_request",
-          "only_if_success": true
-        }
-      }
-    }
-  ],
+  "runtime_output_projections": {
+    "docs_agent_pr_url": "metadata.engine_data.docs_agent.pr.url",
+    "runner_workspace_pr_url": "metadata.runner_workspace_publication.url",
+    "success_status": "metadata.success_status"
+  },
+  "callback_data": {
+    "agent_slug": "technical-docs-agent",
+    "pipeline_slug": "technical-docs-pipeline",
+    "flow_slug": "technical-docs-maintenance-flow",
+    "bundle_source": ".ci/docs-agent/bundles/technical-docs-agent",
+    "target_repo": "OWNER/REPO"
+  },
   "bench_env": {
     "GITHUB_TOKEN": "${GITHUB_TOKEN}",
     "OPENAI_API_KEY": "${OPENAI_API_KEY}"
