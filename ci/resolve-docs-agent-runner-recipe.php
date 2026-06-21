@@ -51,8 +51,7 @@ $required_keys = array(
 	'runtime_dependencies',
 	'openai_provider_ref',
 	'runtime_components',
-	'workspace_policy',
-	'required_abilities',
+	'ability_requirements',
 	'runtime_config',
 );
 
@@ -61,12 +60,6 @@ foreach ( $required_keys as $key ) {
 		fwrite( STDERR, "Docs Agent runner recipe missing {$key}.\n" );
 		exit( 1 );
 	}
-}
-
-$workspace_policy = $recipe['workspace_policy'];
-if ( ! is_array( $workspace_policy ) || ! isset( $workspace_policy['mount'] ) || ! is_array( $workspace_policy['mount'] ) ) {
-	fwrite( STDERR, "Docs Agent runner recipe workspace_policy.mount must be an object.\n" );
-	exit( 1 );
 }
 
 $encode = static function ( mixed $value ): string {
@@ -80,7 +73,7 @@ $encode = static function ( mixed $value ): string {
 };
 
 $outputs = array(
-	'runner_recipe_id'     => (string) ( $recipe['id'] ?? 'docs-agent/datamachine-agent-ci' ),
+	'runner_recipe_id'     => (string) ( $recipe['id'] ?? 'docs-agent/codebox-agent-bundle' ),
 	'runtime_provider'     => (string) $recipe['runtime_provider'],
 	'runtime_ref'          => (string) $recipe['runtime_ref'],
 	'runtime_profile'      => (string) $recipe['runtime_profile'],
@@ -88,8 +81,7 @@ $outputs = array(
 	'runtime_dependencies' => $encode( $recipe['runtime_dependencies'] ),
 	'openai_provider_ref'  => (string) $recipe['openai_provider_ref'],
 	'runtime_components'   => $encode( $recipe['runtime_components'] ),
-	'runtime_mounts'       => $encode( array( $workspace_policy['mount'] ) ),
-	'required_abilities'   => $encode( $recipe['required_abilities'] ),
+	'ability_requirements' => $encode( $recipe['ability_requirements'] ),
 	'runtime_config'       => $encode( $recipe['runtime_config'] ),
 );
 

@@ -134,8 +134,7 @@ jobs:
       runtime_dependencies: ${{ steps.recipe.outputs.runtime_dependencies }}
       openai_provider_ref: ${{ steps.recipe.outputs.openai_provider_ref }}
       runtime_components: ${{ steps.recipe.outputs.runtime_components }}
-      runtime_mounts: ${{ steps.recipe.outputs.runtime_mounts }}
-      required_abilities: ${{ steps.recipe.outputs.required_abilities }}
+      ability_requirements: ${{ steps.recipe.outputs.ability_requirements }}
       runtime_config: ${{ steps.recipe.outputs.runtime_config }}
     steps:
       - name: Resolve Docs Agent settings
@@ -441,18 +440,12 @@ jobs:
           "pr_title_template": "${{ needs.prepare.outputs.fallback_pr_title }}",
           "pr_body_template": "## Summary\n- Maintain the configured Docs Agent lane.\n- Keep writes inside `${{ inputs.writable_paths }}`.\n- Reuse the canonical Docs Agent branch `${{ inputs.docs_branch }}`.\n- Include runner-provided verification and drift-check summaries when available.\n\n## Result\n{result_table}\n\n## Checks\n{checks_table}\n\n## Review Artifacts\n{links_table}\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via Data Machine / WP Codebox in GitHub Actions\n- **Model:** OpenAI GPT-5.5\n- **Used for:** Generated maintenance updates from repository source for human review."
         }
-      extra_wp_config_defines: |
-        {
-          "DOCS_AGENT_TARGET_REPO": "${{ github.repository }}",
-          "DOCS_AGENT_WRITABLE_PATHS": "${{ inputs.writable_paths }}"
-        }
       runtime_config: ${{ needs.prepare.outputs.runtime_config }}
-      runtime_mounts: ${{ needs.prepare.outputs.runtime_mounts }}
       success_requires_pr: false
       success_completion_outcomes: '[]'
       allowed_repos: '["${{ github.repository }}"]'
       app_token_repos: ${{ github.repository }}
-      required_abilities: ${{ needs.prepare.outputs.required_abilities }}
+      ability_requirements: ${{ needs.prepare.outputs.ability_requirements }}
       tool_results_key: github_tool_results
       runtime_output_projections: '{"docs_agent_pr_url":"metadata.engine_data.docs_agent.pr.url","runner_workspace_pr_url":"metadata.runner_workspace_publication.url","success_status":"metadata.success_status"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}

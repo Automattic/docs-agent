@@ -41,8 +41,7 @@ jobs:
       runtime_dependencies: ${{ steps.recipe.outputs.runtime_dependencies }}
       openai_provider_ref: ${{ steps.recipe.outputs.openai_provider_ref }}
       runtime_components: ${{ steps.recipe.outputs.runtime_components }}
-      runtime_mounts: ${{ steps.recipe.outputs.runtime_mounts }}
-      required_abilities: ${{ steps.recipe.outputs.required_abilities }}
+      ability_requirements: ${{ steps.recipe.outputs.ability_requirements }}
       runtime_config: ${{ steps.recipe.outputs.runtime_config }}
     steps:
       - name: Checkout docs-agent
@@ -101,19 +100,13 @@ jobs:
           "from": "origin/main",
           "bootstrap": false
         }
-      extra_wp_config_defines: |
-        {
-          "DOCS_AGENT_TARGET_REPO": "${{ inputs.target_repo }}",
-          "DOCS_AGENT_WRITABLE_PATHS": "${{ inputs.writable_paths }}"
-        }
       runtime_config: ${{ needs.prepare.outputs.runtime_config }}
-      runtime_mounts: ${{ needs.prepare.outputs.runtime_mounts }}
       success_requires_pr: false
       success_completion_outcomes: '[]'
       app_token_repos: ${{ inputs.target_repo }}
       require_homeboy_app_token: true
       allowed_repos: '["${{ inputs.target_repo }}"]'
-      required_abilities: ${{ needs.prepare.outputs.required_abilities }}
+      ability_requirements: ${{ needs.prepare.outputs.ability_requirements }}
       tool_results_key: github_tool_results
       runtime_output_projections: '{"docs_pr_url":"metadata.engine_data.docs_agent.pr_url"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}

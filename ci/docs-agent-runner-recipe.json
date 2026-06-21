@@ -1,18 +1,23 @@
 {
-  "id": "docs-agent/datamachine-agent-ci",
-  "description": "Docs Agent runner recipe for the current Homeboy Extensions runtime-agent-full-run contract.",
+  "id": "docs-agent/codebox-agent-bundle",
+  "description": "Docs Agent runtime recipe for the Homeboy Extensions Codebox agent-bundle profile contract.",
   "runtime_provider": "wp-codebox",
   "runtime_ref": "main",
-  "runtime_profile": "datamachine-agent-ci",
+  "runtime_profile": "docs-agent-codebox-bundle",
   "runtime_profiles": {
-    "datamachine-agent-ci": {
-      "id": "datamachine-agent-ci",
+    "docs-agent-codebox-bundle": {
+      "schema": "wp-codebox/runtime-profile/v1",
+      "id": "docs-agent-codebox-bundle",
       "runtime_task_ability": "datamachine/run-agent-bundle",
       "runtime_bundle_ability": "datamachine/run-agent-bundle",
       "runtime_workflow_ability": "datamachine/execute-workflow",
       "ability_requirements": [
         "datamachine/run-agent-bundle"
-      ]
+      ],
+      "metadata": {
+        "owner": "Automattic/docs-agent",
+        "contract": "Codebox imports the selected Docs Agent bundle and invokes the bundle runtime ability. Host-side writable scope is declared through the reusable workflow writable_paths input."
+      }
     }
   },
   "runtime_dependencies": [
@@ -26,22 +31,8 @@
     "data_machine": "${github_workspace}/.ci/data-machine",
     "data_machine_code": "${github_workspace}/.ci/data-machine-code"
   },
-  "workspace_policy": {
-    "defines": [
-      "DOCS_AGENT_TARGET_REPO",
-      "DOCS_AGENT_WRITABLE_PATHS"
-    ],
-    "mount": {
-      "type": "file",
-      "source": "${docs_agent_checkout}/ci/docs-agent-workspace-policy.php",
-      "target": "/wordpress/wp-content/mu-plugins/docs-agent-workspace-policy.php",
-      "mode": "readonly"
-    }
-  },
-  "required_abilities": [
-    "datamachine/import-agent",
-    "datamachine/run-flow",
-    "datamachine/drain-job"
+  "ability_requirements": [
+    "datamachine/run-agent-bundle"
   ],
   "runtime_config": {
     "daily_memory_enabled": false,
