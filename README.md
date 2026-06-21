@@ -64,7 +64,7 @@ jobs:
 
 ## Workflow Inputs
 
-The consumer API is product-level. Consumer repositories do not need to configure bundle paths, pipeline slugs, runner tools, or implementation-specific runtime details.
+The consumer API is product-level. Consumer repositories configure the documentation lane, target branch, writable paths, optional context repositories, verification commands, drift checks, model, and run gating through reusable workflow inputs.
 
 | Input | Default | Description |
 | --- | --- | --- |
@@ -79,7 +79,7 @@ The consumer API is product-level. Consumer repositories do not need to configur
 | `model` | `gpt-5.5` | Model used by Docs Agent. |
 | `run_agent` | `true` | Set `false` to skip after deterministic preflight says docs are current. |
 
-`context_repositories`, `verification_commands`, and `drift_checks` are passed to the Homeboy Extensions runner as canonical runner inputs. Docs Agent does not define extra checkout, allowed-repository, or writable-workspace policy for context repositories; the runner owns that API and keeps the target repository as the only writable PR boundary.
+`context_repositories`, `verification_commands`, and `drift_checks` are canonical runner inputs. Docs Agent sends those inputs to the Homeboy Extensions runner and keeps the target repository as the only writable PR boundary.
 
 ## Review Artifacts
 
@@ -95,7 +95,7 @@ Docs Agent declares the review artifacts it expects the runner to materialize as
 
 `maintain-docs.yml` forwards `expected_artifacts` and `artifact_declarations` to the Homeboy Extensions runner, keeps transcript upload and `runtime_output_projections` as first-class review outputs, and exposes the same declaration objects as `declared_artifacts_json`. The reusable runner support landed in [Extra-Chill/homeboy-extensions#1422](https://github.com/Extra-Chill/homeboy-extensions/pull/1422).
 
-The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites use the generic Homeboy full-run workflow, with the Codebox/Homeboy contract centralized behind the `docs-agent/codebox-homeboy-runner` recipe in `ci/docs-agent-runner-recipe.json`. The resolver emits product-level runner inputs such as `runtime`, `profile`, `component_contracts`, `ability_requirements`, `runner_workspace`, and `writable_paths`; publication remains runner-owned while agents only edit the provided workspace.
+The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites use the generic Homeboy full-run workflow, with the Codebox/Homeboy contract centralized behind the committed `docs-agent/codebox-homeboy-runner` recipe in `ci/docs-agent-runner-recipe.json`. The resolver emits product-level runner inputs such as `runtime`, `runtime_ref`, `profile`, `runtime_profiles`, `runtime_dependencies`, `component_contracts`, `ability_requirements`, and `runtime_config`; publication remains runner-owned while agents only edit the provided workspace.
 
 ## Pull Request Behavior
 
@@ -162,7 +162,7 @@ For `Automattic/build-with-wordpress`, run skills upkeep as its own scheduled la
 
 ## Bundles
 
-Docs Agent ships portable agent bundles used internally by the reusable workflow:
+Docs Agent ships portable agent bundles selected by the reusable workflow:
 
 - `bundles/technical-docs-agent`: technical/developer documentation maintenance.
 - `bundles/user-docs-agent`: non-technical product documentation maintenance.
@@ -170,9 +170,9 @@ Docs Agent ships portable agent bundles used internally by the reusable workflow
 
 The reusable workflow maps `audience` to the correct bundle, agent identity, pipeline, and maintenance flow.
 
-## Implementation Notes
+## Workflow Operation
 
-Consumer repositories should call `.github/workflows/maintain-docs.yml`. The workflow internally runs the existing Homeboy, WP Codebox, and Data Machine agent runner stack, but those are implementation details of this repository's automation layer.
+Consumer repositories call `.github/workflows/maintain-docs.yml`. The workflow accepts the product-level inputs above, selects the matching Docs Agent bundle, prepares the runner recipe, runs the Homeboy Extensions agent workflow, and publishes or updates the configured Docs Agent pull request when files change.
 
 Maintainers may still use `.github/workflows/docs-agent.yml` for central dispatch/debugging against an arbitrary `target_repo` when GitHub App credentials are available.
 
