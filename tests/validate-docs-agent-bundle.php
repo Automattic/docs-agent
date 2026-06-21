@@ -216,9 +216,19 @@ foreach ( array( 'Docs Agent Runner Recipe', 'Extra-Chill/homeboy-extensions@mai
 	$assert( str_contains( $workflow_readme, $migration_note_text ), "Workflow README missing agent runtime note: {$migration_note_text}" );
 }
 
+$public_docs = strtolower(
+	(string) file_get_contents( $root . '/README.md' ) . "\n" .
+	(string) file_get_contents( $root . '/.github/workflows/README.md' ) . "\n" .
+	(string) file_get_contents( $root . '/bundles/user-docs-agent/memory/agent/MEMORY.md' ) . "\n" .
+	(string) file_get_contents( $root . '/bundles/user-docs-agent/pipelines/user-docs-pipeline.json' )
+);
+foreach ( array( 'hidden internals', 'implementation details', 'compatibility plumbing', 'consumers should not know', 'should not know', 'implementation internals', 'implementation evidence internal', 'plumbing to consumer workflows' ) as $old_boundary_phrase ) {
+	$assert( ! str_contains( $public_docs, $old_boundary_phrase ), "Public Docs Agent docs must use product-level API wording instead of: {$old_boundary_phrase}" );
+}
+
 $docs_agent_workflow = (string) file_get_contents( $root . '/.github/workflows/docs-agent.yml' );
 foreach ( array( 'runtime_output_projections:', 'transcript_artifact_name:', 'expected_artifacts:', 'artifact_declarations:', 'homeboy_extensions_ref: main' ) as $required_central_workflow_text ) {
-	$assert( str_contains( $docs_agent_workflow, $required_central_workflow_text ), "docs-agent.yml missing existing compatibility output: {$required_central_workflow_text}" );
+	$assert( str_contains( $docs_agent_workflow, $required_central_workflow_text ), "docs-agent.yml missing current workflow output: {$required_central_workflow_text}" );
 }
 foreach ( array( 'uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main', 'Resolve runner recipe', 'runtime: ${{ needs.prepare.outputs.runtime }}', 'runtime_ref: ${{ needs.prepare.outputs.runtime_ref }}', 'profile: ${{ needs.prepare.outputs.profile }}', 'runtime_profiles: ${{ needs.prepare.outputs.runtime_profiles }}', 'runtime_execution:', 'runtime_dependencies: ${{ needs.prepare.outputs.runtime_dependencies }}', 'component_contracts: ${{ needs.prepare.outputs.component_contracts }}', 'ability_requirements: ${{ needs.prepare.outputs.ability_requirements }}' ) as $central_runtime_input ) {
 	$assert( str_contains( $docs_agent_workflow, $central_runtime_input ), "docs-agent.yml must use {$central_runtime_input}." );
