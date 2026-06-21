@@ -127,15 +127,14 @@ jobs:
       expected_artifacts: ${{ steps.config.outputs.expected_artifacts }}
       artifact_declarations: ${{ steps.config.outputs.artifact_declarations }}
       runner_recipe_id: ${{ steps.recipe.outputs.runner_recipe_id }}
-      runtime_provider: ${{ steps.recipe.outputs.runtime_provider }}
+      runtime: ${{ steps.recipe.outputs.runtime }}
       runtime_ref: ${{ steps.recipe.outputs.runtime_ref }}
-      runtime_profile: ${{ steps.recipe.outputs.runtime_profile }}
+      profile: ${{ steps.recipe.outputs.profile }}
       runtime_profiles: ${{ steps.recipe.outputs.runtime_profiles }}
       runtime_dependencies: ${{ steps.recipe.outputs.runtime_dependencies }}
       openai_provider_ref: ${{ steps.recipe.outputs.openai_provider_ref }}
-      runtime_components: ${{ steps.recipe.outputs.runtime_components }}
-      runtime_mounts: ${{ steps.recipe.outputs.runtime_mounts }}
-      required_abilities: ${{ steps.recipe.outputs.required_abilities }}
+      component_contracts: ${{ steps.recipe.outputs.component_contracts }}
+      ability_requirements: ${{ steps.recipe.outputs.ability_requirements }}
       runtime_config: ${{ steps.recipe.outputs.runtime_config }}
     steps:
       - name: Resolve Docs Agent settings
@@ -147,12 +146,12 @@ jobs:
           INPUT_VERIFICATION_COMMANDS: ${{ inputs.verification_commands }}
           INPUT_DRIFT_CHECKS: ${{ inputs.drift_checks }}
           INPUT_BOOTSTRAP_CONTRACT: ${{ inputs.bootstrap_contract }}
-          INPUT_DOCS_AGENT_REF: ${{ inputs.docs_agent_ref }}
+          INPUT_RECIPE_REF: ${{ inputs.docs_agent_ref }}
           WORKFLOW_REF: ${{ github.workflow_ref }}
         run: |
           set -euo pipefail
 
-          docs_agent_ref="$(printf '%s' "$INPUT_DOCS_AGENT_REF" | xargs)"
+          docs_agent_ref="$(printf '%s' "$INPUT_RECIPE_REF" | xargs)"
           if [ -z "$docs_agent_ref" ]; then
             workflow_ref="$(printf '%s' "$WORKFLOW_REF" | xargs)"
             if [[ "$workflow_ref" == *@* ]]; then
@@ -374,7 +373,7 @@ jobs:
       - name: Resolve runner recipe
         id: recipe
         env:
-          DOCS_AGENT_CHECKOUT: .ci/docs-agent
+          RUNNER_RECIPE_CHECKOUT: .ci/docs-agent
         run: php .ci/docs-agent/ci/resolve-docs-agent-runner-recipe.php
 
   docs_agent:
@@ -383,9 +382,9 @@ jobs:
     uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main
     with:
       homeboy_extensions_ref: main
-      runtime_provider: ${{ needs.prepare.outputs.runtime_provider }}
+      runtime: ${{ needs.prepare.outputs.runtime }}
       runtime_ref: ${{ needs.prepare.outputs.runtime_ref }}
-      runtime_profile: ${{ needs.prepare.outputs.runtime_profile }}
+      profile: ${{ needs.prepare.outputs.profile }}
       runtime_profiles: ${{ needs.prepare.outputs.runtime_profiles }}
       runtime_execution: ${{ format('{{"kind":"bundle","source":".ci/docs-agent/{0}"}}', needs.prepare.outputs.bundle_source) }}
       workload_id: ${{ needs.prepare.outputs.flow_slug }}
@@ -418,7 +417,7 @@ jobs:
       time_budget_ms: ${{ inputs.time_budget_ms }}
       runtime_dependencies: ${{ needs.prepare.outputs.runtime_dependencies }}
       openai_provider_ref: ${{ needs.prepare.outputs.openai_provider_ref }}
-      runtime_components: ${{ needs.prepare.outputs.runtime_components }}
+      component_contracts: ${{ needs.prepare.outputs.component_contracts }}
       context_repositories: ${{ needs.prepare.outputs.context_repositories }}
       verification_commands: ${{ needs.prepare.outputs.verification_commands }}
       drift_checks: ${{ needs.prepare.outputs.drift_checks }}
@@ -441,18 +440,12 @@ jobs:
           "pr_title_template": "${{ needs.prepare.outputs.fallback_pr_title }}",
           "pr_body_template": "## Summary\n- Maintain the configured Docs Agent lane.\n- Keep writes inside `${{ inputs.writable_paths }}`.\n- Reuse the canonical Docs Agent branch `${{ inputs.docs_branch }}`.\n- Include runner-provided verification and drift-check summaries when available.\n\n## Result\n{result_table}\n\n## Checks\n{checks_table}\n\n## Review Artifacts\n{links_table}\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via Data Machine / WP Codebox in GitHub Actions\n- **Model:** OpenAI GPT-5.5\n- **Used for:** Generated maintenance updates from repository source for human review."
         }
-      extra_wp_config_defines: |
-        {
-          "DOCS_AGENT_TARGET_REPO": "${{ github.repository }}",
-          "DOCS_AGENT_WRITABLE_PATHS": "${{ inputs.writable_paths }}"
-        }
       runtime_config: ${{ needs.prepare.outputs.runtime_config }}
-      runtime_mounts: ${{ needs.prepare.outputs.runtime_mounts }}
       success_requires_pr: false
       success_completion_outcomes: '[]'
       allowed_repos: '["${{ github.repository }}"]'
       app_token_repos: ${{ github.repository }}
-      required_abilities: ${{ needs.prepare.outputs.required_abilities }}
+      ability_requirements: ${{ needs.prepare.outputs.ability_requirements }}
       tool_results_key: github_tool_results
       runtime_output_projections: '{"docs_agent_pr_url":"metadata.engine_data.docs_agent.pr.url","runner_workspace_pr_url":"metadata.runner_workspace_publication.url","success_status":"metadata.success_status"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}

@@ -34,15 +34,14 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       runner_recipe_id: ${{ steps.recipe.outputs.runner_recipe_id }}
-      runtime_provider: ${{ steps.recipe.outputs.runtime_provider }}
+      runtime: ${{ steps.recipe.outputs.runtime }}
       runtime_ref: ${{ steps.recipe.outputs.runtime_ref }}
-      runtime_profile: ${{ steps.recipe.outputs.runtime_profile }}
+      profile: ${{ steps.recipe.outputs.profile }}
       runtime_profiles: ${{ steps.recipe.outputs.runtime_profiles }}
       runtime_dependencies: ${{ steps.recipe.outputs.runtime_dependencies }}
       openai_provider_ref: ${{ steps.recipe.outputs.openai_provider_ref }}
-      runtime_components: ${{ steps.recipe.outputs.runtime_components }}
-      runtime_mounts: ${{ steps.recipe.outputs.runtime_mounts }}
-      required_abilities: ${{ steps.recipe.outputs.required_abilities }}
+      component_contracts: ${{ steps.recipe.outputs.component_contracts }}
+      ability_requirements: ${{ steps.recipe.outputs.ability_requirements }}
       runtime_config: ${{ steps.recipe.outputs.runtime_config }}
     steps:
       - name: Checkout docs-agent
@@ -51,7 +50,7 @@ jobs:
       - name: Resolve runner recipe
         id: recipe
         env:
-          DOCS_AGENT_CHECKOUT: .
+          RUNNER_RECIPE_CHECKOUT: .
         run: php ci/resolve-docs-agent-runner-recipe.php
 
   run-docs-agent:
@@ -59,9 +58,9 @@ jobs:
     uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main
     with:
       homeboy_extensions_ref: main
-      runtime_provider: ${{ needs.prepare.outputs.runtime_provider }}
+      runtime: ${{ needs.prepare.outputs.runtime }}
       runtime_ref: ${{ needs.prepare.outputs.runtime_ref }}
-      runtime_profile: ${{ needs.prepare.outputs.runtime_profile }}
+      profile: ${{ needs.prepare.outputs.profile }}
       runtime_profiles: ${{ needs.prepare.outputs.runtime_profiles }}
       runtime_execution: ${{ format('{{"kind":"bundle","source":"{0}"}}', contains(inputs.flow_kind, 'skills') && 'bundles/skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'bundles/technical-docs-agent' || 'bundles/user-docs-agent')) }}
       workload_id: ${{ inputs.flow_kind }}
@@ -91,7 +90,7 @@ jobs:
       model: ${{ inputs.openai_model }}
       runtime_dependencies: ${{ needs.prepare.outputs.runtime_dependencies }}
       openai_provider_ref: ${{ needs.prepare.outputs.openai_provider_ref }}
-      runtime_components: ${{ needs.prepare.outputs.runtime_components }}
+      component_contracts: ${{ needs.prepare.outputs.component_contracts }}
       runner_workspace: |
         {
           "enabled": true,
@@ -101,19 +100,13 @@ jobs:
           "from": "origin/main",
           "bootstrap": false
         }
-      extra_wp_config_defines: |
-        {
-          "DOCS_AGENT_TARGET_REPO": "${{ inputs.target_repo }}",
-          "DOCS_AGENT_WRITABLE_PATHS": "${{ inputs.writable_paths }}"
-        }
       runtime_config: ${{ needs.prepare.outputs.runtime_config }}
-      runtime_mounts: ${{ needs.prepare.outputs.runtime_mounts }}
       success_requires_pr: false
       success_completion_outcomes: '[]'
       app_token_repos: ${{ inputs.target_repo }}
       require_homeboy_app_token: true
       allowed_repos: '["${{ inputs.target_repo }}"]'
-      required_abilities: ${{ needs.prepare.outputs.required_abilities }}
+      ability_requirements: ${{ needs.prepare.outputs.ability_requirements }}
       tool_results_key: github_tool_results
       runtime_output_projections: '{"docs_pr_url":"metadata.engine_data.docs_agent.pr_url"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
