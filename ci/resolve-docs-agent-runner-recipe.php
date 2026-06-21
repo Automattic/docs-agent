@@ -47,7 +47,7 @@ $required_keys = array(
 	'runtime',
 	'runtime_ref',
 	'profile',
-	'capabilities',
+	'runtime_profiles',
 	'runtime_dependencies',
 	'openai_provider_ref',
 	'component_contracts',
@@ -77,14 +77,7 @@ $outputs = array(
 	'runtime'              => (string) $recipe['runtime'],
 	'runtime_ref'          => (string) $recipe['runtime_ref'],
 	'profile'              => (string) $recipe['profile'],
-	'runtime_profiles'     => $encode(
-		array(
-			(string) $recipe['profile'] => array(
-				'id'           => (string) $recipe['profile'],
-				'capabilities' => $recipe['capabilities'],
-			),
-		)
-	),
+	'runtime_profiles'     => $encode( $recipe['runtime_profiles'] ),
 	'runtime_dependencies' => $encode( $recipe['runtime_dependencies'] ),
 	'openai_provider_ref'  => (string) $recipe['openai_provider_ref'],
 	'component_contracts'  => $encode( $recipe['component_contracts'] ),

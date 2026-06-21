@@ -4,11 +4,16 @@
   "runtime": "wp-codebox",
   "runtime_ref": "main",
   "profile": "docs-agent-runner",
-  "capabilities": [
-    "docs-agent.bundle-execution",
-    "docs-agent.workspace-editing",
-    "homeboy.workspace-publication"
-  ],
+  "runtime_profiles": {
+    "docs-agent-runner": {
+      "id": "docs-agent-runner",
+      "capabilities": [
+        "docs-agent.bundle-execution",
+        "docs-agent.workspace-editing",
+        "homeboy.workspace-publication"
+      ]
+    }
+  },
   "runtime_dependencies": [
     "Automattic/agents-api@main",
     "Extra-Chill/data-machine@main",
