@@ -126,6 +126,17 @@ jobs:
       workspace_contract_checks: ${{ steps.config.outputs.workspace_contract_checks }}
       expected_artifacts: ${{ steps.config.outputs.expected_artifacts }}
       artifact_declarations: ${{ steps.config.outputs.artifact_declarations }}
+      runner_recipe_id: ${{ steps.recipe.outputs.runner_recipe_id }}
+      runtime_provider: ${{ steps.recipe.outputs.runtime_provider }}
+      runtime_ref: ${{ steps.recipe.outputs.runtime_ref }}
+      runtime_profile: ${{ steps.recipe.outputs.runtime_profile }}
+      runtime_profiles: ${{ steps.recipe.outputs.runtime_profiles }}
+      runtime_dependencies: ${{ steps.recipe.outputs.runtime_dependencies }}
+      openai_provider_ref: ${{ steps.recipe.outputs.openai_provider_ref }}
+      runtime_components: ${{ steps.recipe.outputs.runtime_components }}
+      runtime_mounts: ${{ steps.recipe.outputs.runtime_mounts }}
+      required_abilities: ${{ steps.recipe.outputs.required_abilities }}
+      runtime_config: ${{ steps.recipe.outputs.runtime_config }}
     steps:
       - name: Resolve Docs Agent settings
         id: config
@@ -353,25 +364,29 @@ jobs:
             printf 'artifact_declarations<<EOF\n%s\nEOF\n' "$artifact_declarations"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Checkout docs-agent recipe
+        uses: actions/checkout@v4
+        with:
+          repository: Automattic/docs-agent
+          ref: ${{ steps.config.outputs.docs_agent_ref }}
+          path: .ci/docs-agent
+
+      - name: Resolve runner recipe
+        id: recipe
+        env:
+          DOCS_AGENT_CHECKOUT: .ci/docs-agent
+        run: php .ci/docs-agent/ci/resolve-docs-agent-runner-recipe.php
+
   docs_agent:
     name: Maintain Docs
     needs: prepare
     uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main
     with:
       homeboy_extensions_ref: main
-      runtime_provider: wp-codebox
-      runtime_ref: main
-      runtime_profile: datamachine-agent-ci
-      runtime_profiles: |
-        {
-          "datamachine-agent-ci": {
-            "id": "datamachine-agent-ci",
-            "runtime_task_ability": "datamachine/run-agent-bundle",
-            "runtime_bundle_ability": "datamachine/run-agent-bundle",
-            "runtime_workflow_ability": "datamachine/execute-workflow",
-            "ability_requirements": ["datamachine/run-agent-bundle"]
-          }
-        }
+      runtime_provider: ${{ needs.prepare.outputs.runtime_provider }}
+      runtime_ref: ${{ needs.prepare.outputs.runtime_ref }}
+      runtime_profile: ${{ needs.prepare.outputs.runtime_profile }}
+      runtime_profiles: ${{ needs.prepare.outputs.runtime_profiles }}
       runtime_execution: ${{ format('{{"kind":"bundle","source":".ci/docs-agent/{0}"}}', needs.prepare.outputs.bundle_source) }}
       workload_id: ${{ needs.prepare.outputs.flow_slug }}
       workload_label: Run ${{ needs.prepare.outputs.agent_slug }} Docs Agent
@@ -401,19 +416,9 @@ jobs:
       max_turns: ${{ inputs.max_turns }}
       step_budget: ${{ inputs.step_budget }}
       time_budget_ms: ${{ inputs.time_budget_ms }}
-      runtime_dependencies: |
-        [
-          "Automattic/agents-api@main",
-          "Extra-Chill/data-machine@main",
-          "Extra-Chill/data-machine-code@main"
-        ]
-      openai_provider_ref: trunk
-      runtime_components: |
-        {
-          "agents_api": "${{ github.workspace }}/.ci/agents-api",
-          "data_machine": "${{ github.workspace }}/.ci/data-machine",
-          "data_machine_code": "${{ github.workspace }}/.ci/data-machine-code"
-        }
+      runtime_dependencies: ${{ needs.prepare.outputs.runtime_dependencies }}
+      openai_provider_ref: ${{ needs.prepare.outputs.openai_provider_ref }}
+      runtime_components: ${{ needs.prepare.outputs.runtime_components }}
       context_repositories: ${{ needs.prepare.outputs.context_repositories }}
       verification_commands: ${{ needs.prepare.outputs.verification_commands }}
       drift_checks: ${{ needs.prepare.outputs.drift_checks }}
@@ -441,30 +446,13 @@ jobs:
           "DOCS_AGENT_TARGET_REPO": "${{ github.repository }}",
           "DOCS_AGENT_WRITABLE_PATHS": "${{ inputs.writable_paths }}"
         }
-      runtime_config: |
-        {
-          "daily_memory_enabled": false,
-          "disable_datamachine_directives": false,
-          "enable_terminal_actions": false,
-          "wp_cli_tool_name": "run_wp_cli",
-          "pipeline_step_patches": [],
-          "flow_step_patches": [],
-          "wp_gym_eval": { "benchmark_mode": false }
-        }
-      runtime_mounts: |
-        [
-          {
-            "type": "file",
-            "source": ".ci/docs-agent/ci/docs-agent-workspace-policy.php",
-            "target": "/wordpress/wp-content/mu-plugins/docs-agent-workspace-policy.php",
-            "mode": "readonly"
-          }
-        ]
+      runtime_config: ${{ needs.prepare.outputs.runtime_config }}
+      runtime_mounts: ${{ needs.prepare.outputs.runtime_mounts }}
       success_requires_pr: false
       success_completion_outcomes: '[]'
       allowed_repos: '["${{ github.repository }}"]'
       app_token_repos: ${{ github.repository }}
-      required_abilities: '["datamachine/import-agent","datamachine/run-flow","datamachine/drain-job"]'
+      required_abilities: ${{ needs.prepare.outputs.required_abilities }}
       tool_results_key: github_tool_results
       runtime_output_projections: '{"docs_agent_pr_url":"metadata.engine_data.docs_agent.pr.url","runner_workspace_pr_url":"metadata.runner_workspace_publication.url","success_status":"metadata.success_status"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}

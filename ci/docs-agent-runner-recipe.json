@@ -1,0 +1,57 @@
+{
+  "id": "docs-agent/datamachine-agent-ci",
+  "description": "Docs Agent runner recipe for the current Homeboy Extensions runtime-agent-full-run contract.",
+  "runtime_provider": "wp-codebox",
+  "runtime_ref": "main",
+  "runtime_profile": "datamachine-agent-ci",
+  "runtime_profiles": {
+    "datamachine-agent-ci": {
+      "id": "datamachine-agent-ci",
+      "runtime_task_ability": "datamachine/run-agent-bundle",
+      "runtime_bundle_ability": "datamachine/run-agent-bundle",
+      "runtime_workflow_ability": "datamachine/execute-workflow",
+      "ability_requirements": [
+        "datamachine/run-agent-bundle"
+      ]
+    }
+  },
+  "runtime_dependencies": [
+    "Automattic/agents-api@main",
+    "Extra-Chill/data-machine@main",
+    "Extra-Chill/data-machine-code@main"
+  ],
+  "openai_provider_ref": "trunk",
+  "runtime_components": {
+    "agents_api": "${github_workspace}/.ci/agents-api",
+    "data_machine": "${github_workspace}/.ci/data-machine",
+    "data_machine_code": "${github_workspace}/.ci/data-machine-code"
+  },
+  "workspace_policy": {
+    "defines": [
+      "DOCS_AGENT_TARGET_REPO",
+      "DOCS_AGENT_WRITABLE_PATHS"
+    ],
+    "mount": {
+      "type": "file",
+      "source": "${docs_agent_checkout}/ci/docs-agent-workspace-policy.php",
+      "target": "/wordpress/wp-content/mu-plugins/docs-agent-workspace-policy.php",
+      "mode": "readonly"
+    }
+  },
+  "required_abilities": [
+    "datamachine/import-agent",
+    "datamachine/run-flow",
+    "datamachine/drain-job"
+  ],
+  "runtime_config": {
+    "daily_memory_enabled": false,
+    "disable_datamachine_directives": false,
+    "enable_terminal_actions": false,
+    "wp_cli_tool_name": "run_wp_cli",
+    "pipeline_step_patches": [],
+    "flow_step_patches": [],
+    "wp_gym_eval": {
+      "benchmark_mode": false
+    }
+  }
+}
