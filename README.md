@@ -95,7 +95,7 @@ Docs Agent declares the review artifacts it expects the runner to materialize as
 
 `maintain-docs.yml` forwards `expected_artifacts` and `artifact_declarations` to the Homeboy Extensions runner, keeps transcript upload and `runtime_output_projections` as first-class review outputs, and exposes the same declaration objects as `declared_artifacts_json`. The reusable runner support landed in [Extra-Chill/homeboy-extensions#1422](https://github.com/Extra-Chill/homeboy-extensions/pull/1422).
 
-The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites use the generic Homeboy full-run workflow with `runtime_provider`, `runtime_ref`, `runtime_execution`, `runtime_dependencies`, `runtime_components`, `runtime_mounts`, and `required_abilities`; this depends on the generic runtime support now available on `Extra-Chill/homeboy-extensions@main`.
+The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites use the generic Homeboy full-run workflow, but the Docs Agent runtime stack is centralized behind the `docs-agent/datamachine-agent-ci` recipe in `ci/docs-agent-runner-recipe.json`. The resolver emits the current Homeboy Extensions compatibility inputs, including `runtime_dependencies`, `runtime_components`, `runtime_mounts`, and `required_abilities`, until `Extra-Chill/homeboy-extensions@main` exposes a first-class recipe input.
 
 ## Pull Request Behavior
 
@@ -158,7 +158,7 @@ For `Automattic/build-with-wordpress`, run skills upkeep as its own scheduled la
 
 - `examples/consumer-workflow.yml`: scheduled consumer workflow using `maintain-docs.yml` for technical docs.
 - `examples/build-with-wordpress-skills-workflow.yml`: scheduled skills upkeep lane for `Automattic/build-with-wordpress`.
-- `examples/homeboy-runner-config.example.json`: lower-level runner config for maintainers debugging the implementation contract.
+- `examples/homeboy-runner-config.example.json`: recipe-oriented runner config for maintainers debugging the implementation contract.
 
 ## Bundles
 

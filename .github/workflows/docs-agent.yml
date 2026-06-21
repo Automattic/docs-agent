@@ -29,23 +29,40 @@ on:
         default: README.md,docs/**
 
 jobs:
+  prepare:
+    name: Prepare Docs Agent Runner Recipe
+    runs-on: ubuntu-latest
+    outputs:
+      runner_recipe_id: ${{ steps.recipe.outputs.runner_recipe_id }}
+      runtime_provider: ${{ steps.recipe.outputs.runtime_provider }}
+      runtime_ref: ${{ steps.recipe.outputs.runtime_ref }}
+      runtime_profile: ${{ steps.recipe.outputs.runtime_profile }}
+      runtime_profiles: ${{ steps.recipe.outputs.runtime_profiles }}
+      runtime_dependencies: ${{ steps.recipe.outputs.runtime_dependencies }}
+      openai_provider_ref: ${{ steps.recipe.outputs.openai_provider_ref }}
+      runtime_components: ${{ steps.recipe.outputs.runtime_components }}
+      runtime_mounts: ${{ steps.recipe.outputs.runtime_mounts }}
+      required_abilities: ${{ steps.recipe.outputs.required_abilities }}
+      runtime_config: ${{ steps.recipe.outputs.runtime_config }}
+    steps:
+      - name: Checkout docs-agent
+        uses: actions/checkout@v4
+
+      - name: Resolve runner recipe
+        id: recipe
+        env:
+          DOCS_AGENT_CHECKOUT: .
+        run: php ci/resolve-docs-agent-runner-recipe.php
+
   run-docs-agent:
+    needs: prepare
     uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main
     with:
       homeboy_extensions_ref: main
-      runtime_provider: wp-codebox
-      runtime_ref: main
-      runtime_profile: datamachine-agent-ci
-      runtime_profiles: |
-        {
-          "datamachine-agent-ci": {
-            "id": "datamachine-agent-ci",
-            "runtime_task_ability": "datamachine/run-agent-bundle",
-            "runtime_bundle_ability": "datamachine/run-agent-bundle",
-            "runtime_workflow_ability": "datamachine/execute-workflow",
-            "ability_requirements": ["datamachine/run-agent-bundle"]
-          }
-        }
+      runtime_provider: ${{ needs.prepare.outputs.runtime_provider }}
+      runtime_ref: ${{ needs.prepare.outputs.runtime_ref }}
+      runtime_profile: ${{ needs.prepare.outputs.runtime_profile }}
+      runtime_profiles: ${{ needs.prepare.outputs.runtime_profiles }}
       runtime_execution: ${{ format('{{"kind":"bundle","source":"{0}"}}', contains(inputs.flow_kind, 'skills') && 'bundles/skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'bundles/technical-docs-agent' || 'bundles/user-docs-agent')) }}
       workload_id: ${{ inputs.flow_kind }}
       workload_label: Run ${{ contains(inputs.flow_kind, 'skills') && 'skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-agent' || 'user-docs-agent') }} Docs Agent
@@ -72,19 +89,9 @@ jobs:
       writable_paths: ${{ inputs.writable_paths }}
       provider: openai
       model: ${{ inputs.openai_model }}
-      runtime_dependencies: |
-        [
-          "Automattic/agents-api@main",
-          "Extra-Chill/data-machine@main",
-          "Extra-Chill/data-machine-code@main"
-        ]
-      openai_provider_ref: trunk
-      runtime_components: |
-        {
-          "agents_api": "${{ github.workspace }}/.ci/agents-api",
-          "data_machine": "${{ github.workspace }}/.ci/data-machine",
-          "data_machine_code": "${{ github.workspace }}/.ci/data-machine-code"
-        }
+      runtime_dependencies: ${{ needs.prepare.outputs.runtime_dependencies }}
+      openai_provider_ref: ${{ needs.prepare.outputs.openai_provider_ref }}
+      runtime_components: ${{ needs.prepare.outputs.runtime_components }}
       runner_workspace: |
         {
           "enabled": true,
@@ -99,31 +106,14 @@ jobs:
           "DOCS_AGENT_TARGET_REPO": "${{ inputs.target_repo }}",
           "DOCS_AGENT_WRITABLE_PATHS": "${{ inputs.writable_paths }}"
         }
-      runtime_config: |
-        {
-          "daily_memory_enabled": false,
-          "disable_datamachine_directives": false,
-          "enable_terminal_actions": false,
-          "wp_cli_tool_name": "run_wp_cli",
-          "pipeline_step_patches": [],
-          "flow_step_patches": [],
-          "wp_gym_eval": { "benchmark_mode": false }
-        }
-      runtime_mounts: |
-        [
-          {
-            "type": "file",
-            "source": "ci/docs-agent-workspace-policy.php",
-            "target": "/wordpress/wp-content/mu-plugins/docs-agent-workspace-policy.php",
-            "mode": "readonly"
-          }
-        ]
+      runtime_config: ${{ needs.prepare.outputs.runtime_config }}
+      runtime_mounts: ${{ needs.prepare.outputs.runtime_mounts }}
       success_requires_pr: false
       success_completion_outcomes: '[]'
       app_token_repos: ${{ inputs.target_repo }}
       require_homeboy_app_token: true
       allowed_repos: '["${{ inputs.target_repo }}"]'
-      required_abilities: '["datamachine/import-agent","datamachine/run-flow","datamachine/drain-job"]'
+      required_abilities: ${{ needs.prepare.outputs.required_abilities }}
       tool_results_key: github_tool_results
       runtime_output_projections: '{"docs_pr_url":"metadata.engine_data.docs_agent.pr_url"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}

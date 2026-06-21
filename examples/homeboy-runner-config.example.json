@@ -3,26 +3,23 @@
   "component_path": "consumer-repository-checkout",
   "workload_id": "technical-docs-generation",
   "workload_label": "Run Docs Agent",
-  "runtime_dependencies": [
-    "Automattic/agents-api@main",
-    "Extra-Chill/data-machine@main",
-    "Extra-Chill/data-machine-code@main",
-    "WordPress/ai-provider-for-openai@trunk"
-  ],
-  "runtime_components": {
-    "agents_api": "/workspace/components/agents-api",
-    "data_machine": "/workspace/components/data-machine",
-    "data_machine_code": "/workspace/components/data-machine-code"
-  },
-  "runtime_wordpress_version": "7.0",
-  "runtime_profile": "datamachine-agent-ci",
-  "runtime_profiles": {
-    "datamachine-agent-ci": {
-      "id": "datamachine-agent-ci",
-      "runtime_task_ability": "datamachine/run-agent-bundle",
-      "runtime_bundle_ability": "datamachine/run-agent-bundle",
-      "runtime_workflow_ability": "datamachine/execute-workflow",
-      "ability_requirements": ["datamachine/run-agent-bundle"]
+  "runner_recipe": {
+    "id": "docs-agent/datamachine-agent-ci",
+    "source": ".ci/docs-agent/ci/docs-agent-runner-recipe.json",
+    "resolved_by": ".ci/docs-agent/ci/resolve-docs-agent-runner-recipe.php",
+    "compatibility_outputs": {
+      "homeboy_extensions_workflow": "Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main",
+      "fields": [
+        "runtime_provider",
+        "runtime_ref",
+        "runtime_profile",
+        "runtime_profiles",
+        "runtime_dependencies",
+        "runtime_components",
+        "runtime_mounts",
+        "required_abilities",
+        "runtime_config"
+      ]
     }
   },
   "runtime_execution": {
@@ -112,11 +109,6 @@
   "time_budget_ms": 600000,
   "transcript_dir": "docs-agent-transcript-artifacts",
   "replay_bundle_dir": "docs-agent-replay-artifacts",
-  "required_abilities": [
-    "datamachine/import-agent",
-    "datamachine/run-flow",
-    "datamachine/drain-job"
-  ],
   "runtime_output_projections": {
     "docs_agent_pr_url": "metadata.engine_data.docs_agent.pr.url",
     "runner_workspace_pr_url": "metadata.runner_workspace_publication.url",

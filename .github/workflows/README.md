@@ -2,7 +2,7 @@
 
 `maintain-docs.yml` is the consumer-facing reusable workflow for scheduled upkeep. Consumer repositories pass product-level inputs such as `audience`, `base_ref`, `docs_branch`, `writable_paths`, `context_repositories`, `verification_commands`, `drift_checks`, `prompt`, `model`, and `run_agent`.
 
-`docs-agent.yml` is a maintainer/debug workflow for central dispatch against an arbitrary `target_repo`. It exposes lower-level runner details and should not be the starting point for consumer repositories.
+`docs-agent.yml` is a maintainer/debug workflow for central dispatch against an arbitrary `target_repo`. It uses the same Docs Agent runner recipe as `maintain-docs.yml` and should not be the starting point for consumer repositories.
 
 The consumer workflow supports separate lanes for technical docs, user docs, and live skills maintenance. Use `audience: skills` with skills/package writable paths instead of broad docs paths.
 
@@ -14,10 +14,10 @@ The reusable workflow declares the expected typed review artifacts for Docs Agen
 
 The target repository needs a token path that can inspect source, write the configured paths, push the canonical branch, and open or update the pull request.
 
-## Agent Runtime Inputs
+## Docs Agent Runner Recipe
 
-Docs Agent workflow call sites use the generic Homeboy full-run workflow: `Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main`. The call surface is provider-neutral where possible: `runtime_provider`, `runtime_ref`, `runtime_profile`, `runtime_profiles`, `runtime_execution`, `runtime_dependencies`, `runtime_components`, `runtime_mounts`, and `required_abilities`. This migration is tracked in Automattic/docs-agent#100 and depends on the generic full-run support available on `Extra-Chill/homeboy-extensions@main`.
+Docs Agent workflow call sites use the generic Homeboy full-run workflow: `Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main`. Docs Agent keeps its runtime stack behind the committed `docs-agent/datamachine-agent-ci` recipe in `ci/docs-agent-runner-recipe.json`. Workflows run `ci/resolve-docs-agent-runner-recipe.php` and pass the resolved compatibility fields to Homeboy Extensions: `runtime_provider`, `runtime_ref`, `runtime_profile`, `runtime_profiles`, `runtime_dependencies`, `runtime_components`, `runtime_mounts`, `required_abilities`, and `runtime_config`. This migration is tracked in Automattic/docs-agent#100 and depends on the generic full-run support available on `Extra-Chill/homeboy-extensions@main`.
 
-Data Machine remains present only as the selected runtime profile/dependency stack for the current Docs Agent bundles, which still execute through `datamachine/run-agent-bundle`. Bundle selection is expressed through `runtime_execution` rather than legacy `bundle_path` inputs, and extra ability checks use `required_abilities`.
+Data Machine remains present only inside the selected recipe for the current Docs Agent bundles, which still execute through `datamachine/run-agent-bundle`. Bundle selection is expressed through `runtime_execution` rather than legacy `bundle_path` inputs. The workspace policy mu-plugin mount and required ability checks are centralized in the recipe until Homeboy Extensions exposes a first-class recipe input.
 
 When updating the reusable workflow ref, advance `uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@...` and `homeboy_extensions_ref` together, then run `php tests/validate-docs-agent-bundle.php` so workflow routing and runner config stay aligned.

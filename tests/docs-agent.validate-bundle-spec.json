@@ -117,7 +117,6 @@
   "example_runner_config": "../examples/homeboy-runner-config.example.json",
   "example_assertions": {
     "success_requires_pr": false,
-    "runtime_profile": "datamachine-agent-ci",
     "provider": "openai"
   }
 }
