@@ -170,14 +170,13 @@ foreach ( array( 'context_repositories:', 'verification_commands:', 'drift_check
 }
 $assert( str_contains( $maintain_docs_workflow, 'WORKFLOW_REF: ${{ github.workflow_ref }}' ), 'maintain-docs.yml must expose the reusable workflow ref to provenance resolution.' );
 $assert( str_contains( $maintain_docs_workflow, 'docs_agent_ref="${workflow_ref##*@}"' ), 'maintain-docs.yml must default docs_agent_ref from the pinned reusable workflow ref.' );
-$assert( str_contains( $maintain_docs_workflow, 'schema: "wp-codebox/docs-agent-runner-recipe/v1"' ), 'maintain-docs.yml must build the public Docs Agent runner recipe schema.' );
-$assert( str_contains( $maintain_docs_workflow, 'contextRepositories: $contextRepositories' ), 'maintain-docs.yml must pass context repositories through the public recipe.' );
-$assert( str_contains( $maintain_docs_workflow, 'verificationCommands: $verificationCommands' ), 'maintain-docs.yml must pass verification commands through the public recipe.' );
-$assert( str_contains( $maintain_docs_workflow, 'driftChecks: $driftChecks' ), 'maintain-docs.yml must pass drift checks through the public recipe.' );
-$assert( str_contains( $maintain_docs_workflow, 'workspaceContractChecks: $workspaceContractChecks' ), 'maintain-docs.yml must pass workspace contract checks through the public recipe.' );
-$assert( str_contains( $maintain_docs_workflow, 'maxTurns: $maxTurns' ), 'maintain-docs.yml must pass max_turns through the public recipe.' );
-$assert( str_contains( $maintain_docs_workflow, 'stepBudget: $stepBudget' ), 'maintain-docs.yml must pass step_budget through the public recipe.' );
-$assert( str_contains( $maintain_docs_workflow, 'timeBudgetMs: $timeBudgetMs' ), 'maintain-docs.yml must pass time_budget_ms through the public recipe.' );
+$assert( str_contains( $maintain_docs_workflow, 'context_repositories: ${{ needs.prepare.outputs.context_repositories }}' ), 'maintain-docs.yml must pass context repositories through the generic task workflow.' );
+$assert( str_contains( $maintain_docs_workflow, 'verification_commands: ${{ needs.prepare.outputs.verification_commands }}' ), 'maintain-docs.yml must pass verification commands through the generic task workflow.' );
+$assert( str_contains( $maintain_docs_workflow, 'drift_checks: ${{ needs.prepare.outputs.drift_checks }}' ), 'maintain-docs.yml must pass drift checks through the generic task workflow.' );
+$assert( str_contains( $maintain_docs_workflow, 'workspace_contract_checks: ${{ needs.prepare.outputs.workspace_contract_checks }}' ), 'maintain-docs.yml must pass workspace contract checks through the generic task workflow.' );
+$assert( str_contains( $maintain_docs_workflow, 'max_turns: ${{ inputs.max_turns }}' ), 'maintain-docs.yml must pass max_turns through the generic task workflow.' );
+$assert( str_contains( $maintain_docs_workflow, 'step_budget: ${{ inputs.step_budget }}' ), 'maintain-docs.yml must pass step_budget through the generic task workflow.' );
+$assert( str_contains( $maintain_docs_workflow, 'time_budget_ms: ${{ inputs.time_budget_ms }}' ), 'maintain-docs.yml must pass time_budget_ms through the generic task workflow.' );
 
 $assert( preg_match( '/max_turns:\s*\n\s+description:[^\n]*\n\s+type:\s*number\n\s+default:\s*(\d+)/', $maintain_docs_workflow, $max_turns_match ) === 1, 'maintain-docs.yml must declare a numeric max_turns default.' );
 $assert( (int) $max_turns_match[1] >= 48, 'maintain-docs.yml max_turns default must be at least 48 for multi-file bootstrap contracts.' );
@@ -185,21 +184,22 @@ $assert( preg_match( '/step_budget:\s*\n\s+description:[^\n]*\n\s+type:\s*number
 $assert( (int) $step_budget_match[1] >= 64, 'maintain-docs.yml step_budget default must be at least 64 for multi-file bootstrap contracts.' );
 $assert( preg_match( '/time_budget_ms:\s*\n\s+description:[^\n]*\n\s+type:\s*number\n\s+default:\s*(\d+)/', $maintain_docs_workflow, $time_budget_match ) === 1, 'maintain-docs.yml must declare a numeric time_budget_ms default.' );
 $assert( (int) $time_budget_match[1] >= 1200000, 'maintain-docs.yml time_budget_ms default must be at least 1200000 for multi-file bootstrap contracts.' );
-$assert( str_contains( $maintain_docs_workflow, 'allowedRepositories: [$targetRepository]' ), 'maintain-docs.yml must keep the target repository as the only Docs Agent writable repository boundary.' );
+$assert( str_contains( $maintain_docs_workflow, 'allowed_repos: \'["${{ github.repository }}"]\'' ), 'maintain-docs.yml must keep the target repository as the only Docs Agent writable repository boundary.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'Automattic/studio' ), 'maintain-docs.yml must not hardcode downstream Studio context.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'WordPress/agent-skills' ), 'maintain-docs.yml must not hardcode downstream skills context.' );
 $assert( str_contains( $maintain_docs_workflow, 'declared_artifacts_json:' ), 'maintain-docs.yml must expose typed artifact declarations as a reusable workflow output.' );
 $assert( str_contains( $maintain_docs_workflow, 'expected_artifacts<<EOF' ), 'maintain-docs.yml must prepare typed artifact declarations without caller-specific projections.' );
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 'maintain-docs.yml must prepare typed artifact declarations without caller-specific projections.' );
-$assert( str_contains( $maintain_docs_workflow, 'recipe_json: ${{ needs.prepare.outputs.recipe_json }}' ), 'maintain-docs.yml must pass recipe_json to the public Codebox runner.' );
-$assert( str_contains( $maintain_docs_workflow, 'expected: $expectedArtifacts' ), 'maintain-docs.yml must pass expected_artifacts through the public recipe.' );
-$assert( str_contains( $maintain_docs_workflow, 'declarations: $artifactDeclarations' ), 'maintain-docs.yml must pass artifact_declarations through the public recipe.' );
+$assert( str_contains( $maintain_docs_workflow, 'runner_recipe: ${{ needs.prepare.outputs.runner_recipe }}' ), 'maintain-docs.yml must pass the Docs Agent runner recipe descriptor to the generic task workflow.' );
+$assert( str_contains( $maintain_docs_workflow, 'agent_bundle:' ), 'maintain-docs.yml must pass the selected Docs Agent bundle to the generic task workflow.' );
+$assert( str_contains( $maintain_docs_workflow, 'expected_artifacts: ${{ needs.prepare.outputs.expected_artifacts }}' ), 'maintain-docs.yml must pass expected_artifacts through the generic task workflow.' );
+$assert( str_contains( $maintain_docs_workflow, 'artifact_declarations: ${{ needs.prepare.outputs.artifact_declarations }}' ), 'maintain-docs.yml must pass artifact_declarations through the generic task workflow.' );
 
 $transitional_homeboy_extensions_workflow = 'uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main';
-$public_codebox_workflow = 'uses: Automattic/wp-codebox/.github/workflows/docs-agent-runner.yml@main';
-$legacy_public_codebox_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@main';
+$public_codebox_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@main';
+$forbidden_docs_agent_codebox_workflow = 'uses: Automattic/wp-codebox/.github/workflows/docs-agent-runner.yml@main';
 $assert( ! str_contains( $maintain_docs_workflow, $transitional_homeboy_extensions_workflow ), 'maintain-docs.yml must not call Homeboy Extensions directly.' );
-$assert( ! str_contains( $maintain_docs_workflow, $legacy_public_codebox_workflow ), 'maintain-docs.yml must not call the legacy public run-agent-task workflow.' );
+$assert( ! str_contains( $maintain_docs_workflow, $forbidden_docs_agent_codebox_workflow ), 'maintain-docs.yml must not call a Codebox-owned Docs Agent wrapper.' );
 $assert( str_contains( $maintain_docs_workflow, $public_codebox_workflow ), 'maintain-docs.yml must call the public Codebox reusable workflow.' );
 
 $workflow_internal_fragments = array_merge( $blocked_runtime_fragments, array( 'homeboy_extensions_ref:', 'runtime_ref:', 'runtime_ref }}', 'runtime_provider:', 'runtime_provider }}', 'runtime_profile:', 'runtime_profile }}', 'runtime_profiles:', 'runtime_profiles }}', 'runtime_execution:', 'runtime_execution }}', 'runtime_config:', 'runtime_config }}', 'component_contracts:', 'component_contracts }}', 'ability_requirements:', 'ability_requirements }}', 'runtime_components:', 'runtime_components }}', 'runtime_mounts:', 'runtime_mounts }}', 'required_abilities:', 'required_abilities }}', 'extra_wp_config_defines:' ) );
@@ -207,16 +207,15 @@ foreach ( $workflow_internal_fragments as $internal_fragment ) {
 	$assert( ! str_contains( $maintain_docs_workflow, $internal_fragment ), "maintain-docs.yml must not expose runtime internals: {$internal_fragment}" );
 }
 
-foreach ( array( 'recipe_json: ${{ needs.prepare.outputs.recipe_json }}', 'docsAgent:', 'validationDependencies:', 'outputMappings:' ) as $public_codebox_input ) {
+foreach ( array( 'runner_recipe: ${{ needs.prepare.outputs.runner_recipe }}', 'agent_bundle:', 'validation_dependencies:', 'output_projections:' ) as $public_codebox_input ) {
 	$assert( str_contains( $maintain_docs_workflow, $public_codebox_input ), "maintain-docs.yml must use {$public_codebox_input}." );
 }
 $assert( ! str_contains( $maintain_docs_workflow, 'runtime_mounts:' ), 'maintain-docs.yml must not pass sandbox policy mounts.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'extra_wp_config_defines:' ), 'maintain-docs.yml must not pass sandbox policy defines.' );
-$assert( str_contains( $maintain_docs_workflow, 'writablePaths: $writablePaths' ), 'maintain-docs.yml must declare writable paths through the public recipe.' );
-$assert( str_contains( $maintain_docs_workflow, 'replayBundleName:' ), 'maintain-docs.yml must declare replay bundle artifacts through the public recipe.' );
+$assert( str_contains( $maintain_docs_workflow, 'writable_paths: ${{ inputs.writable_paths }}' ), 'maintain-docs.yml must declare writable paths through the generic task workflow.' );
+$assert( str_contains( $maintain_docs_workflow, 'replay_bundle_artifact_name:' ), 'maintain-docs.yml must declare replay bundle artifacts through the generic task workflow.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'datamachine-agent-ci.yml' ), 'maintain-docs.yml must not use the legacy Data Machine adapter workflow.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'runner_recipe:' ), 'maintain-docs.yml must use recipe_json instead of runner_recipe.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'agent_bundle:' ), 'maintain-docs.yml must use recipe docsAgent fields instead of agent_bundle.' );
+$assert( ! str_contains( $maintain_docs_workflow, 'recipe_json:' ), 'maintain-docs.yml must not depend on a Codebox-owned Docs Agent wrapper.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'bundle_path: ' ), 'maintain-docs.yml must use agent_bundle instead of bundle_path.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'bundle_repo:' ), 'maintain-docs.yml must use validation_dependencies instead of bundle_repo.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'bundle_ref:' ), 'maintain-docs.yml must use validation_dependencies instead of bundle_ref.' );
@@ -230,12 +229,12 @@ $assert( ! str_contains( $maintain_docs_workflow, 'extra_wp_codebox_mounts:' ), 
 $assert( ! str_contains( $maintain_docs_workflow, 'agents_api_ref:' ), 'maintain-docs.yml must use the public Codebox/Homeboy runner contract instead of agents_api_ref.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'data_machine_ref:' ), 'maintain-docs.yml must use the public Codebox/Homeboy runner contract instead of data_machine_ref.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'data_machine_code_ref:' ), 'maintain-docs.yml must use the public Codebox/Homeboy runner contract instead of data_machine_code_ref.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'output_projections:' ), 'maintain-docs.yml must use recipe outputMappings instead of output_projections.' );
+$assert( str_contains( $maintain_docs_workflow, 'output_projections:' ), 'maintain-docs.yml must pass output projections to the generic task workflow.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'engine_data_outputs:' ), 'maintain-docs.yml must use recipe outputMappings instead of engine_data_outputs.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'runtime_output_projections:' ), 'maintain-docs.yml must use recipe outputMappings instead of runtime_output_projections.' );
 
 $workflow_readme = (string) file_get_contents( $root . '/.github/workflows/README.md' );
-foreach ( array( 'Docs Agent Runner Recipe', 'Automattic/docs-agent#100', 'public Codebox reusable workflow', 'Automattic/wp-codebox/.github/workflows/docs-agent-runner.yml@main', 'wp-codebox/docs-agent-runner-recipe/v1', 'recipe_json', 'docsAgent' ) as $migration_note_text ) {
+foreach ( array( 'Docs Agent Runner Recipe', 'Automattic/docs-agent#100', 'public Codebox reusable workflow', 'Automattic/wp-codebox/.github/workflows/run-agent-task.yml@main', 'Docs Agent owns the Docs Agent-specific bundle' ) as $migration_note_text ) {
 	$assert( str_contains( $workflow_readme, $migration_note_text ), "Workflow README missing agent runtime note: {$migration_note_text}" );
 }
 $assert( str_contains( $workflow_readme, 'blocks direct Homeboy Extensions workflow calls' ), 'Workflow README must document blocked Homeboy Extensions calls.' );
@@ -256,25 +255,24 @@ foreach ( array( 'extra-chill/homeboy-extensions/.github/workflows/runtime-agent
 }
 
 $docs_agent_workflow = (string) file_get_contents( $root . '/.github/workflows/docs-agent.yml' );
-foreach ( array( 'recipe_json:', 'wp-codebox/docs-agent-runner-recipe/v1', 'outputMappings:', 'transcriptName:', 'expected:', 'declarations:' ) as $required_central_workflow_text ) {
+foreach ( array( 'runner_recipe:', 'agent_bundle:', 'output_projections:', 'transcript_artifact_name:', 'expected_artifacts:', 'artifact_declarations:' ) as $required_central_workflow_text ) {
 	$assert( str_contains( $docs_agent_workflow, $required_central_workflow_text ), "docs-agent.yml missing current workflow output: {$required_central_workflow_text}" );
 }
 $assert( ! str_contains( $docs_agent_workflow, $transitional_homeboy_extensions_workflow ), 'docs-agent.yml must not call Homeboy Extensions directly.' );
-$assert( ! str_contains( $docs_agent_workflow, $legacy_public_codebox_workflow ), 'docs-agent.yml must not call the legacy public run-agent-task workflow.' );
+$assert( ! str_contains( $docs_agent_workflow, $forbidden_docs_agent_codebox_workflow ), 'docs-agent.yml must not call a Codebox-owned Docs Agent wrapper.' );
 $assert( str_contains( $docs_agent_workflow, $public_codebox_workflow ), 'docs-agent.yml must call the public Codebox reusable workflow.' );
-foreach ( array( 'recipe_json: ${{ needs.prepare.outputs.recipe_json }}', 'docsAgent:' ) as $public_codebox_input ) {
+foreach ( array( 'runner_recipe: ${{ needs.prepare.outputs.runner_recipe }}', 'agent_bundle:' ) as $public_codebox_input ) {
 	$assert( str_contains( $docs_agent_workflow, $public_codebox_input ), "docs-agent.yml must use {$public_codebox_input}." );
 }
 $assert( ! str_contains( $docs_agent_workflow, 'runtime_mounts:' ), 'docs-agent.yml must not pass sandbox policy mounts.' );
 $assert( ! str_contains( $docs_agent_workflow, 'extra_wp_config_defines:' ), 'docs-agent.yml must not pass sandbox policy defines.' );
-$assert( str_contains( $docs_agent_workflow, 'writablePaths: $writablePaths' ), 'docs-agent.yml must declare writable paths through the public recipe.' );
-$assert( str_contains( $docs_agent_workflow, 'replayBundleName:' ), 'docs-agent.yml must declare replay bundle artifacts through the public recipe.' );
+$assert( str_contains( $docs_agent_workflow, 'writable_paths:' ), 'docs-agent.yml must declare writable paths through the generic task workflow.' );
+$assert( str_contains( $docs_agent_workflow, 'replay_bundle_artifact_name:' ), 'docs-agent.yml must declare replay bundle artifacts through the generic task workflow.' );
 foreach ( $workflow_internal_fragments as $internal_fragment ) {
 	$assert( ! str_contains( $docs_agent_workflow, $internal_fragment ), "docs-agent.yml must not expose runtime internals: {$internal_fragment}" );
 }
 $assert( ! str_contains( $docs_agent_workflow, 'datamachine-agent-ci.yml' ), 'docs-agent.yml must not use the legacy Data Machine adapter workflow.' );
-$assert( ! str_contains( $docs_agent_workflow, 'runner_recipe:' ), 'docs-agent.yml must use recipe_json instead of runner_recipe.' );
-$assert( ! str_contains( $docs_agent_workflow, 'agent_bundle:' ), 'docs-agent.yml must use recipe docsAgent fields instead of agent_bundle.' );
+$assert( ! str_contains( $docs_agent_workflow, 'recipe_json:' ), 'docs-agent.yml must not depend on a Codebox-owned Docs Agent wrapper.' );
 $assert( ! str_contains( $docs_agent_workflow, 'bundle_path: ' ), 'docs-agent.yml must use agent_bundle instead of bundle_path.' );
 $assert( ! str_contains( $docs_agent_workflow, 'extra_required_abilities:' ), 'docs-agent.yml must not expose legacy required ability inputs.' );
 $assert( ! str_contains( $docs_agent_workflow, 'required_abilities:' ), 'docs-agent.yml must not expose direct required ability inputs.' );

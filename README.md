@@ -95,7 +95,7 @@ Docs Agent declares the review artifacts it expects the runner to materialize as
 
 `maintain-docs.yml` writes `expected_artifacts` and `artifact_declarations` into the public Codebox recipe, keeps output mappings as first-class review outputs, and exposes the same declaration objects as `declared_artifacts_json`.
 
-The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites target the public Codebox workflow contract at `Automattic/wp-codebox/.github/workflows/docs-agent-runner.yml@main`. The workflow accepts `wp-codebox/docs-agent-runner-recipe/v1` through `recipe_path` or `recipe_json`; publication remains runner-owned while agents only edit the provided workspace.
+The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites target the public Codebox task contract at `Automattic/wp-codebox/.github/workflows/run-agent-task.yml@main`. Docs Agent owns the Docs Agent-specific bundle, lane, artifact, prompt, and workspace mapping before calling that generic task workflow; publication remains runner-owned while agents only edit the provided workspace.
 
 The public Codebox boundary owns runtime substrate checkout resolution. Docs Agent workflows pass product-level recipe fields for `docsAgent`, `runner.workspace`, `runner.writablePaths`, artifacts, verification, drift checks, and review output mappings.
 

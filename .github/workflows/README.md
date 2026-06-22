@@ -16,7 +16,7 @@ The target repository needs a token path that can inspect source, write the conf
 
 ## Docs Agent Runner Recipe
 
-Docs Agent workflow call sites use the public Codebox reusable workflow at `Automattic/wp-codebox/.github/workflows/docs-agent-runner.yml@main`. The workflow accepts a `wp-codebox/docs-agent-runner-recipe/v1` recipe through `recipe_path` or `recipe_json` while consumers depend on Docs Agent inputs and review artifacts, not Homeboy Extensions internals. This migration is tracked in Automattic/docs-agent#100.
+Docs Agent workflow call sites use the public Codebox reusable workflow at `Automattic/wp-codebox/.github/workflows/run-agent-task.yml@main`. Docs Agent owns the Docs Agent-specific bundle, lane, artifact, prompt, and workspace mapping before calling that generic task workflow. Consumers depend on Docs Agent inputs and review artifacts, not Homeboy Extensions internals. This migration is tracked in Automattic/docs-agent#100.
 
 The public Codebox workflow must provide a recipe-first boundary for Docs Agent bundle selection, workspace publication, artifact declarations, verification, drift checks, and output mappings. Runtime substrate checkout resolution is intentionally outside the Docs Agent-facing recipe, and validation blocks direct Homeboy Extensions workflow calls, runtime ability names, component paths, mount directives, and define directives from consumer examples.
 

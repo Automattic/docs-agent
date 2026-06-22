@@ -126,7 +126,7 @@ jobs:
       workspace_contract_checks: ${{ steps.config.outputs.workspace_contract_checks }}
       expected_artifacts: ${{ steps.config.outputs.expected_artifacts }}
       artifact_declarations: ${{ steps.config.outputs.artifact_declarations }}
-      recipe_json: ${{ steps.config.outputs.recipe_json }}
+      runner_recipe: ${{ steps.config.outputs.runner_recipe }}
     steps:
       - name: Resolve Docs Agent settings
         id: config
@@ -356,96 +356,6 @@ jobs:
             "$INPUT_BASE_REF" \
             "$INPUT_DOCS_BRANCH" \
             "$INPUT_WRITABLE_PATHS")"
-          recipe_json="$(jq -cn \
-            --arg targetRepository "$GITHUB_REPOSITORY_NAME" \
-            --arg prompt "$prompt" \
-            --arg docsAgentRef "$docs_agent_ref" \
-            --arg bundlePath "$bundle_path" \
-            --arg bundlePathInRepo "$bundle_path" \
-            --arg agentSlug "$agent_slug" \
-            --arg pipelineSlug "$pipeline_slug" \
-            --arg flowSlug "$flow_slug" \
-            --arg writablePaths "$INPUT_WRITABLE_PATHS" \
-            --argjson contextRepositories "$INPUT_CONTEXT_REPOSITORIES" \
-            --argjson verificationCommands "$INPUT_VERIFICATION_COMMANDS" \
-            --argjson driftChecks "$INPUT_DRIFT_CHECKS" \
-            --argjson workspaceContractChecks "$workspace_contract_checks" \
-            --arg repo "$GITHUB_REPOSITORY_NAME" \
-            --arg cloneUrl "https://github.com/$GITHUB_REPOSITORY_NAME.git" \
-            --arg branch "$INPUT_DOCS_BRANCH" \
-            --arg from "origin/$INPUT_BASE_REF" \
-            --argjson expectedArtifacts "$expected_artifacts" \
-            --argjson artifactDeclarations "$artifact_declarations" \
-            --arg prTitleTemplate "$fallback_pr_title" \
-            --arg transcriptName "docs-agent-transcript-${GITHUB_RUN_ID_VALUE}" \
-            --arg replayBundleName "docs-agent-replay-${GITHUB_RUN_ID_VALUE}" \
-            --argjson maxTurns "$INPUT_MAX_TURNS" \
-            --argjson stepBudget "$INPUT_STEP_BUDGET" \
-            --argjson timeBudgetMs "$INPUT_TIME_BUDGET_MS" \
-            '{
-              schema: "wp-codebox/docs-agent-runner-recipe/v1",
-              targetRepository: $targetRepository,
-              prompt: $prompt,
-              docsAgent: {
-                repository: "https://github.com/Automattic/docs-agent.git",
-                ref: $docsAgentRef,
-                bundlePath: $bundlePath,
-                bundlePathInRepo: $bundlePathInRepo,
-                agentSlug: $agentSlug,
-                pipelineSlug: $pipelineSlug,
-                flowSlug: $flowSlug
-              },
-              runner: {
-                validationDependencies: ("Automattic/docs-agent@" + $docsAgentRef),
-                contextRepositories: $contextRepositories,
-                verificationCommands: $verificationCommands,
-                driftChecks: $driftChecks,
-                writablePaths: $writablePaths,
-                workspaceContractChecks: $workspaceContractChecks,
-                workspace: {
-                  enabled: true,
-                  repo: $repo,
-                  clone_url: $cloneUrl,
-                  branch: $branch,
-                  from: $from,
-                  bootstrap: false,
-                  allow_stale: true,
-                  rebase_base: true
-                }
-              },
-              policy: {
-                successRequiresPr: false,
-                successCompletionOutcomes: [],
-                appTokenRepositories: $targetRepository,
-                requireAppToken: true,
-                allowedRepositories: [$targetRepository]
-              },
-              runtime: {
-                maxTurns: $maxTurns,
-                stepBudget: $stepBudget,
-                timeBudgetMs: $timeBudgetMs
-              },
-              artifacts: {
-                expected: $expectedArtifacts,
-                declarations: $artifactDeclarations,
-                exportConfig: {
-                  pr_title_template: $prTitleTemplate,
-                  pr_body_template: "## Summary\n- Maintain the configured Docs Agent lane.\n- Keep writes inside the configured writable paths.\n- Reuse the canonical Docs Agent branch.\n- Include runner-provided verification and drift-check summaries when available.\n\n## Result\n{result_table}\n\n## Checks\n{checks_table}\n\n## Review Artifacts\n{links_table}\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via WP Codebox in GitHub Actions\n- **Model:** OpenAI GPT-5.5\n- **Used for:** Generated maintenance updates from repository source for human review."
-                },
-                transcriptName: $transcriptName,
-                replayBundleName: $replayBundleName
-              },
-              engine: {
-                key: "docs_agent",
-                toolResultsKey: "github_tool_results",
-                outputMappings: {
-                  docs_agent_pr_url: "metadata.engine_data.docs_agent.pr.url",
-                  runner_workspace_pr_url: "metadata.runner_workspace_publication.url",
-                  success_status: "metadata.success_status"
-                }
-              }
-            }')"
-
           {
             printf 'bundle_source=%s\n' "$bundle_path"
             printf 'agent_slug=%s\n' "$agent_slug"
@@ -464,18 +374,78 @@ jobs:
             printf 'workspace_contract_checks<<EOF\n%s\nEOF\n' "$workspace_contract_checks"
             printf 'expected_artifacts<<EOF\n%s\nEOF\n' "$expected_artifacts"
             printf 'artifact_declarations<<EOF\n%s\nEOF\n' "$artifact_declarations"
-            printf 'recipe_json<<EOF\n%s\nEOF\n' "$recipe_json"
+            printf 'runner_recipe=%s@%s:%s\n' 'Automattic/docs-agent' "$docs_agent_ref" 'ci/docs-agent-runner-recipe.json'
           } >> "$GITHUB_OUTPUT"
 
   docs_agent:
     name: Maintain Docs
     needs: prepare
-    uses: Automattic/wp-codebox/.github/workflows/docs-agent-runner.yml@main
+    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@main
     with:
-      recipe_json: ${{ needs.prepare.outputs.recipe_json }}
+      runner_recipe: ${{ needs.prepare.outputs.runner_recipe }}
+      agent_bundle: ${{ format('.ci/docs-agent/{0}', needs.prepare.outputs.bundle_source) }}
+      workload_id: ${{ needs.prepare.outputs.flow_slug }}
+      workload_label: Run ${{ needs.prepare.outputs.agent_slug }} Docs Agent
+      component_id: docs-agent-ci-driver
+      target_repo: ${{ github.repository }}
+      prompt: |
+        ${{ needs.prepare.outputs.default_prompt }}
+
+        ${{ inputs.prompt }}
+
+        ${{ needs.prepare.outputs.bootstrap_contract_prompt }}
+
+        Target repository: ${{ github.repository }}
+        Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        Docs Agent lane: ${{ inputs.audience }}
+        Docs Agent run kind: ${{ needs.prepare.outputs.run_kind }}
+        Base ref: ${{ inputs.base_ref }}
+        Canonical branch: ${{ inputs.docs_branch }}
+        Writable paths: ${{ inputs.writable_paths }}
+
+        If context repository aliases are available, treat them as read-only source evidence for the target workspace. Refer to aliases by name in findings and summaries instead of describing checkout mechanics.
+
+        For the selected lane, write files in the provided workspace. If the selected surface is already aligned, finish cleanly without changing files.
       run_agent: ${{ inputs.run_agent }}
       provider: openai
       model: ${{ inputs.model }}
+      max_turns: ${{ inputs.max_turns }}
+      step_budget: ${{ inputs.step_budget }}
+      time_budget_ms: ${{ inputs.time_budget_ms }}
+      context_repositories: ${{ needs.prepare.outputs.context_repositories }}
+      verification_commands: ${{ needs.prepare.outputs.verification_commands }}
+      drift_checks: ${{ needs.prepare.outputs.drift_checks }}
+      workspace_contract_checks: ${{ needs.prepare.outputs.workspace_contract_checks }}
+      writable_paths: ${{ inputs.writable_paths }}
+      validation_dependencies: Automattic/docs-agent@${{ needs.prepare.outputs.docs_agent_ref }}
+      runner_workspace: |
+        {
+          "enabled": true,
+          "repo": "${{ github.repository }}",
+          "clone_url": "https://github.com/${{ github.repository }}.git",
+          "branch": "${{ inputs.docs_branch }}",
+          "from": "origin/${{ inputs.base_ref }}",
+          "bootstrap": false,
+          "allow_stale": true,
+          "rebase_base": true
+        }
+      artifact_export_config: |
+        {
+          "pr_title_template": "${{ needs.prepare.outputs.fallback_pr_title }}",
+          "pr_body_template": "## Summary\n- Maintain the configured Docs Agent lane.\n- Keep writes inside `${{ inputs.writable_paths }}`.\n- Reuse the canonical Docs Agent branch `${{ inputs.docs_branch }}`.\n- Include runner-provided verification and drift-check summaries when available.\n\n## Result\n{result_table}\n\n## Checks\n{checks_table}\n\n## Review Artifacts\n{links_table}\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via WP Codebox in GitHub Actions\n- **Model:** OpenAI GPT-5.5\n- **Used for:** Generated maintenance updates from repository source for human review."
+        }
+      success_requires_pr: false
+      success_completion_outcomes: '[]'
+      allowed_repos: '["${{ github.repository }}"]'
+      app_token_repos: ${{ github.repository }}
+      require_homeboy_app_token: true
+      tool_results_key: github_tool_results
+      output_projections: '{"docs_agent_pr_url":"metadata.engine_data.docs_agent.pr.url","runner_workspace_pr_url":"metadata.runner_workspace_publication.url","success_status":"metadata.success_status"}'
+      transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
+      replay_bundle_artifact_name: docs-agent-replay-${{ github.run_id }}
+      expected_artifacts: ${{ needs.prepare.outputs.expected_artifacts }}
+      artifact_declarations: ${{ needs.prepare.outputs.artifact_declarations }}
+      callback_data: ${{ format('{{"agent_slug":"{0}","pipeline_slug":"{1}","flow_slug":"{2}","bundle_source":".ci/docs-agent/{3}","target_repo":"{4}"}}', needs.prepare.outputs.agent_slug, needs.prepare.outputs.pipeline_slug, needs.prepare.outputs.flow_slug, needs.prepare.outputs.bundle_source, github.repository) }}
     secrets:
       CODEBOX_RUNNER_APP_ID: ${{ secrets.HOMEBOY_APP_ID }}
       CODEBOX_RUNNER_APP_PRIVATE_KEY: ${{ secrets.HOMEBOY_APP_PRIVATE_KEY }}
