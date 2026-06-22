@@ -11,8 +11,6 @@
     "label": "User Docs Agent",
     "description": "Reusable non-technical product documentation agent for frontend users.",
     "agent_config": {
-      "default_provider": "openai",
-      "default_model": "gpt-5.5",
       "max_turns": 12,
       "daily_memory": {
         "enabled": false,

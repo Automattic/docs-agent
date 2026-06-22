@@ -6,7 +6,7 @@
 - Bundle path: `bundles/technical-docs-agent`.
 - Agent slug: `technical-docs-agent`.
 - The primitive is source-code-derived technical documentation generation.
-- Consumer repositories provide target repo, event context, writable path scope, and credentials through the public WP Codebox Docs Agent workflow.
+- Consumer repositories provide target repo, event context, writable path scope, and credentials through their chosen runner.
 - Documentation updates must stay inside the runner-enforced writable path scope.
 - No-op success is valid when technical docs are already aligned.
 - One focused pull request is the review boundary when changes are needed.

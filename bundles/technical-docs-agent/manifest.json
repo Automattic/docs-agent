@@ -11,8 +11,6 @@
     "label": "Technical Docs Agent",
     "description": "Reusable developer and operator documentation agent for GitHub repositories.",
     "agent_config": {
-      "default_provider": "openai",
-      "default_model": "gpt-5.5",
       "max_turns": 12,
       "daily_memory": {
         "enabled": false,

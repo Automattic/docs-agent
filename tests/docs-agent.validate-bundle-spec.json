@@ -114,9 +114,9 @@
       "system_prompt_must_contain_all": ["runtime behavior", "technical docs lane documents skills", "read-only context repository aliases", "target workspace as the only writable boundary", "build commands", "repository checks", "generated-output drift checks"]
     }
   },
-  "example_runner_config": "../examples/homeboy-runner-config.example.json",
+  "example_runner_config": "../examples/runner-recipe.example.json",
   "example_assertions": {
-    "schema": "wp-codebox/docs-agent-runner-recipe/v1",
+    "schema": "docs-agent/runner-recipe/v1",
     "targetRepository": "OWNER/REPO"
   }
 }

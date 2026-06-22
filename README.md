@@ -64,7 +64,7 @@ jobs:
 
 ## Workflow Inputs
 
-The consumer API is product-level. Consumer repositories configure the documentation lane, target branch, writable paths, optional context repositories, verification commands, drift checks, model, and run gating through reusable workflow inputs.
+The consumer API is product-level. Consumer repositories configure the documentation lane, target branch, writable paths, optional context repositories, verification commands, drift checks, and run gating through reusable workflow inputs.
 
 | Input | Default | Description |
 | --- | --- | --- |
@@ -76,10 +76,9 @@ The consumer API is product-level. Consumer repositories configure the documenta
 | `verification_commands` | `[]` | JSON array of canonical runner verification commands executed in the target workspace. |
 | `drift_checks` | `[]` | JSON array of canonical runner drift checks executed after verification. |
 | `prompt` | empty | Optional additional maintenance instruction. |
-| `model` | `gpt-5.5` | Model used by Docs Agent. |
 | `run_agent` | `true` | Set `false` to skip after deterministic preflight says docs are current. |
 
-`context_repositories`, `verification_commands`, and `drift_checks` are canonical runner inputs. Docs Agent sends those inputs to the public Codebox runner and keeps the target repository as the only writable PR boundary.
+`context_repositories`, `verification_commands`, and `drift_checks` are canonical recipe inputs. Docs Agent keeps the target repository as the only writable PR boundary; the caller-owned runner decides how to execute the recipe.
 
 ## Review Artifacts
 
@@ -93,11 +92,11 @@ Docs Agent declares the review artifacts it expects the runner to materialize as
 | `docs_agent_drift_report` | `docs-agent/drift-report/v1` | Drift-check results for generated docs, skills, or packaged outputs. |
 | `docs_agent_workspace_publication` | `docs-agent/workspace-publication/v1` | Canonical branch and pull request links published by the runner workspace. |
 
-`maintain-docs.yml` writes `expected_artifacts` and `artifact_declarations` into the public Codebox recipe, keeps output mappings as first-class review outputs, and exposes the same declaration objects as `declared_artifacts_json`.
+`maintain-docs.yml` writes `expected_artifacts` and `artifact_declarations` into a portable Docs Agent recipe and exposes the same declaration objects as `declared_artifacts_json`.
 
-The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites target the public Codebox task contract at `Automattic/wp-codebox/.github/workflows/run-agent-task.yml@main`. Docs Agent owns the Docs Agent-specific bundle, lane, artifact, prompt, and workspace mapping before calling that generic task workflow; publication remains runner-owned while agents only edit the provided workspace.
+Docs Agent owns the Docs Agent-specific bundle, lane, artifact, prompt, and workspace mapping. Execution, credentials, AI provider selection, sandboxing, and publication are runner-owned concerns outside this repository.
 
-The public Codebox boundary owns runtime substrate checkout resolution. Docs Agent workflows pass product-level recipe fields for `docsAgent`, `runner.workspace`, `runner.writablePaths`, artifacts, verification, drift checks, and review output mappings.
+Portable recipe fields include `docsAgent`, `runner.writablePaths`, artifacts, verification commands, drift checks, and review output mapping suggestions.
 
 ## Pull Request Behavior
 
@@ -154,13 +153,12 @@ Keep the writable scope narrow. It is the main safety boundary for generated cha
 - User docs commonly use a dedicated namespace such as `docs/user/**`.
 - Skills maintenance commonly uses `skills/**,plugins/**/skills/**,plugins/**/README.md`, plus generated MCP or plugin config files only when build scripts intentionally update them.
 
-For `Automattic/build-with-wordpress`, run skills upkeep as its own scheduled lane with `context_repositories`, `verification_commands`, `drift_checks`, a canonical branch such as `docs-agent/build-with-wordpress-skills`, and writable paths such as `skills/**,plugins/**/skills/**,plugins/**/README.md`.
+Run skills upkeep as its own scheduled lane with `context_repositories`, `verification_commands`, `drift_checks`, a dedicated branch such as `docs-agent/skills-upkeep`, and writable paths such as `skills/**,packages/**/skills/**,packages/**/README.md`.
 
 ## Examples
 
 - `examples/consumer-workflow.yml`: scheduled consumer workflow using `maintain-docs.yml` for technical docs.
-- `examples/build-with-wordpress-skills-workflow.yml`: scheduled skills upkeep lane for `Automattic/build-with-wordpress`.
-- `examples/homeboy-runner-config.example.json`: recipe-oriented config for maintainers debugging the public Codebox contract.
+- `examples/runner-recipe.example.json`: recipe-oriented config for maintainers debugging the portable Docs Agent contract.
 
 ## Bundles
 
@@ -174,9 +172,9 @@ The reusable workflow maps `audience` to the correct bundle, agent identity, pip
 
 ## Workflow Operation
 
-Consumer repositories call `.github/workflows/maintain-docs.yml`. The workflow accepts the product-level inputs above, selects the matching Docs Agent bundle, prepares the public Codebox recipe, runs the WP Codebox Docs Agent workflow, and publishes or updates the configured Docs Agent pull request when files change.
+Consumer repositories call `.github/workflows/maintain-docs.yml`. The workflow accepts the product-level inputs above, selects the matching Docs Agent bundle, and prepares a runner-neutral recipe. A caller-owned runner consumes that recipe and publishes or updates the configured Docs Agent pull request when files change.
 
-Maintainers may still use `.github/workflows/docs-agent.yml` for central dispatch/debugging against an arbitrary `target_repo` when GitHub App credentials are available.
+Maintainers may still use `.github/workflows/docs-agent.yml` to prepare a recipe summary for an arbitrary `target_repo`.
 
 ## Review The Output PR
 
