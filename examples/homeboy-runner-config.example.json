@@ -14,7 +14,6 @@
         "runtime_ref",
         "profile",
         "runtime_profiles",
-        "runtime_dependencies",
         "component_contracts",
         "ability_requirements",
         "runtime_config"
