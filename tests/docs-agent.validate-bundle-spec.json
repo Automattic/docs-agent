@@ -116,7 +116,7 @@
   },
   "example_runner_config": "../examples/homeboy-runner-config.example.json",
   "example_assertions": {
-    "success_requires_pr": false,
-    "provider": "openai"
+    "schema": "wp-codebox/docs-agent-runner-recipe/v1",
+    "targetRepository": "OWNER/REPO"
   }
 }

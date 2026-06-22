@@ -1,49 +1,50 @@
 {
-  "component_id": "docs-agent-ci-driver",
-  "component_path": "consumer-repository-checkout",
-  "workload_id": "technical-docs-generation",
-  "workload_label": "Run Docs Agent",
-  "runner_recipe": {
-    "id": "docs-agent/codebox-homeboy-runner",
-    "source": ".ci/docs-agent/ci/docs-agent-runner-recipe.json",
-    "resolved_by": ".ci/docs-agent/ci/resolve-docs-agent-runner-recipe.php"
+  "schema": "wp-codebox/docs-agent-runner-recipe/v1",
+  "targetRepository": "OWNER/REPO",
+  "prompt": "Run the technical docs maintenance flow. Update developer-facing living documentation only where source evidence shows stale, missing, fragmented, or misleading coverage.",
+  "docsAgent": {
+    "repository": "https://github.com/Automattic/docs-agent.git",
+    "ref": "v0.1.0",
+    "bundlePath": "bundles/technical-docs-agent",
+    "bundlePathInRepo": "bundles/technical-docs-agent",
+    "agentSlug": "technical-docs-agent",
+    "pipelineSlug": "technical-docs-pipeline",
+    "flowSlug": "technical-docs-maintenance-flow"
   },
-  "runtime_execution": {
-    "kind": "bundle",
-    "source": ".ci/docs-agent/bundles/technical-docs-agent"
-  },
-  "validation_dependencies": ["Automattic/docs-agent@v0.1.0"],
-  "provider": "openai",
-  "model": "gpt-5.5",
-  "provider_register_function": "WordPress\\OpenAiAiProvider\\register_provider",
-  "provider_credentials": {
-    "connectors_ai_openai_api_key": "OPENAI_API_KEY"
-  },
-  "github_token_env": "GITHUB_TOKEN",
-  "github_profile_id": "docs-agent-ci",
-  "target_repo": "OWNER/REPO",
-  "allowed_repos": ["OWNER/REPO"],
-  "writable_paths": ["README.md", "docs/**"],
-  "context_repositories": [],
-  "verification_commands": [],
-  "drift_checks": [],
-  "runner_workspace": {
+  "runner": {
+    "validationDependencies": "Automattic/docs-agent@v0.1.0",
+    "contextRepositories": [],
+    "verificationCommands": [],
+    "driftChecks": [],
+    "writablePaths": "README.md,docs/**",
+    "workspace": {
     "enabled": true,
-    "repo": "REPO",
+    "repo": "OWNER/REPO",
     "clone_url": "https://github.com/OWNER/REPO.git",
     "branch_prefix": "docs/agent-run",
     "from": "origin/main",
     "bootstrap": false
+    }
   },
-  "success_requires_pr": false,
-  "expected_artifacts": [
+  "policy": {
+    "successRequiresPr": false,
+    "requireAppToken": true,
+    "allowedRepositories": ["OWNER/REPO"]
+  },
+  "runtime": {
+    "maxTurns": 12,
+    "stepBudget": 16,
+    "timeBudgetMs": 600000
+  },
+  "artifacts": {
+    "expected": [
     "docs_agent_transcript",
     "docs_agent_change_summary",
     "docs_agent_verification_report",
     "docs_agent_drift_report",
     "docs_agent_workspace_publication"
-  ],
-  "artifact_declarations": [
+    ],
+    "declarations": [
     {
       "schema": "wp-codebox/artifact-declaration/v1",
       "name": "docs_agent_transcript",
@@ -89,27 +90,17 @@
       "required": false,
       "egress": ["pr-body", "workflow-output", "review-link"]
     }
-  ],
-  "max_turns": 12,
-  "prompt": "Run the technical docs maintenance flow. Update developer-facing living documentation only where source code, tests, recent issues, recent pull requests, or existing docs show stale, missing, fragmented, or misleading coverage. Open a documentation PR only if needed.",
-  "step_budget": 16,
-  "time_budget_ms": 600000,
-  "transcript_dir": "docs-agent-transcript-artifacts",
-  "replay_bundle_dir": "docs-agent-replay-artifacts",
-  "runtime_output_projections": {
+    ],
+    "transcriptName": "docs-agent-transcript",
+    "replayBundleName": "docs-agent-replay"
+  },
+  "engine": {
+    "key": "docs_agent",
+    "toolResultsKey": "github_tool_results",
+    "outputMappings": {
     "docs_agent_pr_url": "metadata.engine_data.docs_agent.pr.url",
     "runner_workspace_pr_url": "metadata.runner_workspace_publication.url",
     "success_status": "metadata.success_status"
-  },
-  "callback_data": {
-    "agent_slug": "technical-docs-agent",
-    "pipeline_slug": "technical-docs-pipeline",
-    "flow_slug": "technical-docs-maintenance-flow",
-    "bundle_source": ".ci/docs-agent/bundles/technical-docs-agent",
-    "target_repo": "OWNER/REPO"
-  },
-  "bench_env": {
-    "GITHUB_TOKEN": "${GITHUB_TOKEN}",
-    "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+    }
   }
 }

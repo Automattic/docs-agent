@@ -1,43 +1,63 @@
 {
-  "id": "docs-agent/codebox-homeboy-runner",
-  "description": "Docs Agent product-level Codebox/Homeboy runner contract.",
-  "runtime": "wp-codebox",
-  "runtime_ref": "main",
-  "profile": "docs-agent-runner",
-  "runtime_profiles": {
-    "docs-agent-runner": {
-      "id": "docs-agent-runner",
-      "capabilities": [
-        "docs-agent.bundle-execution",
-        "docs-agent.workspace-editing",
-        "homeboy.workspace-publication"
-      ]
+  "schema": "wp-codebox/docs-agent-runner-recipe/v1",
+  "targetRepository": "OWNER/REPO",
+  "prompt": "Run the technical docs maintenance flow. Update developer-facing living documentation only where source evidence shows stale, missing, fragmented, or misleading coverage.",
+  "docsAgent": {
+    "repository": "https://github.com/Automattic/docs-agent.git",
+    "ref": "main",
+    "bundlePath": "bundles/technical-docs-agent",
+    "bundlePathInRepo": "bundles/technical-docs-agent",
+    "agentSlug": "technical-docs-agent",
+    "pipelineSlug": "technical-docs-pipeline",
+    "flowSlug": "technical-docs-maintenance-flow"
+  },
+  "runner": {
+    "validationDependencies": "Automattic/docs-agent@main",
+    "contextRepositories": [],
+    "verificationCommands": [],
+    "driftChecks": [],
+    "writablePaths": "README.md,docs/**",
+    "workspaceContractChecks": {},
+    "workspace": {
+      "enabled": true,
+      "repo": "OWNER/REPO",
+      "clone_url": "https://github.com/OWNER/REPO.git",
+      "branch_prefix": "docs/agent-run",
+      "from": "origin/main",
+      "bootstrap": false
     }
   },
-  "openai_provider_ref": "trunk",
-  "component_contracts": [
-    {
-      "id": "docs-agent-runtime",
-      "requires": [
-        "wordpress-agent-runtime",
-        "docs-agent-bundle-execution",
-        "runner-owned-workspace-publication"
-      ]
-    }
-  ],
-  "ability_requirements": [
-    "docs-agent.bundle-execution",
-    "docs-agent.workspace-editing",
-    "homeboy.workspace-publication"
-  ],
-  "runtime_config": {
-    "daily_memory_enabled": false,
-    "enable_terminal_actions": false,
-    "wp_cli_tool_name": "run_wp_cli",
-    "pipeline_step_patches": [],
-    "flow_step_patches": [],
-    "wp_gym_eval": {
-      "benchmark_mode": false
+  "policy": {
+    "successRequiresPr": false,
+    "successCompletionOutcomes": [],
+    "appTokenRepositories": "OWNER/REPO",
+    "requireAppToken": true,
+    "allowedRepositories": ["OWNER/REPO"]
+  },
+  "runtime": {
+    "maxTurns": 12,
+    "stepBudget": 16,
+    "timeBudgetMs": 600000
+  },
+  "artifacts": {
+    "expected": [
+      "docs_agent_transcript",
+      "docs_agent_change_summary",
+      "docs_agent_verification_report",
+      "docs_agent_drift_report",
+      "docs_agent_workspace_publication"
+    ],
+    "declarations": [],
+    "transcriptName": "docs-agent-transcript",
+    "replayBundleName": "docs-agent-replay"
+  },
+  "engine": {
+    "key": "docs_agent",
+    "toolResultsKey": "github_tool_results",
+    "outputMappings": {
+      "docs_agent_pr_url": "metadata.engine_data.docs_agent.pr.url",
+      "runner_workspace_pr_url": "metadata.runner_workspace_publication.url",
+      "success_status": "metadata.success_status"
     }
   }
 }
