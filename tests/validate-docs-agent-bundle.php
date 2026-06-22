@@ -212,7 +212,7 @@ foreach ( $workflow_internal_fragments as $internal_fragment ) {
 	$assert( ! str_contains( $maintain_docs_workflow, $internal_fragment ), "maintain-docs.yml must not expose runtime internals: {$internal_fragment}" );
 }
 
-foreach ( array( 'runtime: ${{ needs.prepare.outputs.runtime }}', 'runtime_ref: ${{ needs.prepare.outputs.runtime_ref }}', 'profile: ${{ needs.prepare.outputs.profile }}', 'runtime_execution:', 'runtime_dependencies: ${{ needs.prepare.outputs.runtime_dependencies }}', 'validation_dependencies:' ) as $runtime_input ) {
+foreach ( array( 'runtime: ${{ needs.prepare.outputs.runtime }}', 'runtime_ref: ${{ needs.prepare.outputs.runtime_ref }}', 'profile: ${{ needs.prepare.outputs.profile }}', 'runtime_profiles: ${{ needs.prepare.outputs.runtime_profiles }}', 'runtime_execution:', 'component_contracts: ${{ needs.prepare.outputs.component_contracts }}', 'ability_requirements: ${{ needs.prepare.outputs.ability_requirements }}', 'validation_dependencies:' ) as $runtime_input ) {
 	$assert( str_contains( $maintain_docs_workflow, $runtime_input ), "maintain-docs.yml must use {$runtime_input}." );
 }
 $assert( ! str_contains( $maintain_docs_workflow, 'runtime_mounts:' ), 'maintain-docs.yml must not pass sandbox policy mounts.' );
@@ -231,9 +231,9 @@ $assert( ! str_contains( $maintain_docs_workflow, 'extra_required_abilities:' ),
 $assert( ! str_contains( $maintain_docs_workflow, 'required_abilities:' ), 'maintain-docs.yml must not expose direct required ability inputs.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'wp_codebox_ref:' ), 'maintain-docs.yml must not use wp_codebox_ref.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'extra_wp_codebox_mounts:' ), 'maintain-docs.yml must not use extra_wp_codebox_mounts.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'agents_api_ref:' ), 'maintain-docs.yml must use runtime_dependencies instead of agents_api_ref.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'data_machine_ref:' ), 'maintain-docs.yml must use runtime_dependencies instead of data_machine_ref.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'data_machine_code_ref:' ), 'maintain-docs.yml must use runtime_dependencies instead of data_machine_code_ref.' );
+$assert( ! str_contains( $maintain_docs_workflow, 'agents_api_ref:' ), 'maintain-docs.yml must use the public Codebox/Homeboy runner contract instead of agents_api_ref.' );
+$assert( ! str_contains( $maintain_docs_workflow, 'data_machine_ref:' ), 'maintain-docs.yml must use the public Codebox/Homeboy runner contract instead of data_machine_ref.' );
+$assert( ! str_contains( $maintain_docs_workflow, 'data_machine_code_ref:' ), 'maintain-docs.yml must use the public Codebox/Homeboy runner contract instead of data_machine_code_ref.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'engine_data_outputs:' ), 'maintain-docs.yml must use runtime_output_projections instead of engine_data_outputs.' );
 
 $workflow_readme = (string) file_get_contents( $root . '/.github/workflows/README.md' );
@@ -265,7 +265,7 @@ $assert( str_contains( $docs_agent_workflow, 'TODO(Codebox public workflow)' ), 
 if ( str_contains( $docs_agent_workflow, $transitional_homeboy_extensions_workflow ) ) {
 	$assert( str_contains( $docs_agent_workflow, 'transitional Homeboy Extensions' ), 'docs-agent.yml direct Homeboy Extensions workflow call must be documented as transitional.' );
 }
-foreach ( array( 'Resolve runner recipe', 'runtime: ${{ needs.prepare.outputs.runtime }}', 'runtime_ref: ${{ needs.prepare.outputs.runtime_ref }}', 'profile: ${{ needs.prepare.outputs.profile }}', 'runtime_execution:', 'runtime_dependencies: ${{ needs.prepare.outputs.runtime_dependencies }}' ) as $central_runtime_input ) {
+foreach ( array( 'uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main', 'Resolve runner recipe', 'runtime: ${{ needs.prepare.outputs.runtime }}', 'runtime_ref: ${{ needs.prepare.outputs.runtime_ref }}', 'profile: ${{ needs.prepare.outputs.profile }}', 'runtime_profiles: ${{ needs.prepare.outputs.runtime_profiles }}', 'runtime_execution:', 'component_contracts: ${{ needs.prepare.outputs.component_contracts }}', 'ability_requirements: ${{ needs.prepare.outputs.ability_requirements }}' ) as $central_runtime_input ) {
 	$assert( str_contains( $docs_agent_workflow, $central_runtime_input ), "docs-agent.yml must use {$central_runtime_input}." );
 }
 $assert( ! str_contains( $docs_agent_workflow, 'runtime_mounts:' ), 'docs-agent.yml must not pass sandbox policy mounts.' );
@@ -283,7 +283,7 @@ $assert( ! str_contains( $docs_agent_workflow, 'agent_runtime:' ), 'docs-agent.y
 $assert( ! str_contains( $docs_agent_workflow, 'agent_runtime_ref:' ), 'docs-agent.yml must use runtime_ref instead of agent_runtime_ref.' );
 $assert( ! str_contains( $docs_agent_workflow, 'wp_codebox_ref:' ), 'docs-agent.yml must not use wp_codebox_ref.' );
 $assert( ! str_contains( $docs_agent_workflow, 'extra_wp_codebox_mounts:' ), 'docs-agent.yml must not use extra_wp_codebox_mounts.' );
-$assert( ! str_contains( $docs_agent_workflow, 'validation_dependencies: Automattic/agents-api@' ), 'docs-agent.yml must let Homeboy runtime inputs supply runtime validation dependencies.' );
+$assert( ! str_contains( $docs_agent_workflow, 'validation_dependencies:' . ' Automattic/agents-api@' ), 'docs-agent.yml must let the public Codebox/Homeboy runner contract supply runtime validation dependencies.' );
 
 $declared_artifact_names = array_keys( $expected_artifact_schemas );
 foreach ( $declared_artifact_names as $artifact_name ) {

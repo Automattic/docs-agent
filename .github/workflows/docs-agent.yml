@@ -38,7 +38,6 @@ jobs:
       runtime_ref: ${{ steps.recipe.outputs.runtime_ref }}
       profile: ${{ steps.recipe.outputs.profile }}
       runtime_profiles: ${{ steps.recipe.outputs.runtime_profiles }}
-      runtime_dependencies: ${{ steps.recipe.outputs.runtime_dependencies }}
       openai_provider_ref: ${{ steps.recipe.outputs.openai_provider_ref }}
       component_contracts: ${{ steps.recipe.outputs.component_contracts }}
       ability_requirements: ${{ steps.recipe.outputs.ability_requirements }}
@@ -90,7 +89,6 @@ jobs:
       writable_paths: ${{ inputs.writable_paths }}
       provider: openai
       model: ${{ inputs.openai_model }}
-      runtime_dependencies: ${{ needs.prepare.outputs.runtime_dependencies }}
       openai_provider_ref: ${{ needs.prepare.outputs.openai_provider_ref }}
       component_contracts: ${{ needs.prepare.outputs.component_contracts }}
       runner_workspace: |

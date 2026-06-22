@@ -131,7 +131,6 @@ jobs:
       runtime_ref: ${{ steps.recipe.outputs.runtime_ref }}
       profile: ${{ steps.recipe.outputs.profile }}
       runtime_profiles: ${{ steps.recipe.outputs.runtime_profiles }}
-      runtime_dependencies: ${{ steps.recipe.outputs.runtime_dependencies }}
       openai_provider_ref: ${{ steps.recipe.outputs.openai_provider_ref }}
       component_contracts: ${{ steps.recipe.outputs.component_contracts }}
       ability_requirements: ${{ steps.recipe.outputs.ability_requirements }}
@@ -417,7 +416,6 @@ jobs:
       max_turns: ${{ inputs.max_turns }}
       step_budget: ${{ inputs.step_budget }}
       time_budget_ms: ${{ inputs.time_budget_ms }}
-      runtime_dependencies: ${{ needs.prepare.outputs.runtime_dependencies }}
       openai_provider_ref: ${{ needs.prepare.outputs.openai_provider_ref }}
       component_contracts: ${{ needs.prepare.outputs.component_contracts }}
       context_repositories: ${{ needs.prepare.outputs.context_repositories }}
