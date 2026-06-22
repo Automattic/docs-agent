@@ -97,6 +97,8 @@ Docs Agent declares the review artifacts it expects the runner to materialize as
 
 The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites use the generic Homeboy full-run workflow, with the Codebox/Homeboy contract centralized behind the committed `docs-agent/codebox-homeboy-runner` recipe in `ci/docs-agent-runner-recipe.json`. The resolver emits product-level runner inputs such as `runtime`, `runtime_ref`, `profile`, `runtime_profiles`, `component_contracts`, `ability_requirements`, and `runtime_config`; publication remains runner-owned while agents only edit the provided workspace.
 
+Runtime substrate checkout resolution belongs behind the Codebox/Homeboy runner contract. Until Codebox exposes a stable public component wrapper for those internals, Docs Agent validation keeps recipe and workflow surfaces on product-level capabilities and blocks direct runtime ability names, component paths, mount directives, and define directives.
+
 ## Pull Request Behavior
 
 Docs Agent opens or updates one canonical PR for the configured branch.
