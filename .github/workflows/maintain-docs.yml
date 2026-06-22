@@ -379,6 +379,8 @@ jobs:
   docs_agent:
     name: Maintain Docs
     needs: prepare
+    # TODO(Codebox public workflow): replace this transitional Homeboy Extensions
+    # call with the Codebox public reusable workflow when that boundary exists.
     uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main
     with:
       homeboy_extensions_ref: main

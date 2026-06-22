@@ -6,20 +6,7 @@
   "runner_recipe": {
     "id": "docs-agent/codebox-homeboy-runner",
     "source": ".ci/docs-agent/ci/docs-agent-runner-recipe.json",
-    "resolved_by": ".ci/docs-agent/ci/resolve-docs-agent-runner-recipe.php",
-    "workflow_outputs": {
-      "homeboy_extensions_workflow": "Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main",
-      "fields": [
-        "runtime",
-        "runtime_ref",
-        "profile",
-        "runtime_profiles",
-        "runtime_dependencies",
-        "component_contracts",
-        "ability_requirements",
-        "runtime_config"
-      ]
-    }
+    "resolved_by": ".ci/docs-agent/ci/resolve-docs-agent-runner-recipe.php"
   },
   "runtime_execution": {
     "kind": "bundle",
