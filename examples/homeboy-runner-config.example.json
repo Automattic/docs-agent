@@ -36,6 +36,7 @@
   "github_profile_id": "docs-agent-ci",
   "target_repo": "OWNER/REPO",
   "allowed_repos": ["OWNER/REPO"],
+  "writable_paths": ["README.md", "docs/**"],
   "context_repositories": [],
   "verification_commands": [],
   "drift_checks": [],

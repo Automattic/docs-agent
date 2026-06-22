@@ -14,11 +14,7 @@
       ]
     }
   },
-  "runtime_dependencies": [
-    "Automattic/agents-api@main",
-    "Extra-Chill/data-machine@main",
-    "Extra-Chill/data-machine-code@main"
-  ],
+  "runtime_dependencies": [],
   "openai_provider_ref": "trunk",
   "component_contracts": [
     {
