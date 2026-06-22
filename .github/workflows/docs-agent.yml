@@ -30,40 +30,24 @@ on:
 
 jobs:
   prepare:
-    name: Prepare Docs Agent Runner Recipe
+    name: Prepare Docs Agent
     runs-on: ubuntu-latest
     outputs:
-      runner_recipe_id: ${{ steps.recipe.outputs.runner_recipe_id }}
-      runtime: ${{ steps.recipe.outputs.runtime }}
-      runtime_ref: ${{ steps.recipe.outputs.runtime_ref }}
-      profile: ${{ steps.recipe.outputs.profile }}
-      runtime_profiles: ${{ steps.recipe.outputs.runtime_profiles }}
-      openai_provider_ref: ${{ steps.recipe.outputs.openai_provider_ref }}
-      component_contracts: ${{ steps.recipe.outputs.component_contracts }}
-      ability_requirements: ${{ steps.recipe.outputs.ability_requirements }}
-      runtime_config: ${{ steps.recipe.outputs.runtime_config }}
+      runner_recipe: ${{ steps.recipe.outputs.runner_recipe }}
     steps:
       - name: Checkout docs-agent
         uses: actions/checkout@v4
 
-      - name: Resolve runner recipe
+      - name: Prepare runner recipe reference
         id: recipe
-        env:
-          RUNNER_RECIPE_CHECKOUT: .
-        run: php ci/resolve-docs-agent-runner-recipe.php
+        run: printf 'runner_recipe=%s@%s:%s\n' '${{ github.repository }}' '${{ github.sha }}' 'ci/docs-agent-runner-recipe.json' >> "$GITHUB_OUTPUT"
 
   run-docs-agent:
     needs: prepare
-    # TODO(Codebox public workflow): replace this transitional Homeboy Extensions
-    # call with the Codebox public reusable workflow when that boundary exists.
-    uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main
+    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@main
     with:
-      homeboy_extensions_ref: main
-      runtime: ${{ needs.prepare.outputs.runtime }}
-      runtime_ref: ${{ needs.prepare.outputs.runtime_ref }}
-      profile: ${{ needs.prepare.outputs.profile }}
-      runtime_profiles: ${{ needs.prepare.outputs.runtime_profiles }}
-      runtime_execution: ${{ format('{{"kind":"bundle","source":"{0}"}}', contains(inputs.flow_kind, 'skills') && 'bundles/skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'bundles/technical-docs-agent' || 'bundles/user-docs-agent')) }}
+      runner_recipe: ${{ needs.prepare.outputs.runner_recipe }}
+      agent_bundle: ${{ contains(inputs.flow_kind, 'skills') && 'bundles/skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'bundles/technical-docs-agent' || 'bundles/user-docs-agent') }}
       workload_id: ${{ inputs.flow_kind }}
       workload_label: Run ${{ contains(inputs.flow_kind, 'skills') && 'skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-agent' || 'user-docs-agent') }} Docs Agent
       component_id: docs-agent-ci-driver
@@ -89,8 +73,6 @@ jobs:
       writable_paths: ${{ inputs.writable_paths }}
       provider: openai
       model: ${{ inputs.openai_model }}
-      openai_provider_ref: ${{ needs.prepare.outputs.openai_provider_ref }}
-      component_contracts: ${{ needs.prepare.outputs.component_contracts }}
       runner_workspace: |
         {
           "enabled": true,
@@ -100,15 +82,13 @@ jobs:
           "from": "origin/main",
           "bootstrap": false
         }
-      runtime_config: ${{ needs.prepare.outputs.runtime_config }}
       success_requires_pr: false
       success_completion_outcomes: '[]'
       app_token_repos: ${{ inputs.target_repo }}
       require_homeboy_app_token: true
       allowed_repos: '["${{ inputs.target_repo }}"]'
-      ability_requirements: ${{ needs.prepare.outputs.ability_requirements }}
       tool_results_key: github_tool_results
-      runtime_output_projections: '{"docs_pr_url":"metadata.engine_data.docs_agent.pr_url"}'
+      output_projections: '{"docs_pr_url":"metadata.engine_data.docs_agent.pr_url"}'
       transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
       replay_bundle_artifact_name: docs-agent-replay-${{ github.run_id }}
       expected_artifacts: '["docs_agent_transcript","docs_agent_change_summary","docs_agent_verification_report","docs_agent_drift_report","docs_agent_workspace_publication"]'

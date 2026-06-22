@@ -79,7 +79,7 @@ The consumer API is product-level. Consumer repositories configure the documenta
 | `model` | `gpt-5.5` | Model used by Docs Agent. |
 | `run_agent` | `true` | Set `false` to skip after deterministic preflight says docs are current. |
 
-`context_repositories`, `verification_commands`, and `drift_checks` are canonical runner inputs. Docs Agent sends those inputs to the Homeboy Extensions runner and keeps the target repository as the only writable PR boundary.
+`context_repositories`, `verification_commands`, and `drift_checks` are canonical runner inputs. Docs Agent sends those inputs to the public Codebox runner and keeps the target repository as the only writable PR boundary.
 
 ## Review Artifacts
 
@@ -93,11 +93,11 @@ Docs Agent declares the review artifacts it expects the runner to materialize as
 | `docs_agent_drift_report` | `docs-agent/drift-report/v1` | Drift-check results for generated docs, skills, or packaged outputs. |
 | `docs_agent_workspace_publication` | `docs-agent/workspace-publication/v1` | Canonical branch and pull request links published by the runner workspace. |
 
-`maintain-docs.yml` forwards `expected_artifacts` and `artifact_declarations` to the runner, keeps transcript upload and `runtime_output_projections` as first-class review outputs, and exposes the same declaration objects as `declared_artifacts_json`.
+`maintain-docs.yml` forwards `expected_artifacts` and `artifact_declarations` to the runner, keeps transcript upload and `output_projections` as first-class review outputs, and exposes the same declaration objects as `declared_artifacts_json`.
 
-The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites should target a public Codebox workflow contract that accepts the committed `docs-agent/codebox-homeboy-runner` recipe in `ci/docs-agent-runner-recipe.json`; publication remains runner-owned while agents only edit the provided workspace.
+The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites target the public Codebox workflow contract at `Automattic/wp-codebox/.github/workflows/run-agent-task.yml@main`. The workflow accepts the committed `docs-agent/codebox-homeboy-runner` recipe in `ci/docs-agent-runner-recipe.json`; publication remains runner-owned while agents only edit the provided workspace.
 
-TODO(Codebox public workflow): the current workflow still calls the Homeboy Extensions full-run workflow because Codebox does not yet expose a stable public reusable workflow for this recipe. Treat the direct Homeboy Extensions workflow path and recipe resolver output fields as transitional wiring, not consumer-facing Docs Agent contracts. Runtime substrate checkout resolution belongs behind the Codebox public workflow boundary; validation blocks direct runtime ability names, component paths, mount directives, and define directives from consumer examples.
+The public Codebox boundary owns runtime substrate checkout resolution. Docs Agent workflows pass product-level inputs such as `runner_recipe`, `agent_bundle`, `runner_workspace`, `writable_paths`, artifacts, verification, drift checks, and review output projections.
 
 ## Pull Request Behavior
 
@@ -106,7 +106,7 @@ Docs Agent opens or updates one canonical PR for the configured branch.
 - If the selected surface is current, the run succeeds with no changes.
 - If maintenance is needed, changes are written only under `writable_paths`.
 - If the canonical PR is already open, later runs reuse the same `docs_branch` and PR instead of creating duplicates.
-- Transcript and projected engine data are exposed as reusable workflow outputs, the typed artifact declarations are exposed as `declared_artifacts_json`, and the transcript is uploaded as a workflow artifact for review/debugging.
+- Transcript and projected engine data are exposed as reusable workflow outputs, typed artifact declarations are exposed as `declared_artifacts_json`, and the transcript is uploaded as a workflow artifact for review/debugging.
 
 ## Quality Bar
 
