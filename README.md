@@ -93,11 +93,11 @@ Docs Agent declares the review artifacts it expects the runner to materialize as
 | `docs_agent_drift_report` | `docs-agent/drift-report/v1` | Drift-check results for generated docs, skills, or packaged outputs. |
 | `docs_agent_workspace_publication` | `docs-agent/workspace-publication/v1` | Canonical branch and pull request links published by the runner workspace. |
 
-`maintain-docs.yml` forwards `expected_artifacts` and `artifact_declarations` to the runner, keeps transcript upload and `output_projections` as first-class review outputs, and exposes the same declaration objects as `declared_artifacts_json`.
+`maintain-docs.yml` writes `expected_artifacts` and `artifact_declarations` into the public Codebox recipe, keeps output mappings as first-class review outputs, and exposes the same declaration objects as `declared_artifacts_json`.
 
-The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites target the public Codebox workflow contract at `Automattic/wp-codebox/.github/workflows/run-agent-task.yml@main`. The workflow accepts the committed `docs-agent/codebox-homeboy-runner` recipe in `ci/docs-agent-runner-recipe.json`; publication remains runner-owned while agents only edit the provided workspace.
+The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites target the public Codebox workflow contract at `Automattic/wp-codebox/.github/workflows/docs-agent-runner.yml@main`. The workflow accepts `wp-codebox/docs-agent-runner-recipe/v1` through `recipe_path` or `recipe_json`; publication remains runner-owned while agents only edit the provided workspace.
 
-The public Codebox boundary owns runtime substrate checkout resolution. Docs Agent workflows pass product-level inputs such as `runner_recipe`, `agent_bundle`, `runner_workspace`, `writable_paths`, artifacts, verification, drift checks, and review output projections.
+The public Codebox boundary owns runtime substrate checkout resolution. Docs Agent workflows pass product-level recipe fields for `docsAgent`, `runner.workspace`, `runner.writablePaths`, artifacts, verification, drift checks, and review output mappings.
 
 ## Pull Request Behavior
 
@@ -106,7 +106,7 @@ Docs Agent opens or updates one canonical PR for the configured branch.
 - If the selected surface is current, the run succeeds with no changes.
 - If maintenance is needed, changes are written only under `writable_paths`.
 - If the canonical PR is already open, later runs reuse the same `docs_branch` and PR instead of creating duplicates.
-- Transcript and projected engine data are exposed as reusable workflow outputs, typed artifact declarations are exposed as `declared_artifacts_json`, and the transcript is uploaded as a workflow artifact for review/debugging.
+- Transcript and projected engine data are exposed as reusable workflow outputs, and typed artifact declarations are exposed as `declared_artifacts_json` for review/debugging.
 
 ## Quality Bar
 
@@ -160,7 +160,7 @@ For `Automattic/build-with-wordpress`, run skills upkeep as its own scheduled la
 
 - `examples/consumer-workflow.yml`: scheduled consumer workflow using `maintain-docs.yml` for technical docs.
 - `examples/build-with-wordpress-skills-workflow.yml`: scheduled skills upkeep lane for `Automattic/build-with-wordpress`.
-- `examples/homeboy-runner-config.example.json`: recipe-oriented runner config for maintainers debugging the implementation contract.
+- `examples/homeboy-runner-config.example.json`: recipe-oriented config for maintainers debugging the public Codebox contract.
 
 ## Bundles
 
@@ -174,7 +174,7 @@ The reusable workflow maps `audience` to the correct bundle, agent identity, pip
 
 ## Workflow Operation
 
-Consumer repositories call `.github/workflows/maintain-docs.yml`. The workflow accepts the product-level inputs above, selects the matching Docs Agent bundle, prepares the runner recipe, runs the Homeboy Extensions agent workflow, and publishes or updates the configured Docs Agent pull request when files change.
+Consumer repositories call `.github/workflows/maintain-docs.yml`. The workflow accepts the product-level inputs above, selects the matching Docs Agent bundle, prepares the public Codebox recipe, runs the WP Codebox Docs Agent workflow, and publishes or updates the configured Docs Agent pull request when files change.
 
 Maintainers may still use `.github/workflows/docs-agent.yml` for central dispatch/debugging against an arbitrary `target_repo` when GitHub App credentials are available.
 

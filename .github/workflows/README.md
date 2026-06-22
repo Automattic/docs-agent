@@ -10,16 +10,16 @@ For `Automattic/build-with-wordpress`, schedule skills upkeep separately from do
 
 When context repositories, verification commands, or drift checks are needed, pass them through the reusable workflow inputs above. The reusable workflow sends those inputs to the canonical runner and keeps the target repository as the writable Docs Agent workspace.
 
-The reusable workflow declares the expected typed review artifacts for Docs Agent runs: transcript, change summary, verification report, drift report, and workspace publication links. `maintain-docs.yml` forwards those declarations through runner artifact inputs, exposes the declaration objects through `declared_artifacts_json`, and publishes transcript artifacts and output projections for review.
+The reusable workflow declares the expected typed review artifacts for Docs Agent runs: transcript, change summary, verification report, drift report, and workspace publication links. `maintain-docs.yml` writes those declarations into the public recipe, exposes the declaration objects through `declared_artifacts_json`, and relies on WP Codebox recipe output mappings for review.
 
 The target repository needs a token path that can inspect source, write the configured paths, push the canonical branch, and open or update the pull request.
 
 ## Docs Agent Runner Recipe
 
-Docs Agent workflow call sites use the public Codebox reusable workflow at `Automattic/wp-codebox/.github/workflows/run-agent-task.yml@main`. The workflow accepts the committed `docs-agent/codebox-homeboy-runner` recipe in `ci/docs-agent-runner-recipe.json` through the `runner_recipe` input while consumers depend on Docs Agent inputs and review artifacts, not Homeboy Extensions internals. This migration is tracked in Automattic/docs-agent#100.
+Docs Agent workflow call sites use the public Codebox reusable workflow at `Automattic/wp-codebox/.github/workflows/docs-agent-runner.yml@main`. The workflow accepts a `wp-codebox/docs-agent-runner-recipe/v1` recipe through `recipe_path` or `recipe_json` while consumers depend on Docs Agent inputs and review artifacts, not Homeboy Extensions internals. This migration is tracked in Automattic/docs-agent#100.
 
-The public Codebox workflow must provide `runner_recipe`, `agent_bundle`, `runner_workspace`, artifact declaration, verification, drift-check, and output projection inputs. Runtime substrate checkout resolution is intentionally outside the Docs Agent-facing recipe, and validation blocks direct Homeboy Extensions workflow calls, runtime ability names, component paths, mount directives, and define directives from consumer examples.
+The public Codebox workflow must provide a recipe-first boundary for Docs Agent bundle selection, workspace publication, artifact declarations, verification, drift checks, and output mappings. Runtime substrate checkout resolution is intentionally outside the Docs Agent-facing recipe, and validation blocks direct Homeboy Extensions workflow calls, runtime ability names, component paths, mount directives, and define directives from consumer examples.
 
-Bundle selection is expressed through `agent_bundle` rather than legacy `bundle_path` inputs. Workspace boundaries are expressed through `runner_workspace`, `writable_paths`, and runner-owned publication inputs so agents remain workspace editors while Codebox owns sandbox execution and publication handoff.
+Bundle selection is expressed through recipe `docsAgent` fields rather than legacy workflow bundle inputs. Workspace boundaries are expressed through recipe `runner.workspace` and `runner.writablePaths` fields so agents remain workspace editors while Codebox owns sandbox execution and publication handoff.
 
 Run `php tests/validate-docs-agent-bundle.php` after workflow changes so workflow routing and runner config stay aligned.

@@ -6,7 +6,7 @@
 - Bundle path: `bundles/user-docs-agent`.
 - Agent slug: `user-docs-agent`.
 - The primitive is non-technical product documentation for frontend users.
-- Consumer repositories provide target repo, event context, writable path scope, and credentials through the Homeboy Extensions Data Machine agent runner.
+- Consumer repositories provide target repo, event context, writable path scope, and credentials through the public WP Codebox Docs Agent workflow.
 - Documentation updates must stay inside the runner-enforced writable path scope.
 - No-op success is valid when user docs are already aligned.
 - One focused pull request is the review boundary when changes are needed.

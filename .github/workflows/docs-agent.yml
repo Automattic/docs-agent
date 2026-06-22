@@ -33,112 +33,147 @@ jobs:
     name: Prepare Docs Agent
     runs-on: ubuntu-latest
     outputs:
-      runner_recipe: ${{ steps.recipe.outputs.runner_recipe }}
+      recipe_json: ${{ steps.recipe.outputs.recipe_json }}
     steps:
       - name: Checkout docs-agent
         uses: actions/checkout@v4
 
-      - name: Prepare runner recipe reference
+      - name: Prepare Docs Agent recipe
         id: recipe
-        run: printf 'runner_recipe=%s@%s:%s\n' '${{ github.repository }}' '${{ github.sha }}' 'ci/docs-agent-runner-recipe.json' >> "$GITHUB_OUTPUT"
+        env:
+          TARGET_REPO: ${{ inputs.target_repo }}
+          FLOW_KIND: ${{ inputs.flow_kind }}
+          PROMPT: ${{ inputs.prompt }}
+          WRITABLE_PATHS: ${{ inputs.writable_paths }}
+          GITHUB_REPOSITORY_NAME: ${{ github.repository }}
+          GITHUB_SHA_VALUE: ${{ github.sha }}
+          GITHUB_RUN_ID_VALUE: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          case "$FLOW_KIND" in
+            technical-docs-bootstrap-flow)
+              bundle_path="bundles/technical-docs-agent"
+              agent_slug="technical-docs-agent"
+              pipeline_slug="technical-docs-pipeline"
+              default_prompt="Run the technical docs bootstrap flow. Build the broadest complete initial developer documentation surface possible from source code, tests, existing docs, issues, and pull requests. Write docs in the provided workspace unless the repo already has complete technical docs."
+              ;;
+            technical-docs-maintenance-flow)
+              bundle_path="bundles/technical-docs-agent"
+              agent_slug="technical-docs-agent"
+              pipeline_slug="technical-docs-pipeline"
+              default_prompt="Run the technical docs maintenance flow. Update developer-facing living documentation only where source code, tests, recent issues, recent pull requests, or existing docs show stale, missing, fragmented, or misleading coverage. Write docs in the provided workspace."
+              ;;
+            user-docs-bootstrap-flow)
+              bundle_path="bundles/user-docs-agent"
+              agent_slug="user-docs-agent"
+              pipeline_slug="user-docs-pipeline"
+              default_prompt="Run the user docs bootstrap flow. Build the broadest complete initial non-technical product documentation surface possible for frontend users from product-facing evidence, existing user docs, UI strings, support-style issues, release notes, and pull requests describing user-visible behavior. Use a separate user-docs namespace such as docs/user/. Write docs in the provided workspace unless the repo already has complete user docs."
+              ;;
+            user-docs-maintenance-flow)
+              bundle_path="bundles/user-docs-agent"
+              agent_slug="user-docs-agent"
+              pipeline_slug="user-docs-pipeline"
+              default_prompt="Run the user docs maintenance flow. Update non-technical product documentation only where product-facing evidence, existing user docs, UI strings, support-style issues, release notes, or recent pull requests show stale, missing, fragmented, or misleading user guidance. Keep changes in the user-docs namespace and write docs in the provided workspace."
+              ;;
+            skills-maintenance-flow)
+              bundle_path="bundles/skills-agent"
+              agent_slug="skills-agent"
+              pipeline_slug="skills-pipeline"
+              default_prompt="Run the skills maintenance flow. Update live agent skill instructions and generated packaged skill outputs only where skill files, build scripts, generated outputs, upstream tool behavior, recent issues, or recent pull requests show stale, missing, fragmented, or misleading executable guidance. Keep changes inside the configured skills/package writable paths, run required verification such as build commands, repository checks, and generated-output drift checks, and write changes in the provided workspace."
+              ;;
+            *)
+              printf 'Unsupported flow_kind: %s\n' "$FLOW_KIND" >&2
+              exit 1
+              ;;
+          esac
+
+          prompt="$PROMPT"
+          if [ -z "$prompt" ]; then
+            prompt="$default_prompt"
+          fi
+          prompt="$(printf '%s\n\nWritable paths: %s' "$prompt" "$WRITABLE_PATHS")"
+          artifact_declarations='[
+            {"schema":"wp-codebox/artifact-declaration/v1","name":"docs_agent_transcript","type":"DocsAgentTranscript","artifact_schema":"docs-agent/transcript/v1","description":"Machine-readable transcript for the Docs Agent run.","required":false,"egress":["artifact","workflow-output","review-link"]},
+            {"schema":"wp-codebox/artifact-declaration/v1","name":"docs_agent_change_summary","type":"DocsAgentChangeSummary","artifact_schema":"docs-agent/change-summary/v1","description":"Reviewable summary of documentation or skill changes made by the run.","required":false,"egress":["pr-body","workflow-output","review-link"]},
+            {"schema":"wp-codebox/artifact-declaration/v1","name":"docs_agent_verification_report","type":"DocsAgentVerificationReport","artifact_schema":"docs-agent/verification-report/v1","description":"Runner verification command results for the target workspace.","required":false,"egress":["pr-body","workflow-output","review-link"]},
+            {"schema":"wp-codebox/artifact-declaration/v1","name":"docs_agent_drift_report","type":"DocsAgentDriftReport","artifact_schema":"docs-agent/drift-report/v1","description":"Drift-check results for generated documentation, skills, or packaged outputs.","required":false,"egress":["pr-body","workflow-output","review-link"]},
+            {"schema":"wp-codebox/artifact-declaration/v1","name":"docs_agent_workspace_publication","type":"DocsAgentWorkspacePublication","artifact_schema":"docs-agent/workspace-publication/v1","description":"Canonical branch and pull request links published by the runner workspace.","required":false,"egress":["pr-body","workflow-output","review-link"]}
+          ]'
+          recipe_json="$(jq -cn \
+            --arg targetRepository "$TARGET_REPO" \
+            --arg prompt "$prompt" \
+            --arg docsAgentRef "$GITHUB_SHA_VALUE" \
+            --arg bundlePath "$bundle_path" \
+            --arg agentSlug "$agent_slug" \
+            --arg pipelineSlug "$pipeline_slug" \
+            --arg flowSlug "$FLOW_KIND" \
+            --arg writablePaths "$WRITABLE_PATHS" \
+            --arg cloneUrl "https://github.com/$TARGET_REPO.git" \
+            --arg transcriptName "docs-agent-transcript-${GITHUB_RUN_ID_VALUE}" \
+            --arg replayBundleName "docs-agent-replay-${GITHUB_RUN_ID_VALUE}" \
+            --argjson artifactDeclarations "$artifact_declarations" \
+            '{
+              schema: "wp-codebox/docs-agent-runner-recipe/v1",
+              targetRepository: $targetRepository,
+              prompt: $prompt,
+              docsAgent: {
+                repository: "https://github.com/Automattic/docs-agent.git",
+                ref: $docsAgentRef,
+                bundlePath: $bundlePath,
+                bundlePathInRepo: $bundlePath,
+                agentSlug: $agentSlug,
+                pipelineSlug: $pipelineSlug,
+                flowSlug: $flowSlug
+              },
+              runner: {
+                validationDependencies: ("Automattic/docs-agent@" + $docsAgentRef),
+                writablePaths: $writablePaths,
+                workspace: {
+                  enabled: true,
+                  repo: $targetRepository,
+                  clone_url: $cloneUrl,
+                  branch_prefix: "docs/agent-run",
+                  from: "origin/main",
+                  bootstrap: false
+                }
+              },
+              policy: {
+                successRequiresPr: false,
+                successCompletionOutcomes: [],
+                appTokenRepositories: $targetRepository,
+                requireAppToken: true,
+                allowedRepositories: [$targetRepository]
+              },
+              artifacts: {
+                expected: ["docs_agent_transcript", "docs_agent_change_summary", "docs_agent_verification_report", "docs_agent_drift_report", "docs_agent_workspace_publication"],
+                declarations: $artifactDeclarations,
+                transcriptName: $transcriptName,
+                replayBundleName: $replayBundleName
+              },
+              engine: {
+                key: "docs_agent",
+                toolResultsKey: "github_tool_results",
+                outputMappings: { docs_pr_url: "metadata.engine_data.docs_agent.pr_url" }
+              }
+            }')"
+
+          printf 'recipe_json<<EOF\n%s\nEOF\n' "$recipe_json" >> "$GITHUB_OUTPUT"
 
   run-docs-agent:
     needs: prepare
-    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@main
+    uses: Automattic/wp-codebox/.github/workflows/docs-agent-runner.yml@main
     with:
-      runner_recipe: ${{ needs.prepare.outputs.runner_recipe }}
-      agent_bundle: ${{ contains(inputs.flow_kind, 'skills') && 'bundles/skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'bundles/technical-docs-agent' || 'bundles/user-docs-agent') }}
-      workload_id: ${{ inputs.flow_kind }}
-      workload_label: Run ${{ contains(inputs.flow_kind, 'skills') && 'skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-agent' || 'user-docs-agent') }} Docs Agent
-      component_id: docs-agent-ci-driver
+      recipe_json: ${{ needs.prepare.outputs.recipe_json }}
       target_repo: ${{ inputs.target_repo }}
-      prompt: |
-        ${{
-          inputs.prompt != '' &&
-          inputs.prompt ||
-          (
-            contains(inputs.flow_kind, 'technical-docs-bootstrap') &&
-            'Run the technical docs bootstrap flow. Build the broadest complete initial developer documentation surface possible from source code, tests, existing docs, issues, and pull requests. Write docs in the provided workspace unless the repo already has complete technical docs.' ||
-            contains(inputs.flow_kind, 'technical-docs') &&
-            'Run the technical docs maintenance flow. Update developer-facing living documentation only where source code, tests, recent issues, recent pull requests, or existing docs show stale, missing, fragmented, or misleading coverage. Write docs in the provided workspace.' ||
-            contains(inputs.flow_kind, 'user-docs-bootstrap') &&
-            'Run the user docs bootstrap flow. Build the broadest complete initial non-technical product documentation surface possible for frontend users from product-facing evidence, existing user docs, UI strings, support-style issues, release notes, and pull requests describing user-visible behavior. Use a separate user-docs namespace such as docs/user/. Write docs in the provided workspace unless the repo already has complete user docs.' ||
-            contains(inputs.flow_kind, 'skills') &&
-            'Run the skills maintenance flow. Update live agent skill instructions and generated packaged skill outputs only where skill files, build scripts, generated outputs, upstream tool behavior, recent issues, or recent pull requests show stale, missing, fragmented, or misleading executable guidance. Keep changes inside the configured skills/package writable paths, run required verification such as build commands, repository checks, and generated-output drift checks, and write changes in the provided workspace.' ||
-            'Run the user docs maintenance flow. Update non-technical product documentation only where product-facing evidence, existing user docs, UI strings, support-style issues, release notes, or recent pull requests show stale, missing, fragmented, or misleading user guidance. Keep changes in the user-docs namespace and write docs in the provided workspace.'
-          )
-        }}
-
-        Writable paths: ${{ inputs.writable_paths }}
-      writable_paths: ${{ inputs.writable_paths }}
       provider: openai
       model: ${{ inputs.openai_model }}
-      runner_workspace: |
-        {
-          "enabled": true,
-          "repo": "${{ inputs.target_repo }}",
-          "clone_url": "https://github.com/${{ inputs.target_repo }}.git",
-          "branch_prefix": "docs/agent-run",
-          "from": "origin/main",
-          "bootstrap": false
-        }
-      success_requires_pr: false
-      success_completion_outcomes: '[]'
-      app_token_repos: ${{ inputs.target_repo }}
-      require_homeboy_app_token: true
-      allowed_repos: '["${{ inputs.target_repo }}"]'
-      tool_results_key: github_tool_results
-      output_projections: '{"docs_pr_url":"metadata.engine_data.docs_agent.pr_url"}'
-      transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
-      replay_bundle_artifact_name: docs-agent-replay-${{ github.run_id }}
-      expected_artifacts: '["docs_agent_transcript","docs_agent_change_summary","docs_agent_verification_report","docs_agent_drift_report","docs_agent_workspace_publication"]'
-      artifact_declarations: |
-        [
-          {
-            "schema": "wp-codebox/artifact-declaration/v1",
-            "name": "docs_agent_transcript",
-            "type": "DocsAgentTranscript",
-            "artifact_schema": "docs-agent/transcript/v1",
-            "description": "Machine-readable transcript for the Docs Agent run.",
-            "required": false,
-            "egress": ["artifact", "workflow-output", "review-link"]
-          },
-          {
-            "schema": "wp-codebox/artifact-declaration/v1",
-            "name": "docs_agent_change_summary",
-            "type": "DocsAgentChangeSummary",
-            "artifact_schema": "docs-agent/change-summary/v1",
-            "description": "Reviewable summary of documentation or skill changes made by the run.",
-            "required": false,
-            "egress": ["pr-body", "workflow-output", "review-link"]
-          },
-          {
-            "schema": "wp-codebox/artifact-declaration/v1",
-            "name": "docs_agent_verification_report",
-            "type": "DocsAgentVerificationReport",
-            "artifact_schema": "docs-agent/verification-report/v1",
-            "description": "Runner verification command results for the target workspace.",
-            "required": false,
-            "egress": ["pr-body", "workflow-output", "review-link"]
-          },
-          {
-            "schema": "wp-codebox/artifact-declaration/v1",
-            "name": "docs_agent_drift_report",
-            "type": "DocsAgentDriftReport",
-            "artifact_schema": "docs-agent/drift-report/v1",
-            "description": "Drift-check results for generated documentation, skills, or packaged outputs.",
-            "required": false,
-            "egress": ["pr-body", "workflow-output", "review-link"]
-          },
-          {
-            "schema": "wp-codebox/artifact-declaration/v1",
-            "name": "docs_agent_workspace_publication",
-            "type": "DocsAgentWorkspacePublication",
-            "artifact_schema": "docs-agent/workspace-publication/v1",
-            "description": "Canonical branch and pull request links published by the runner workspace.",
-            "required": false,
-            "egress": ["pr-body", "workflow-output", "review-link"]
-          }
-        ]
-      callback_data: ${{ format('{{"agent_slug":"{0}","pipeline_slug":"{1}","flow_slug":"{2}","bundle_source":"{3}","target_repo":"{4}"}}', contains(inputs.flow_kind, 'skills') && 'skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-agent' || 'user-docs-agent'), contains(inputs.flow_kind, 'skills') && 'skills-pipeline' || (contains(inputs.flow_kind, 'technical-docs') && 'technical-docs-pipeline' || 'user-docs-pipeline'), inputs.flow_kind, contains(inputs.flow_kind, 'skills') && 'bundles/skills-agent' || (contains(inputs.flow_kind, 'technical-docs') && 'bundles/technical-docs-agent' || 'bundles/user-docs-agent'), inputs.target_repo) }}
-    secrets: inherit
+    secrets:
+      CODEBOX_RUNNER_APP_ID: ${{ secrets.HOMEBOY_APP_ID }}
+      CODEBOX_RUNNER_APP_PRIVATE_KEY: ${{ secrets.HOMEBOY_APP_PRIVATE_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      MODEL_PROVIDER_SECRET_1: ${{ secrets.PROVIDER_SECRET_1 }}
+      MODEL_PROVIDER_SECRET_2: ${{ secrets.PROVIDER_SECRET_2 }}
+      MODEL_PROVIDER_SECRET_3: ${{ secrets.PROVIDER_SECRET_3 }}
+      MODEL_PROVIDER_SECRET_4: ${{ secrets.PROVIDER_SECRET_4 }}
+      MODEL_PROVIDER_SECRET_5: ${{ secrets.PROVIDER_SECRET_5 }}
