@@ -93,11 +93,11 @@ Docs Agent declares the review artifacts it expects the runner to materialize as
 | `docs_agent_drift_report` | `docs-agent/drift-report/v1` | Drift-check results for generated docs, skills, or packaged outputs. |
 | `docs_agent_workspace_publication` | `docs-agent/workspace-publication/v1` | Canonical branch and pull request links published by the runner workspace. |
 
-`maintain-docs.yml` forwards `expected_artifacts` and `artifact_declarations` to the Homeboy Extensions runner, keeps transcript upload and `runtime_output_projections` as first-class review outputs, and exposes the same declaration objects as `declared_artifacts_json`. The reusable runner support landed in [Extra-Chill/homeboy-extensions#1422](https://github.com/Extra-Chill/homeboy-extensions/pull/1422).
+`maintain-docs.yml` forwards `expected_artifacts` and `artifact_declarations` to the runner, keeps transcript upload and `runtime_output_projections` as first-class review outputs, and exposes the same declaration objects as `declared_artifacts_json`.
 
-The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites use the generic Homeboy full-run workflow, with the Codebox/Homeboy contract centralized behind the committed `docs-agent/codebox-homeboy-runner` recipe in `ci/docs-agent-runner-recipe.json`. The resolver emits product-level runner inputs such as `runtime`, `runtime_ref`, `profile`, `runtime_profiles`, `component_contracts`, `ability_requirements`, and `runtime_config`; publication remains runner-owned while agents only edit the provided workspace.
+The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites should target a public Codebox workflow contract that accepts the committed `docs-agent/codebox-homeboy-runner` recipe in `ci/docs-agent-runner-recipe.json`; publication remains runner-owned while agents only edit the provided workspace.
 
-Runtime substrate checkout resolution belongs behind the Codebox/Homeboy runner contract. Until Codebox exposes a stable public component wrapper for those internals, Docs Agent validation keeps recipe and workflow surfaces on product-level capabilities and blocks direct runtime ability names, component paths, mount directives, and define directives.
+TODO(Codebox public workflow): the current workflow still calls the Homeboy Extensions full-run workflow because Codebox does not yet expose a stable public reusable workflow for this recipe. Treat the direct Homeboy Extensions workflow path and recipe resolver output fields as transitional wiring, not consumer-facing Docs Agent contracts. Runtime substrate checkout resolution belongs behind the Codebox public workflow boundary; validation blocks direct runtime ability names, component paths, mount directives, and define directives from consumer examples.
 
 ## Pull Request Behavior
 
