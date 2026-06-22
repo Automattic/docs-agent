@@ -161,7 +161,8 @@ $profile_capabilities = $recipe['runtime_profiles']['docs-agent-runner']['capabi
 $assert( in_array( 'docs-agent.workspace-editing', $profile_capabilities, true ), 'Runner recipe must declare Docs Agent runner capabilities through runtime_profiles.' );
 
 $recipe_text = (string) file_get_contents( $root . '/ci/docs-agent-runner-recipe.json' );
-foreach ( array( 'datamachine/', 'datamachine-agent-ci', 'runtime_task_ability', 'runtime_bundle_ability', 'runtime_workflow_ability', 'runtime_components', 'workspace_policy', 'DOCS_AGENT_', '/wordpress/wp-content/mu-plugins', 'required_abilities', 'disable_datamachine_directives' ) as $internal_fragment ) {
+$blocked_runtime_fragments = array( 'datamachine/', 'datamachine-agent-ci', 'runtime_task_ability', 'runtime_bundle_ability', 'runtime_workflow_ability', 'runtime_components', 'Automattic/agents-api@', 'Extra-Chill/data-machine@', 'Extra-Chill/data-machine-code@', 'workspace_policy', 'DOCS_AGENT_', '/wordpress/wp-content/mu-plugins', 'required_abilities', 'disable_datamachine_directives' );
+foreach ( $blocked_runtime_fragments as $internal_fragment ) {
 	$assert( ! str_contains( $recipe_text, $internal_fragment ), "Runner recipe must not expose runtime internals: {$internal_fragment}" );
 }
 
@@ -206,7 +207,7 @@ $assert( str_contains( $maintain_docs_workflow, 'Resolve runner recipe' ), 'main
 $assert( str_contains( $maintain_docs_workflow, 'expected_artifacts: ${{ needs.prepare.outputs.expected_artifacts }}' ), 'maintain-docs.yml must pass expected_artifacts through to the canonical runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations: ${{ needs.prepare.outputs.artifact_declarations }}' ), 'maintain-docs.yml must pass artifact_declarations through to the canonical runner.' );
 
-$workflow_internal_fragments = array( 'datamachine/', 'datamachine-agent-ci', 'runtime_provider:', 'runtime_provider }}', 'runtime_profile:', 'runtime_profile }}', 'runtime_components:', 'runtime_components }}', 'runtime_mounts:', 'runtime_mounts }}', 'required_abilities:', 'required_abilities }}', 'extra_wp_config_defines:', 'DOCS_AGENT_', '/wordpress/wp-content/mu-plugins', 'workspace_policy' );
+$workflow_internal_fragments = array_merge( $blocked_runtime_fragments, array( 'runtime_provider:', 'runtime_provider }}', 'runtime_profile:', 'runtime_profile }}', 'runtime_components:', 'runtime_components }}', 'runtime_mounts:', 'runtime_mounts }}', 'required_abilities:', 'required_abilities }}', 'extra_wp_config_defines:' ) );
 foreach ( $workflow_internal_fragments as $internal_fragment ) {
 	$assert( ! str_contains( $maintain_docs_workflow, $internal_fragment ), "maintain-docs.yml must not expose runtime internals: {$internal_fragment}" );
 }
@@ -239,6 +240,8 @@ $workflow_readme = (string) file_get_contents( $root . '/.github/workflows/READM
 foreach ( array( 'Docs Agent Runner Recipe', 'Extra-Chill/homeboy-extensions@main', 'Automattic/docs-agent#100', 'runtime-agent-full-run.yml', 'docs-agent/codebox-homeboy-runner', 'resolve-docs-agent-runner-recipe.php', 'runtime_dependencies', 'component_contracts', 'ability_requirements' ) as $migration_note_text ) {
 	$assert( str_contains( $workflow_readme, $migration_note_text ), "Workflow README missing agent runtime note: {$migration_note_text}" );
 }
+$assert( str_contains( $workflow_readme, 'stable public component wrapper' ), 'Workflow README must document the Codebox public wrapper blocker.' );
+$assert( str_contains( $workflow_readme, 'blocks direct runtime ability names, component paths, mount directives, and define directives' ), 'Workflow README must document blocked runtime substrate surfaces.' );
 
 $public_docs = strtolower(
 	(string) file_get_contents( $root . '/README.md' ) . "\n" .
@@ -288,6 +291,9 @@ $assert( ! str_contains( $skills_example, 'prompt:' ), 'build-with-wordpress ski
 $example_text = (string) file_get_contents( $example_path );
 foreach ( array( '/path/to', '/Users/', 'localhost', '127.0.0.1' ) as $local_path_fragment ) {
 	$assert( ! str_contains( $example_text, $local_path_fragment ), "Example runner config must not contain local-only path or host fragment: {$local_path_fragment}" );
+}
+foreach ( $blocked_runtime_fragments as $internal_fragment ) {
+	$assert( ! str_contains( $example_text, $internal_fragment ), "Example runner config must not expose runtime internals: {$internal_fragment}" );
 }
 
 $example_artifacts = $example['expected_artifacts'] ?? null;
