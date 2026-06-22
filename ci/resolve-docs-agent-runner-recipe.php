@@ -9,7 +9,7 @@ $root        = dirname( __DIR__ );
 $recipe_path = $root . '/ci/docs-agent-runner-recipe.json';
 $output_path = getenv( 'GITHUB_OUTPUT' ) ?: '';
 
-$docs_agent_checkout = trim( (string) ( getenv( 'DOCS_AGENT_CHECKOUT' ) ?: '.' ) );
+$runner_recipe_checkout = trim( (string) ( getenv( 'RUNNER_RECIPE_CHECKOUT' ) ?: '.' ) );
 $github_workspace    = trim( (string) ( getenv( 'GITHUB_WORKSPACE' ) ?: '${{ github.workspace }}' ) );
 
 if ( ! is_file( $recipe_path ) ) {
@@ -23,11 +23,11 @@ if ( ! is_array( $recipe ) ) {
 	exit( 1 );
 }
 
-$replace_placeholders = static function ( mixed $value ) use ( &$replace_placeholders, $docs_agent_checkout, $github_workspace ): mixed {
+$replace_placeholders = static function ( mixed $value ) use ( &$replace_placeholders, $runner_recipe_checkout, $github_workspace ): mixed {
 	if ( is_string( $value ) ) {
 		return str_replace(
-			array( '${docs_agent_checkout}', '${github_workspace}' ),
-			array( rtrim( $docs_agent_checkout, '/' ), rtrim( $github_workspace, '/' ) ),
+			array( '${runner_recipe_checkout}', '${github_workspace}' ),
+			array( rtrim( $runner_recipe_checkout, '/' ), rtrim( $github_workspace, '/' ) ),
 			$value
 		);
 	}
@@ -44,13 +44,13 @@ $replace_placeholders = static function ( mixed $value ) use ( &$replace_placeho
 $recipe = $replace_placeholders( $recipe );
 
 $required_keys = array(
-	'runtime_provider',
+	'runtime',
 	'runtime_ref',
-	'runtime_profile',
+	'profile',
 	'runtime_profiles',
 	'runtime_dependencies',
 	'openai_provider_ref',
-	'runtime_components',
+	'component_contracts',
 	'ability_requirements',
 	'runtime_config',
 );
@@ -73,14 +73,14 @@ $encode = static function ( mixed $value ): string {
 };
 
 $outputs = array(
-	'runner_recipe_id'     => (string) ( $recipe['id'] ?? 'docs-agent/codebox-agent-bundle' ),
-	'runtime_provider'     => (string) $recipe['runtime_provider'],
+	'runner_recipe_id'     => (string) ( $recipe['id'] ?? 'docs-agent/codebox-homeboy-runner' ),
+	'runtime'              => (string) $recipe['runtime'],
 	'runtime_ref'          => (string) $recipe['runtime_ref'],
-	'runtime_profile'      => (string) $recipe['runtime_profile'],
+	'profile'              => (string) $recipe['profile'],
 	'runtime_profiles'     => $encode( $recipe['runtime_profiles'] ),
 	'runtime_dependencies' => $encode( $recipe['runtime_dependencies'] ),
 	'openai_provider_ref'  => (string) $recipe['openai_provider_ref'],
-	'runtime_components'   => $encode( $recipe['runtime_components'] ),
+	'component_contracts'  => $encode( $recipe['component_contracts'] ),
 	'ability_requirements' => $encode( $recipe['ability_requirements'] ),
 	'runtime_config'       => $encode( $recipe['runtime_config'] ),
 );

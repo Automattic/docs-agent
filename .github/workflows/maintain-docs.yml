@@ -127,13 +127,13 @@ jobs:
       expected_artifacts: ${{ steps.config.outputs.expected_artifacts }}
       artifact_declarations: ${{ steps.config.outputs.artifact_declarations }}
       runner_recipe_id: ${{ steps.recipe.outputs.runner_recipe_id }}
-      runtime_provider: ${{ steps.recipe.outputs.runtime_provider }}
+      runtime: ${{ steps.recipe.outputs.runtime }}
       runtime_ref: ${{ steps.recipe.outputs.runtime_ref }}
-      runtime_profile: ${{ steps.recipe.outputs.runtime_profile }}
+      profile: ${{ steps.recipe.outputs.profile }}
       runtime_profiles: ${{ steps.recipe.outputs.runtime_profiles }}
       runtime_dependencies: ${{ steps.recipe.outputs.runtime_dependencies }}
       openai_provider_ref: ${{ steps.recipe.outputs.openai_provider_ref }}
-      runtime_components: ${{ steps.recipe.outputs.runtime_components }}
+      component_contracts: ${{ steps.recipe.outputs.component_contracts }}
       ability_requirements: ${{ steps.recipe.outputs.ability_requirements }}
       runtime_config: ${{ steps.recipe.outputs.runtime_config }}
     steps:
@@ -146,12 +146,12 @@ jobs:
           INPUT_VERIFICATION_COMMANDS: ${{ inputs.verification_commands }}
           INPUT_DRIFT_CHECKS: ${{ inputs.drift_checks }}
           INPUT_BOOTSTRAP_CONTRACT: ${{ inputs.bootstrap_contract }}
-          INPUT_DOCS_AGENT_REF: ${{ inputs.docs_agent_ref }}
+          INPUT_RECIPE_REF: ${{ inputs.docs_agent_ref }}
           WORKFLOW_REF: ${{ github.workflow_ref }}
         run: |
           set -euo pipefail
 
-          docs_agent_ref="$(printf '%s' "$INPUT_DOCS_AGENT_REF" | xargs)"
+          docs_agent_ref="$(printf '%s' "$INPUT_RECIPE_REF" | xargs)"
           if [ -z "$docs_agent_ref" ]; then
             workflow_ref="$(printf '%s' "$WORKFLOW_REF" | xargs)"
             if [[ "$workflow_ref" == *@* ]]; then
@@ -373,7 +373,7 @@ jobs:
       - name: Resolve runner recipe
         id: recipe
         env:
-          DOCS_AGENT_CHECKOUT: .ci/docs-agent
+          RUNNER_RECIPE_CHECKOUT: .ci/docs-agent
         run: php .ci/docs-agent/ci/resolve-docs-agent-runner-recipe.php
 
   docs_agent:
@@ -382,9 +382,9 @@ jobs:
     uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main
     with:
       homeboy_extensions_ref: main
-      runtime_provider: ${{ needs.prepare.outputs.runtime_provider }}
+      runtime: ${{ needs.prepare.outputs.runtime }}
       runtime_ref: ${{ needs.prepare.outputs.runtime_ref }}
-      runtime_profile: ${{ needs.prepare.outputs.runtime_profile }}
+      profile: ${{ needs.prepare.outputs.profile }}
       runtime_profiles: ${{ needs.prepare.outputs.runtime_profiles }}
       runtime_execution: ${{ format('{{"kind":"bundle","source":".ci/docs-agent/{0}"}}', needs.prepare.outputs.bundle_source) }}
       workload_id: ${{ needs.prepare.outputs.flow_slug }}
@@ -417,7 +417,7 @@ jobs:
       time_budget_ms: ${{ inputs.time_budget_ms }}
       runtime_dependencies: ${{ needs.prepare.outputs.runtime_dependencies }}
       openai_provider_ref: ${{ needs.prepare.outputs.openai_provider_ref }}
-      runtime_components: ${{ needs.prepare.outputs.runtime_components }}
+      component_contracts: ${{ needs.prepare.outputs.component_contracts }}
       context_repositories: ${{ needs.prepare.outputs.context_repositories }}
       verification_commands: ${{ needs.prepare.outputs.verification_commands }}
       drift_checks: ${{ needs.prepare.outputs.drift_checks }}

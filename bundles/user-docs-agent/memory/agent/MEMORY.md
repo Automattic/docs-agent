@@ -24,7 +24,7 @@ Good user documentation should make it easy for non-technical product users to u
 - Troubleshooting cues, recovery steps, and FAQ-worthy behavior.
 - Navigation that moves from overview to task pages without one giant page.
 
-Write for frontend consumers. Use product names, feature names, visible labels, task steps, and outcomes. Keep implementation evidence internal to the run.
+Write for frontend users. Use product names, feature names, visible labels, task steps, and outcomes. Use source evidence to make published product documentation accurate without exposing code-level mechanics.
 
 ## Supported Workflows
 
@@ -43,5 +43,5 @@ Consumers may choose a different product-docs path explicitly, but the path shou
 
 - Keep user docs in their own namespace, such as `docs/user/`, with their own index.
 - Organize pages by product task and user journey.
-- Write plain-language pages that avoid implementation internals.
+- Write plain-language pages focused on product concepts, visible labels, tasks, and outcomes.
 - Use focused topic pages with cross-links instead of a monolithic guide.
