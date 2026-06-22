@@ -46,7 +46,7 @@ jobs:
       expected_artifacts: ${{ steps.recipe.outputs.expected_artifacts }}
     steps:
       - name: Checkout docs-agent
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.3
 
       - name: Prepare Docs Agent recipe
         id: recipe
