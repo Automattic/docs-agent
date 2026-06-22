@@ -18,6 +18,8 @@ The target repository needs a token path that can inspect source, write the conf
 
 Docs Agent workflow call sites use the generic Homeboy full-run workflow: `Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main`. Docs Agent keeps its Codebox/Homeboy runner contract behind the committed `docs-agent/codebox-homeboy-runner` recipe in `ci/docs-agent-runner-recipe.json`. Workflows run `ci/resolve-docs-agent-runner-recipe.php` and pass product-level runner fields to Homeboy Extensions: `runtime`, `runtime_ref`, `profile`, `runtime_profiles`, `runtime_dependencies`, `component_contracts`, `ability_requirements`, and `runtime_config`. This support is tracked in Automattic/docs-agent#100 and uses the generic full-run support available on `Extra-Chill/homeboy-extensions@main`.
 
+Runtime substrate checkout resolution is intentionally outside the Docs Agent-facing recipe. Until Codebox exposes a stable public component wrapper for those internals, validation blocks direct runtime ability names, component paths, mount directives, and define directives from the recipe and workflow call sites.
+
 Bundle selection is expressed through `runtime_execution` rather than legacy `bundle_path` inputs. Workspace boundaries are expressed through `runner_workspace`, `writable_paths`, and runner-owned publication inputs so agents remain workspace editors while Homeboy owns branch and pull request publication.
 
 When updating the reusable workflow ref, advance `uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@...` and `homeboy_extensions_ref` together, then run `php tests/validate-docs-agent-bundle.php` so workflow routing and runner config stay aligned.
