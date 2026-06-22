@@ -95,7 +95,7 @@ Docs Agent declares the review artifacts it expects the runner to materialize as
 
 `maintain-docs.yml` forwards `expected_artifacts` and `artifact_declarations` to the Homeboy Extensions runner, keeps transcript upload and `runtime_output_projections` as first-class review outputs, and exposes the same declaration objects as `declared_artifacts_json`. The reusable runner support landed in [Extra-Chill/homeboy-extensions#1422](https://github.com/Extra-Chill/homeboy-extensions/pull/1422).
 
-The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites use the generic Homeboy full-run workflow, with the Codebox/Homeboy contract centralized behind the committed `docs-agent/codebox-homeboy-runner` recipe in `ci/docs-agent-runner-recipe.json`. The resolver emits product-level runner inputs such as `runtime`, `runtime_ref`, `profile`, `runtime_profiles`, `runtime_dependencies`, `component_contracts`, `ability_requirements`, and `runtime_config`; publication remains runner-owned while agents only edit the provided workspace.
+The runner migration is tracked in [Automattic/docs-agent#100](https://github.com/Automattic/docs-agent/issues/100). Docs Agent workflow call sites use the generic Homeboy full-run workflow, with the Codebox/Homeboy contract centralized behind the committed `docs-agent/codebox-homeboy-runner` recipe in `ci/docs-agent-runner-recipe.json`. The resolver emits product-level runner inputs such as `runtime`, `runtime_ref`, `profile`, `runtime_profiles`, `component_contracts`, `ability_requirements`, and `runtime_config`; publication remains runner-owned while agents only edit the provided workspace.
 
 ## Pull Request Behavior
 
