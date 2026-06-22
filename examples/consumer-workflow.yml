@@ -26,7 +26,7 @@ jobs:
     with:
       audience: technical
       base_ref: trunk
-      docs_branch: docs-agent/build-with-wordpress-docs
+      docs_branch: docs-agent/example-docs
       writable_paths: README.md,docs/**
       prompt: ${{ github.event_name == 'workflow_dispatch' && inputs.prompt || '' }}
       run_agent: ${{ github.event_name != 'workflow_dispatch' || inputs.run_agent }}

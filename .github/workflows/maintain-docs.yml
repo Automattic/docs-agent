@@ -4,11 +4,11 @@ name: Maintain Docs
   workflow_call:
     inputs:
       audience:
-        description: Maintenance lane to run. Use technical for developer docs, user for product docs, or skills for live skill upkeep.
+        description: Maintenance lane to prepare. Use technical for developer docs, user for product docs, or skills for live skill upkeep.
         type: string
         default: technical
       run_kind:
-        description: 'Docs Agent flow kind to run: bootstrap or maintenance.'
+        description: 'Docs Agent flow kind to prepare: bootstrap or maintenance.'
         type: string
         default: maintenance
       base_ref:
@@ -24,7 +24,7 @@ name: Maintain Docs
         type: string
         default: README.md,docs/**
       context_repositories:
-        description: JSON array of canonical read-only runner context repositories.
+        description: JSON array of canonical read-only context repositories.
         type: string
         default: "[]"
       verification_commands:
@@ -43,90 +43,33 @@ name: Maintain Docs
         description: Optional maintenance instruction appended to the default Docs Agent prompt.
         type: string
         default: ""
-      model:
-        description: Model used by Docs Agent.
-        type: string
-        default: gpt-5.5
       docs_agent_ref:
         description: Ref of Automattic/docs-agent to use for the agent bundle and validation dependency.
         type: string
         default: main
       run_agent:
-        description: Set false to record a deterministic skip after a caller preflight decides docs are already current.
+        description: Preserved for callers that gate downstream runner execution; this workflow only prepares a recipe.
         type: boolean
         default: true
-      max_turns:
-        description: Maximum model turns for one Docs Agent run.
-        type: number
-        default: 48
-      step_budget:
-        description: Maximum runner step budget for one Docs Agent run.
-        type: number
-        default: 64
-      time_budget_ms:
-        description: Maximum wall-clock budget in milliseconds for one Docs Agent run.
-        type: number
-        default: 1200000
-    secrets:
-      HOMEBOY_APP_ID:
-        required: false
-      HOMEBOY_APP_PRIVATE_KEY:
-        required: false
-      OPENAI_API_KEY:
-        required: false
-      PROVIDER_SECRET_1:
-        required: false
-      PROVIDER_SECRET_2:
-        required: false
-      PROVIDER_SECRET_3:
-        required: false
-      PROVIDER_SECRET_4:
-        required: false
-      PROVIDER_SECRET_5:
-        required: false
     outputs:
       job_status:
-        description: Runner job status, or skipped when run_agent is false.
-        value: ${{ jobs.docs_agent.outputs.job_status }}
-      transcript_json:
-        description: Machine-readable Docs Agent transcript JSON.
-        value: ${{ jobs.docs_agent.outputs.transcript_json }}
-      transcript_summary:
-        description: Human-readable Docs Agent transcript summary.
-        value: ${{ jobs.docs_agent.outputs.transcript_summary }}
-      engine_data_json:
-        description: Projected Docs Agent engine data, including PR URL fields when available.
-        value: ${{ jobs.docs_agent.outputs.engine_data_json }}
+        description: Recipe preparation status.
+        value: ${{ jobs.prepare.outputs.job_status }}
+      recipe_json:
+        description: Portable Docs Agent runner recipe JSON.
+        value: ${{ jobs.prepare.outputs.recipe_json }}
       declared_artifacts_json:
-        description: Docs Agent typed artifact declarations prepared for upstream runner support.
+        description: Docs Agent typed artifact declarations.
         value: ${{ jobs.prepare.outputs.artifact_declarations }}
-      auth_mode:
-        description: Authentication mode used by the underlying runner.
-        value: ${{ jobs.docs_agent.outputs.credential_mode }}
 
 jobs:
   prepare:
-    name: Prepare Docs Agent
+    name: Prepare Docs Agent Recipe
     runs-on: ubuntu-latest
     outputs:
-      bundle_source: ${{ steps.config.outputs.bundle_source }}
-      agent_slug: ${{ steps.config.outputs.agent_slug }}
-      pipeline_slug: ${{ steps.config.outputs.pipeline_slug }}
-      flow_slug: ${{ steps.config.outputs.flow_slug }}
-      run_kind: ${{ steps.config.outputs.run_kind }}
-      docs_agent_ref: ${{ steps.config.outputs.docs_agent_ref }}
-      bundle_validator_spec: ${{ steps.config.outputs.bundle_validator_spec }}
-      fallback_pr_title: ${{ steps.config.outputs.fallback_pr_title }}
-      default_prompt: ${{ steps.config.outputs.default_prompt }}
-      context_repositories: ${{ steps.config.outputs.context_repositories }}
-      verification_commands: ${{ steps.config.outputs.verification_commands }}
-      drift_checks: ${{ steps.config.outputs.drift_checks }}
-      bootstrap_contract: ${{ steps.config.outputs.bootstrap_contract }}
-      bootstrap_contract_prompt: ${{ steps.config.outputs.bootstrap_contract_prompt }}
-      workspace_contract_checks: ${{ steps.config.outputs.workspace_contract_checks }}
-      expected_artifacts: ${{ steps.config.outputs.expected_artifacts }}
+      job_status: prepared
+      recipe_json: ${{ steps.config.outputs.recipe_json }}
       artifact_declarations: ${{ steps.config.outputs.artifact_declarations }}
-      runner_recipe: ${{ steps.config.outputs.runner_recipe }}
     steps:
       - name: Resolve Docs Agent settings
         id: config
@@ -137,321 +80,105 @@ jobs:
           INPUT_VERIFICATION_COMMANDS: ${{ inputs.verification_commands }}
           INPUT_DRIFT_CHECKS: ${{ inputs.drift_checks }}
           INPUT_BOOTSTRAP_CONTRACT: ${{ inputs.bootstrap_contract }}
-          INPUT_RECIPE_REF: ${{ inputs.docs_agent_ref }}
           INPUT_PROMPT: ${{ inputs.prompt }}
           INPUT_WRITABLE_PATHS: ${{ inputs.writable_paths }}
-          INPUT_MAX_TURNS: ${{ inputs.max_turns }}
-          INPUT_STEP_BUDGET: ${{ inputs.step_budget }}
-          INPUT_TIME_BUDGET_MS: ${{ inputs.time_budget_ms }}
+          INPUT_DOCS_AGENT_REF: ${{ inputs.docs_agent_ref }}
           INPUT_DOCS_BRANCH: ${{ inputs.docs_branch }}
           INPUT_BASE_REF: ${{ inputs.base_ref }}
           GITHUB_REPOSITORY_NAME: ${{ github.repository }}
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_RUN_ID_VALUE: ${{ github.run_id }}
-          WORKFLOW_REF: ${{ github.workflow_ref }}
         run: |
           set -euo pipefail
 
-          docs_agent_ref="$(printf '%s' "$INPUT_RECIPE_REF" | xargs)"
-          if [ -z "$docs_agent_ref" ]; then
-            workflow_ref="$(printf '%s' "$WORKFLOW_REF" | xargs)"
-            if [[ "$workflow_ref" == *@* ]]; then
-              docs_agent_ref="${workflow_ref##*@}"
-            else
-              docs_agent_ref="main"
-            fi
-          fi
-
-          run_kind="$(printf '%s' "$RUN_KIND" | xargs)"
-          if [ -z "$run_kind" ]; then
-            run_kind="maintenance"
-          fi
-
-          bootstrap_contract_input="$INPUT_BOOTSTRAP_CONTRACT"
-          if [ -z "$bootstrap_contract_input" ]; then
-            bootstrap_contract_input="{}"
-          fi
-
-          bootstrap_contract="$(printf '%s' "$bootstrap_contract_input" | jq -c '
-            if type != "object" then
-              error("bootstrap_contract must be a JSON object")
-            else
-              . + {
-                required_paths: (.required_paths // []),
-                required_globs: (.required_globs // []),
-                entry_points: (.entry_points // []),
-                forbidden_phrases: (.forbidden_phrases // [])
-              }
-            end
-          ')"
-
-          printf '%s' "$bootstrap_contract" | jq -e '
-            (.required_paths | type == "array") and
-            (all(.required_paths[]; type == "string" and length > 0)) and
-            (.required_globs | type == "array") and
-            (all(.required_globs[]; type == "object" and (.pattern | type == "string" and length > 0) and (((.min // .min_count) | type) == "number") and ((.min // .min_count) >= 0))) and
-            (.entry_points | type == "array") and
-            (all(.entry_points[]; type == "object" and (.path | type == "string" and length > 0) and ((.must_link_to // []) | type == "array") and all((.must_link_to // [])[]; type == "string" and length > 0))) and
-            (.forbidden_phrases | type == "array") and
-            (all(.forbidden_phrases[]; type == "string" and length > 0))
-          ' >/dev/null
-
-          if [ "$run_kind" = "bootstrap" ]; then
-            workspace_contract_checks="$(printf '%s' "$bootstrap_contract" | jq -c '{
-              paths_exist: .required_paths,
-              glob_min_count: (.required_globs | map({ pattern: .pattern, min: (.min // .min_count) })),
-              entry_points: .entry_points,
-              forbidden_phrases: .forbidden_phrases
-            }')"
-            bootstrap_contract_prompt="$(printf '%s' "$bootstrap_contract" | jq -r '
-              if ((.required_paths | length) + (.required_globs | length) + (.entry_points | length) + (.forbidden_phrases | length)) == 0 then
-                ""
-              else
-                ([
-                  "Bootstrap contract success criteria:",
-                  "- Treat the JSON contract below as required completion criteria for this bootstrap run.",
-                  "- Create or preserve every required path before reporting success.",
-                  "- Create or preserve enough files for every required glob minimum before reporting success.",
-                  "- Connect each declared entry point to its declared target pages before reporting success.",
-                  "- Keep declared forbidden phrases out of the completed documentation surface.",
-                  "- Use no_changes only when the existing documentation surface already satisfies this contract and the complete bootstrap scope.",
-                  "```json",
-                  (tojson),
-                  "```"
-                ] | join("\n"))
-              end
-            ')"
-          else
-            workspace_contract_checks="{}"
-            bootstrap_contract_prompt=""
-          fi
-
-          case "$AUDIENCE" in
-            technical)
+          case "$AUDIENCE:$RUN_KIND" in
+            technical:bootstrap)
               bundle_path="bundles/technical-docs-agent"
               agent_slug="technical-docs-agent"
               pipeline_slug="technical-docs-pipeline"
-              bundle_validator_spec=".ci/docs-agent/tests/technical-docs-agent.validate-bundle-spec.json"
-              case "$run_kind" in
-                bootstrap)
-                  flow_slug="technical-docs-bootstrap-flow"
-                  fallback_pr_title="Bootstrap developer documentation"
-                  default_prompt="Bootstrap source-grounded developer documentation that helps developers understand, use, and extend the code in the repository. Cover repository architecture, generated-output contracts, APIs, extension points, setup, tests, operations, and contributor workflows. Build the complete initial developer documentation system from repository source and configured context evidence in this run. Add an adoption-oriented introduction path that uses repository-native product names, explains core concepts, and tells maintainers where to start before deep reference material. Preserve technical precision and useful architecture/reference depth."
-                  ;;
-                maintenance)
-                  flow_slug="technical-docs-maintenance-flow"
-                  fallback_pr_title="Update developer documentation"
-                  default_prompt="Maintain source-grounded developer documentation that helps developers understand, use, and extend the code in the repository. Update docs for newly shipped source behavior, changed generated-output contracts, APIs, extension points, setup, tests, operations, and contributor workflows. Correct documentation drift where existing docs no longer match source evidence. Preserve technical precision, repository-native product names, useful architecture/reference depth, and the existing documentation information architecture."
-                  ;;
-                *)
-                  printf 'Unsupported run_kind for technical docs: %s. Use bootstrap or maintenance.\n' "$run_kind" >&2
-                  exit 1
-                  ;;
-              esac
+              flow_slug="technical-docs-bootstrap-flow"
+              default_prompt="Bootstrap source-grounded developer documentation that helps developers understand, use, and extend the code in the repository."
               ;;
-            user)
+            technical:maintenance)
+              bundle_path="bundles/technical-docs-agent"
+              agent_slug="technical-docs-agent"
+              pipeline_slug="technical-docs-pipeline"
+              flow_slug="technical-docs-maintenance-flow"
+              default_prompt="Maintain source-grounded developer documentation that helps developers understand, use, and extend the code in the repository."
+              ;;
+            user:bootstrap)
               bundle_path="bundles/user-docs-agent"
               agent_slug="user-docs-agent"
               pipeline_slug="user-docs-pipeline"
-              bundle_validator_spec=".ci/docs-agent/tests/user-docs-agent.validate-bundle-spec.json"
-              case "$run_kind" in
-                bootstrap)
-                  flow_slug="user-docs-bootstrap-flow"
-                  fallback_pr_title="Bootstrap product documentation"
-                  default_prompt="Bootstrap source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs. Build the complete initial user documentation system from product-facing evidence in this run. Add an adoption-oriented introduction path that explains product names, concepts, and where to start before detailed task/reference material. Preserve factual depth without turning the docs shallow."
-                  ;;
-                maintenance)
-                  flow_slug="user-docs-maintenance-flow"
-                  fallback_pr_title="Update product documentation"
-                  default_prompt="Maintain source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs. Add an adoption-oriented introduction path that explains product names, concepts, and where to start before detailed task/reference material. Preserve factual depth without turning the docs shallow."
-                  ;;
-                *)
-                  printf 'Unsupported run_kind for user docs: %s. Use bootstrap or maintenance.\n' "$run_kind" >&2
-                  exit 1
-                  ;;
-              esac
+              flow_slug="user-docs-bootstrap-flow"
+              default_prompt="Bootstrap source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs."
               ;;
-            skills)
-              if [ "$run_kind" = "bootstrap" ]; then
-                printf 'Unsupported run_kind for skills: bootstrap. Use maintenance.\n' >&2
-                exit 1
-              fi
+            user:maintenance)
+              bundle_path="bundles/user-docs-agent"
+              agent_slug="user-docs-agent"
+              pipeline_slug="user-docs-pipeline"
+              flow_slug="user-docs-maintenance-flow"
+              default_prompt="Maintain source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs."
+              ;;
+            skills:maintenance)
               bundle_path="bundles/skills-agent"
               agent_slug="skills-agent"
               pipeline_slug="skills-pipeline"
-              if [ "$run_kind" = "maintenance" ]; then
-                flow_slug="skills-maintenance-flow"
-              else
-                printf 'Unsupported run_kind for skills: %s. Use maintenance.\n' "$run_kind" >&2
-                exit 1
-              fi
-              bundle_validator_spec=".ci/docs-agent/tests/skills-agent.validate-bundle-spec.json"
-              fallback_pr_title="Update live agent skills"
-              default_prompt="Maintain live agent skill instructions and generated packaged skill outputs. Keep the skills lane separate from technical docs upkeep: technical docs document skills, while this lane maintains executable skill instructions themselves. Preserve prompt quality, routing behavior, tool-use policy, writable-path safety, packaging consistency, and focused review of behavior changes. Run consumer-required verification such as pnpm build, pnpm verify, and generated-output drift checks when requested by the target repository."
+              flow_slug="skills-maintenance-flow"
+              default_prompt="Maintain live agent skill instructions and generated packaged skill outputs."
               ;;
             *)
-              printf 'Unsupported audience: %s. Use technical, user, or skills.\n' "$AUDIENCE" >&2
+              printf 'Unsupported Docs Agent lane: %s/%s\n' "$AUDIENCE" "$RUN_KIND" >&2
               exit 1
               ;;
           esac
 
-          artifact_declarations="$(jq -cn '[
-            {
-              schema: "wp-codebox/artifact-declaration/v1",
-              name: "docs_agent_transcript",
-              type: "DocsAgentTranscript",
-              artifact_schema: "docs-agent/transcript/v1",
-              description: "Machine-readable transcript for the Docs Agent run.",
-              required: false,
-              egress: ["artifact", "workflow-output", "review-link"]
-            },
-            {
-              schema: "wp-codebox/artifact-declaration/v1",
-              name: "docs_agent_change_summary",
-              type: "DocsAgentChangeSummary",
-              artifact_schema: "docs-agent/change-summary/v1",
-              description: "Reviewable summary of documentation or skill changes made by the run.",
-              required: false,
-              egress: ["pr-body", "workflow-output", "review-link"]
-            },
-            {
-              schema: "wp-codebox/artifact-declaration/v1",
-              name: "docs_agent_verification_report",
-              type: "DocsAgentVerificationReport",
-              artifact_schema: "docs-agent/verification-report/v1",
-              description: "Runner verification command results for the target workspace.",
-              required: false,
-              egress: ["pr-body", "workflow-output", "review-link"]
-            },
-            {
-              schema: "wp-codebox/artifact-declaration/v1",
-              name: "docs_agent_drift_report",
-              type: "DocsAgentDriftReport",
-              artifact_schema: "docs-agent/drift-report/v1",
-              description: "Drift-check results for generated documentation, skills, or packaged outputs.",
-              required: false,
-              egress: ["pr-body", "workflow-output", "review-link"]
-            },
-            {
-              schema: "wp-codebox/artifact-declaration/v1",
-              name: "docs_agent_workspace_publication",
-              type: "DocsAgentWorkspacePublication",
-              artifact_schema: "docs-agent/workspace-publication/v1",
-              description: "Canonical branch and pull request links published by the runner workspace.",
-              required: false,
-              egress: ["pr-body", "workflow-output", "review-link"]
-            }
-          ]')"
-          expected_artifacts="$(printf '%s' "$artifact_declarations" | jq -c 'map(.name)')"
-          prompt="$(printf '%s\n\n%s\n\n%s\n\nTarget repository: %s\nWorkflow run: %s/%s/actions/runs/%s\nDocs Agent lane: %s\nDocs Agent run kind: %s\nBase ref: %s\nCanonical branch: %s\nWritable paths: %s\n\nIf context repository aliases are available, treat them as read-only source evidence for the target workspace. Refer to aliases by name in findings and summaries instead of describing checkout mechanics.\n\nFor the selected lane, write files in the provided workspace. If the selected surface is already aligned, finish cleanly without changing files.' \
+          context_repositories="$(printf '%s' "$INPUT_CONTEXT_REPOSITORIES" | jq -c 'if type == "array" then . else error("context_repositories must be an array") end')"
+          verification_commands="$(printf '%s' "$INPUT_VERIFICATION_COMMANDS" | jq -c 'if type == "array" then . else error("verification_commands must be an array") end')"
+          drift_checks="$(printf '%s' "$INPUT_DRIFT_CHECKS" | jq -c 'if type == "array" then . else error("drift_checks must be an array") end')"
+          bootstrap_contract="$(printf '%s' "$INPUT_BOOTSTRAP_CONTRACT" | jq -c 'if type == "object" then . else error("bootstrap_contract must be an object") end')"
+
+          artifact_declarations='[
+            {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_transcript","type":"DocsAgentTranscript","artifact_schema":"docs-agent/transcript/v1","description":"Machine-readable transcript for the Docs Agent run.","required":false},
+            {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_change_summary","type":"DocsAgentChangeSummary","artifact_schema":"docs-agent/change-summary/v1","description":"Reviewable summary of documentation or skill changes made by the run.","required":false},
+            {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_verification_report","type":"DocsAgentVerificationReport","artifact_schema":"docs-agent/verification-report/v1","description":"Runner verification command results for the target workspace.","required":false},
+            {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_drift_report","type":"DocsAgentDriftReport","artifact_schema":"docs-agent/drift-report/v1","description":"Drift-check results for generated documentation, skills, or packaged outputs.","required":false},
+            {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_workspace_publication","type":"DocsAgentWorkspacePublication","artifact_schema":"docs-agent/workspace-publication/v1","description":"Canonical branch and pull request links published by the runner workspace.","required":false}
+          ]'
+
+          prompt="$(printf '%s\n\n%s\n\nTarget repository: %s\nWorkflow run: %s/%s/actions/runs/%s\nDocs Agent lane: %s\nDocs Agent run kind: %s\nBase ref: %s\nCanonical branch: %s\nWritable paths: %s\n' \
             "$default_prompt" \
             "$INPUT_PROMPT" \
-            "$bootstrap_contract_prompt" \
             "$GITHUB_REPOSITORY_NAME" \
             "$GITHUB_SERVER_URL" \
             "$GITHUB_REPOSITORY_NAME" \
             "$GITHUB_RUN_ID_VALUE" \
             "$AUDIENCE" \
-            "$run_kind" \
+            "$RUN_KIND" \
             "$INPUT_BASE_REF" \
             "$INPUT_DOCS_BRANCH" \
             "$INPUT_WRITABLE_PATHS")"
+
+          recipe_json="$(jq -cn \
+            --arg targetRepository "$GITHUB_REPOSITORY_NAME" \
+            --arg prompt "$prompt" \
+            --arg repository "https://github.com/Automattic/docs-agent.git" \
+            --arg ref "$INPUT_DOCS_AGENT_REF" \
+            --arg bundlePath "$bundle_path" \
+            --arg agentSlug "$agent_slug" \
+            --arg pipelineSlug "$pipeline_slug" \
+            --arg flowSlug "$flow_slug" \
+            --arg writablePaths "$INPUT_WRITABLE_PATHS" \
+            --arg baseRef "$INPUT_BASE_REF" \
+            --arg docsBranch "$INPUT_DOCS_BRANCH" \
+            --argjson contextRepositories "$context_repositories" \
+            --argjson verificationCommands "$verification_commands" \
+            --argjson driftChecks "$drift_checks" \
+            --argjson bootstrapContract "$bootstrap_contract" \
+            --argjson artifactDeclarations "$artifact_declarations" \
+            '{schema:"docs-agent/runner-recipe/v1",targetRepository:$targetRepository,prompt:$prompt,docsAgent:{repository:$repository,ref:$ref,bundlePath:$bundlePath,agentSlug:$agentSlug,pipelineSlug:$pipelineSlug,flowSlug:$flowSlug},runner:{contextRepositories:$contextRepositories,verificationCommands:$verificationCommands,driftChecks:$driftChecks,writablePaths:$writablePaths,baseRef:$baseRef,docsBranch:$docsBranch,bootstrapContract:$bootstrapContract},artifacts:{expected:($artifactDeclarations|map(.name)),declarations:$artifactDeclarations}}')"
+
           {
-            printf 'bundle_source=%s\n' "$bundle_path"
-            printf 'agent_slug=%s\n' "$agent_slug"
-            printf 'pipeline_slug=%s\n' "$pipeline_slug"
-            printf 'flow_slug=%s\n' "$flow_slug"
-            printf 'run_kind=%s\n' "$run_kind"
-            printf 'docs_agent_ref=%s\n' "$docs_agent_ref"
-            printf 'bundle_validator_spec=%s\n' "$bundle_validator_spec"
-            printf 'fallback_pr_title=%s\n' "$fallback_pr_title"
-            printf 'default_prompt<<EOF\n%s\nEOF\n' "$default_prompt"
-            printf 'context_repositories<<EOF\n%s\nEOF\n' "$INPUT_CONTEXT_REPOSITORIES"
-            printf 'verification_commands<<EOF\n%s\nEOF\n' "$INPUT_VERIFICATION_COMMANDS"
-            printf 'drift_checks<<EOF\n%s\nEOF\n' "$INPUT_DRIFT_CHECKS"
-            printf 'bootstrap_contract<<EOF\n%s\nEOF\n' "$bootstrap_contract"
-            printf 'bootstrap_contract_prompt<<EOF\n%s\nEOF\n' "$bootstrap_contract_prompt"
-            printf 'workspace_contract_checks<<EOF\n%s\nEOF\n' "$workspace_contract_checks"
-            printf 'expected_artifacts<<EOF\n%s\nEOF\n' "$expected_artifacts"
+            printf 'recipe_json<<EOF\n%s\nEOF\n' "$recipe_json"
             printf 'artifact_declarations<<EOF\n%s\nEOF\n' "$artifact_declarations"
-            printf 'runner_recipe=%s@%s:%s\n' 'Automattic/docs-agent' "$docs_agent_ref" 'ci/docs-agent-runner-recipe.json'
           } >> "$GITHUB_OUTPUT"
-
-  docs_agent:
-    name: Maintain Docs
-    needs: prepare
-    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@main
-    with:
-      runner_recipe: ${{ needs.prepare.outputs.runner_recipe }}
-      agent_bundle: ${{ format('.ci/docs-agent/{0}', needs.prepare.outputs.bundle_source) }}
-      workload_id: ${{ needs.prepare.outputs.flow_slug }}
-      workload_label: Run ${{ needs.prepare.outputs.agent_slug }} Docs Agent
-      component_id: docs-agent-ci-driver
-      target_repo: ${{ github.repository }}
-      prompt: |
-        ${{ needs.prepare.outputs.default_prompt }}
-
-        ${{ inputs.prompt }}
-
-        ${{ needs.prepare.outputs.bootstrap_contract_prompt }}
-
-        Target repository: ${{ github.repository }}
-        Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        Docs Agent lane: ${{ inputs.audience }}
-        Docs Agent run kind: ${{ needs.prepare.outputs.run_kind }}
-        Base ref: ${{ inputs.base_ref }}
-        Canonical branch: ${{ inputs.docs_branch }}
-        Writable paths: ${{ inputs.writable_paths }}
-
-        If context repository aliases are available, treat them as read-only source evidence for the target workspace. Refer to aliases by name in findings and summaries instead of describing checkout mechanics.
-
-        For the selected lane, write files in the provided workspace. If the selected surface is already aligned, finish cleanly without changing files.
-      run_agent: ${{ inputs.run_agent }}
-      provider: openai
-      model: ${{ inputs.model }}
-      max_turns: ${{ inputs.max_turns }}
-      step_budget: ${{ inputs.step_budget }}
-      time_budget_ms: ${{ inputs.time_budget_ms }}
-      context_repositories: ${{ needs.prepare.outputs.context_repositories }}
-      verification_commands: ${{ needs.prepare.outputs.verification_commands }}
-      drift_checks: ${{ needs.prepare.outputs.drift_checks }}
-      workspace_contract_checks: ${{ needs.prepare.outputs.workspace_contract_checks }}
-      writable_paths: ${{ inputs.writable_paths }}
-      validation_dependencies: Automattic/docs-agent@${{ needs.prepare.outputs.docs_agent_ref }}
-      runner_workspace: |
-        {
-          "enabled": true,
-          "repo": "${{ github.repository }}",
-          "clone_url": "https://github.com/${{ github.repository }}.git",
-          "branch": "${{ inputs.docs_branch }}",
-          "from": "origin/${{ inputs.base_ref }}",
-          "bootstrap": false,
-          "allow_stale": true,
-          "rebase_base": true
-        }
-      artifact_export_config: |
-        {
-          "pr_title_template": "${{ needs.prepare.outputs.fallback_pr_title }}",
-          "pr_body_template": "## Summary\n- Maintain the configured Docs Agent lane.\n- Keep writes inside `${{ inputs.writable_paths }}`.\n- Reuse the canonical Docs Agent branch `${{ inputs.docs_branch }}`.\n- Include runner-provided verification and drift-check summaries when available.\n\n## Result\n{result_table}\n\n## Checks\n{checks_table}\n\n## Review Artifacts\n{links_table}\n\n## AI assistance\n- **AI assistance:** Yes\n- **Tool(s):** Docs Agent via WP Codebox in GitHub Actions\n- **Model:** OpenAI GPT-5.5\n- **Used for:** Generated maintenance updates from repository source for human review."
-        }
-      success_requires_pr: false
-      success_completion_outcomes: '[]'
-      allowed_repos: '["${{ github.repository }}"]'
-      app_token_repos: ${{ github.repository }}
-      require_homeboy_app_token: true
-      tool_results_key: github_tool_results
-      output_projections: '{"docs_agent_pr_url":"metadata.engine_data.docs_agent.pr.url","runner_workspace_pr_url":"metadata.runner_workspace_publication.url","success_status":"metadata.success_status"}'
-      transcript_artifact_name: docs-agent-transcript-${{ github.run_id }}
-      replay_bundle_artifact_name: docs-agent-replay-${{ github.run_id }}
-      expected_artifacts: ${{ needs.prepare.outputs.expected_artifacts }}
-      artifact_declarations: ${{ needs.prepare.outputs.artifact_declarations }}
-      callback_data: ${{ format('{{"agent_slug":"{0}","pipeline_slug":"{1}","flow_slug":"{2}","bundle_source":".ci/docs-agent/{3}","target_repo":"{4}"}}', needs.prepare.outputs.agent_slug, needs.prepare.outputs.pipeline_slug, needs.prepare.outputs.flow_slug, needs.prepare.outputs.bundle_source, github.repository) }}
-    secrets:
-      CODEBOX_RUNNER_APP_ID: ${{ secrets.HOMEBOY_APP_ID }}
-      CODEBOX_RUNNER_APP_PRIVATE_KEY: ${{ secrets.HOMEBOY_APP_PRIVATE_KEY }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      MODEL_PROVIDER_SECRET_1: ${{ secrets.PROVIDER_SECRET_1 }}
-      MODEL_PROVIDER_SECRET_2: ${{ secrets.PROVIDER_SECRET_2 }}
-      MODEL_PROVIDER_SECRET_3: ${{ secrets.PROVIDER_SECRET_3 }}
-      MODEL_PROVIDER_SECRET_4: ${{ secrets.PROVIDER_SECRET_4 }}
-      MODEL_PROVIDER_SECRET_5: ${{ secrets.PROVIDER_SECRET_5 }}
