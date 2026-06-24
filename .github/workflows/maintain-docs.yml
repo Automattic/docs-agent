@@ -48,13 +48,13 @@ name: Maintain Docs
         type: string
         default: main
       run_agent:
-        description: Preserved for callers that gate downstream runner execution; this workflow only prepares a recipe.
+        description: Run the prepared Docs Agent task through the generic Codebox agent-task workflow.
         type: boolean
         default: true
     outputs:
       job_status:
-        description: Recipe preparation status.
-        value: ${{ jobs.prepare.outputs.job_status }}
+        description: Docs Agent run status.
+        value: ${{ jobs.run-agent.outputs.job_status || jobs.prepare.outputs.job_status }}
       recipe_json:
         description: Portable Docs Agent runner recipe JSON.
         value: ${{ jobs.prepare.outputs.recipe_json }}
@@ -70,6 +70,14 @@ jobs:
       job_status: prepared
       recipe_json: ${{ steps.config.outputs.recipe_json }}
       artifact_declarations: ${{ steps.config.outputs.artifact_declarations }}
+      agent_bundle: ${{ steps.config.outputs.agent_bundle }}
+      prompt: ${{ steps.config.outputs.prompt }}
+      context_repositories: ${{ steps.config.outputs.context_repositories }}
+      verification_commands: ${{ steps.config.outputs.verification_commands }}
+      drift_checks: ${{ steps.config.outputs.drift_checks }}
+      workspace_contract_checks: ${{ steps.config.outputs.workspace_contract_checks }}
+      runner_workspace: ${{ steps.config.outputs.runner_workspace }}
+      expected_artifacts: ${{ steps.config.outputs.expected_artifacts }}
     steps:
       - name: Resolve Docs Agent settings
         id: config
@@ -178,7 +186,52 @@ jobs:
             --argjson artifactDeclarations "$artifact_declarations" \
             '{schema:"docs-agent/runner-recipe/v1",targetRepository:$targetRepository,prompt:$prompt,docsAgent:{repository:$repository,ref:$ref,bundlePath:$bundlePath,agentSlug:$agentSlug,pipelineSlug:$pipelineSlug,flowSlug:$flowSlug},runner:{contextRepositories:$contextRepositories,verificationCommands:$verificationCommands,driftChecks:$driftChecks,writablePaths:$writablePaths,baseRef:$baseRef,docsBranch:$docsBranch,bootstrapContract:$bootstrapContract},artifacts:{expected:($artifactDeclarations|map(.name)),declarations:$artifactDeclarations}}')"
 
+          runner_workspace="$(jq -cn \
+            --arg repo "$GITHUB_REPOSITORY_NAME" \
+            --arg branch "$INPUT_DOCS_BRANCH" \
+            --arg baseRef "$INPUT_BASE_REF" \
+            '{enabled:true,repo:$repo,clone_url:("https://github.com/" + $repo + ".git"),branch:$branch,branch_prefix:$branch,from:("origin/" + $baseRef)}')"
+          expected_artifacts="$(printf '%s' "$artifact_declarations" | jq -c 'map(.name)')"
+
           {
             printf 'recipe_json<<EOF\n%s\nEOF\n' "$recipe_json"
             printf 'artifact_declarations<<EOF\n%s\nEOF\n' "$artifact_declarations"
+            printf 'agent_bundle=%s\n' "$bundle_path"
+            printf 'prompt<<EOF\n%s\nEOF\n' "$prompt"
+            printf 'context_repositories<<EOF\n%s\nEOF\n' "$context_repositories"
+            printf 'verification_commands<<EOF\n%s\nEOF\n' "$verification_commands"
+            printf 'drift_checks<<EOF\n%s\nEOF\n' "$drift_checks"
+            printf 'workspace_contract_checks<<EOF\n%s\nEOF\n' "$bootstrap_contract"
+            printf 'runner_workspace<<EOF\n%s\nEOF\n' "$runner_workspace"
+            printf 'expected_artifacts<<EOF\n%s\nEOF\n' "$expected_artifacts"
           } >> "$GITHUB_OUTPUT"
+
+  run-agent:
+    name: Run Docs Agent
+    needs: prepare
+    if: inputs.run_agent
+    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@main
+    with:
+      runner_recipe: Automattic/docs-agent@${{ inputs.docs_agent_ref }}:ci/docs-agent-runner-recipe.json
+      agent_bundle: ${{ needs.prepare.outputs.agent_bundle }}
+      workload_id: docs-agent-${{ inputs.audience }}-${{ inputs.run_kind }}
+      workload_label: Run Docs Agent
+      component_id: docs-agent
+      target_repo: ${{ github.repository }}
+      prompt: ${{ needs.prepare.outputs.prompt }}
+      writable_paths: ${{ inputs.writable_paths }}
+      runner_workspace: ${{ needs.prepare.outputs.runner_workspace }}
+      validation_dependencies: Automattic/docs-agent@${{ inputs.docs_agent_ref }}
+      context_repositories: ${{ needs.prepare.outputs.context_repositories }}
+      verification_commands: ${{ needs.prepare.outputs.verification_commands }}
+      drift_checks: ${{ needs.prepare.outputs.drift_checks }}
+      workspace_contract_checks: ${{ needs.prepare.outputs.workspace_contract_checks }}
+      success_requires_pr: false
+      success_completion_outcomes: '["no_changes","succeeded"]'
+      access_token_repos: ${{ github.repository }}
+      require_access_token: true
+      allowed_repos: '["${{ github.repository }}"]'
+      expected_artifacts: ${{ needs.prepare.outputs.expected_artifacts }}
+      artifact_declarations: ${{ needs.prepare.outputs.artifact_declarations }}
+      callback_data: ${{ needs.prepare.outputs.recipe_json }}
+    secrets: inherit
