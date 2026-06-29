@@ -283,4 +283,59 @@ foreach ( $expected_artifact_schemas as $name => $schema ) {
 	$assert( $schema === ( $example_artifacts_by_name[ $name ]['artifact_schema'] ?? '' ), "Example runner config typed artifact {$name} schema mismatch." );
 }
 
+/*
+ * Native agents-api agent bundle validation.
+ *
+ * The native bundles are flat agent specs that import through the agents-api
+ * runtime bundle importer (`wp_agent_import_runtime_bundles`), which requires
+ * `agent.{agent_slug, agent_name, agent_config, meta}`. They carry no Data
+ * Machine pipeline/flow envelope and must preserve the same runner-neutral
+ * editing boundary as the reusable Data Machine bundle: workspace edits only,
+ * no agent-owned git/PR publication.
+ */
+$native_spec = $read_json( $root . '/tests/native-agent.validate-bundle-spec.json' );
+$native_dir  = realpath( $root . '/tests/' . ( $native_spec['native_bundles_dir'] ?? '' ) );
+$assert( is_string( $native_dir ) && is_dir( $native_dir ), 'Native bundle dir must point to an existing directory.' );
+
+foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertions ) {
+	$native_path = $native_dir . '/' . $native_file;
+	$assert( is_file( $native_path ), "Missing native agent bundle file: {$native_file}" );
+
+	$native_text   = (string) file_get_contents( $native_path );
+	$native_bundle = $read_json( $native_path );
+
+	$agent = $native_bundle['agent'] ?? array();
+	$assert( is_array( $agent ), "Native bundle {$native_file} must declare an agent object." );
+
+	// agents-api importer required shape.
+	$assert( ( $native_assertions['agent_slug'] ?? '' ) === ( $agent['agent_slug'] ?? '' ), "Native bundle {$native_file} agent_slug mismatch." );
+	$assert( is_string( $agent['agent_name'] ?? null ) && '' !== trim( (string) $agent['agent_name'] ), "Native bundle {$native_file} must declare a non-empty agent_name." );
+	$assert( is_array( $agent['agent_config'] ?? null ), "Native bundle {$native_file} must declare an agent_config object." );
+	$assert( is_array( $agent['meta'] ?? null ), "Native bundle {$native_file} must declare a meta object." );
+
+	$config = $agent['agent_config'];
+	$assert( is_string( $config['instructions'] ?? null ) && '' !== trim( (string) $config['instructions'] ), "Native bundle {$native_file} agent_config.instructions must be a non-empty string." );
+	$tools = $config['enabled_tools'] ?? array();
+	$assert( is_array( $tools ) && array() !== $tools, "Native bundle {$native_file} agent_config.enabled_tools must be a non-empty list." );
+
+	foreach ( $native_assertions['required_tools'] ?? array() as $required_tool ) {
+		$assert( in_array( $required_tool, $tools, true ), "Native bundle {$native_file} missing required tool: {$required_tool}" );
+	}
+
+	// Runner-neutral boundary: no agent-owned publication tools.
+	foreach ( $native_spec['forbidden_publication_tools'] ?? array() as $forbidden_tool ) {
+		$assert( ! in_array( $forbidden_tool, $tools, true ), "Native bundle {$native_file} must not enable publication tool: {$forbidden_tool}" );
+	}
+
+	// No Data Machine coupling in the native bundle text.
+	foreach ( $native_spec['forbidden_dm_fragments'] ?? array() as $dm_fragment ) {
+		$assert( ! str_contains( $native_text, $dm_fragment ), "Native bundle {$native_file} must not contain Data Machine fragment: {$dm_fragment}" );
+	}
+
+	$instructions = strtolower( (string) $config['instructions'] );
+	foreach ( $native_assertions['instructions_must_contain'] ?? array() as $required_phrase ) {
+		$assert( str_contains( $instructions, strtolower( (string) $required_phrase ) ), "Native bundle {$native_file} instructions missing required text: {$required_phrase}" );
+	}
+}
+
 fwrite( STDOUT, "Docs Agent bundle validation passed.\n" );

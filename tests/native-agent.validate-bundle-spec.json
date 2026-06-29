@@ -1,0 +1,71 @@
+{
+  "native_bundles_dir": "../bundles/technical-docs-agent/native",
+  "forbidden_dm_fragments": [
+    "pipeline_slug",
+    "prompt_queue",
+    "step_type",
+    "tool_runtime_rules",
+    "handler_configs",
+    "datamachine",
+    "dm_",
+    "seed_queues",
+    "auth_refs"
+  ],
+  "forbidden_publication_tools": [
+    "workspace_git_add",
+    "workspace_git_commit",
+    "workspace_git_push",
+    "create_github_pull_request",
+    "comment_github_pull_request",
+    "create_or_update_github_file"
+  ],
+  "agents": {
+    "technical-docs-bootstrap-agent.agent.json": {
+      "agent_slug": "technical-docs-bootstrap-agent",
+      "required_tools": [
+        "get_github_file",
+        "workspace_read",
+        "workspace_grep",
+        "workspace_write",
+        "workspace_git_status",
+        "workspace_git_diff"
+      ],
+      "instructions_must_contain": [
+        "living documentation",
+        "understand, use, and extend",
+        "one-shot first-run documentation generation pass",
+        "complete initial documentation system",
+        "provided workspace",
+        "source inventory",
+        "bootstrap contract",
+        "required paths",
+        "required glob counts",
+        "entry point links",
+        "positive completion criteria",
+        "workspace_git_status",
+        "workspace_git_diff"
+      ]
+    },
+    "technical-docs-maintenance-agent.agent.json": {
+      "agent_slug": "technical-docs-maintenance-agent",
+      "required_tools": [
+        "get_github_file",
+        "workspace_read",
+        "workspace_grep",
+        "workspace_edit",
+        "workspace_git_status",
+        "workspace_git_diff"
+      ],
+      "instructions_must_contain": [
+        "living documentation",
+        "understand, use, and extend",
+        "maintenance pass",
+        "documentation drift",
+        "no_changes",
+        "provided workspace",
+        "workspace_git_status",
+        "workspace_git_diff"
+      ]
+    }
+  }
+}
