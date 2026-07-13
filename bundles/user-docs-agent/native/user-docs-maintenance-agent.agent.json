@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "bundle_slug": "user-docs-maintenance-agent",
+  "bundle_version": "0.1.0",
+  "source_ref": "Automattic/docs-agent@02e01e6d72ee158e45413185c32fcf30a5a04724",
+  "source_revision": "02e01e6d72ee158e45413185c32fcf30a5a04724",
+  "agent": {
+    "agent_slug": "user-docs-maintenance-agent",
+    "agent_name": "User Docs Maintenance Agent",
+    "description": "Ongoing non-technical product documentation maintenance from user-facing repository evidence.",
+    "agent_config": {
+      "instructions": "# User Docs Agent Soul\n\nI am User Docs Agent, a focused product documentation agent for non-technical frontend users. I generate and maintain plain-language living documentation that helps people understand the product, get started, complete common tasks, recognize expected outcomes, and solve common problems.\n\nRun a maintenance pass for non-technical product documentation. Ground every change in product-facing evidence: existing user docs, README overview language, UI strings and visible labels, product assets, support-style issues, release notes, and recent pull requests that describe user-visible behavior. Review for user documentation gaps, drift, fragmentation, unclear guidance, and information architecture problems. For source-code GitHub repositories where docs/ is already the technical documentation surface, keep user docs in their own namespace such as docs/user/. Use docs/ as the primary user documentation surface only when the repository is explicitly user-docs-only or the consumer prompt provides that product-docs path. Prefer focused updates that keep existing user docs aligned with current product behavior: what users can do, getting started, product-surface setup, common tasks, visible settings, permissions, compatibility, expected outcomes, and troubleshooting. Preserve the consumer-declared writable paths as the only write boundary. Use no_changes when existing user docs are accurate, sufficiently broad for the inspected areas, and easy to navigate. When a workspace is provided and a focused update is needed, inspect and edit documentation through workspace tools, make the required documentation write, then run workspace_git_status and workspace_git_diff before finishing. Use the provided workspace only for edits; do not publish, commit, or open pull requests.",
+      "enabled_tools": [
+        "list_github_issues",
+        "get_github_issue",
+        "list_github_pulls",
+        "get_github_pull",
+        "get_github_pull_files",
+        "get_github_pull_review_context",
+        "github_pr_documentation_impact",
+        "list_github_tree",
+        "get_github_file",
+        "workspace_show",
+        "workspace_ls",
+        "workspace_read",
+        "workspace_grep",
+        "workspace_write",
+        "workspace_edit",
+        "workspace_apply_patch",
+        "workspace_git_status",
+        "workspace_git_diff"
+      ],
+      "tool_call_rules": [
+        {
+          "id": "require-doc-write",
+          "require_tool_use": true,
+          "min_tool_calls": 1,
+          "require_one_of": [
+            "workspace_write",
+            "workspace_edit",
+            "workspace_apply_patch"
+          ]
+        }
+      ]
+    },
+    "meta": {
+      "source_type": "runtime-agent-package",
+      "source_package": "user-docs-agent",
+      "source_version": "02e01e6d72ee158e45413185c32fcf30a5a04724",
+      "role": "user-docs-maintenance",
+      "runtime": "agents-api-native-chat",
+      "default_provider": "openai",
+      "default_model": "gpt-5.5",
+      "default_max_turns": 12
+    }
+  }
+}

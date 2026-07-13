@@ -1,0 +1,35 @@
+name: Docs Agent Tests
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Validate bundles and native imports
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out Docs Agent
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: Automattic/docs-agent
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Check out Agents API
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: Automattic/agents-api
+          ref: 5addf598167ec17821954b0f9aa3a9b160b7e36e
+          path: agents-api
+          token: ${{ github.token }}
+          persist-credentials: false
+
+      - name: Run structural, link, and native importer tests
+        run: |
+          php tests/validate-docs-agent-bundle.php
+          php tests/repair-docs-links-smoke.php
+          AGENTS_API_DIR="$GITHUB_WORKSPACE/agents-api" php tests/native-agent-import.php

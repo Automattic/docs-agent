@@ -305,10 +305,17 @@ foreach ( $expected_artifact_schemas as $name => $schema ) {
  * no agent-owned git/PR publication.
  */
 $native_spec = $read_json( $root . '/tests/native-agent.validate-bundle-spec.json' );
-$native_dir  = realpath( $root . '/tests/' . ( $native_spec['native_bundles_dir'] ?? '' ) );
-$assert( is_string( $native_dir ) && is_dir( $native_dir ), 'Native bundle dir must point to an existing directory.' );
+$native_dirs = array();
+foreach ( $native_spec['native_bundle_dirs'] ?? array() as $bundle_name => $native_bundle_dir ) {
+	$native_dir = realpath( $root . '/tests/' . $native_bundle_dir );
+	$assert( is_string( $native_dir ) && is_dir( $native_dir ), "Native bundle dir must point to an existing directory for {$bundle_name}." );
+	$native_dirs[ $bundle_name ] = $native_dir;
+}
 
 foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertions ) {
+	$native_bundle_name = $native_assertions['bundle'] ?? '';
+	$native_dir         = $native_dirs[ $native_bundle_name ] ?? null;
+	$assert( is_string( $native_dir ), "Native bundle {$native_file} must name an existing native bundle directory." );
 	$native_path = $native_dir . '/' . $native_file;
 	$assert( is_file( $native_path ), "Missing native agent bundle file: {$native_file}" );
 
@@ -317,6 +324,11 @@ foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertion
 
 	$agent = $native_bundle['agent'] ?? array();
 	$assert( is_array( $agent ), "Native bundle {$native_file} must declare an agent object." );
+	$source_revision = (string) ( $native_assertions['source_revision'] ?? '' );
+	$assert( '' !== $source_revision, "Native bundle {$native_file} must declare its immutable source revision in the test spec." );
+	$assert( "Automattic/docs-agent@{$source_revision}" === ( $native_bundle['source_ref'] ?? '' ), "Native bundle {$native_file} source_ref must resolve to the commit that contains this package." );
+	$assert( $source_revision === ( $native_bundle['source_revision'] ?? '' ), "Native bundle {$native_file} source_revision must identify the commit that contains this package." );
+	$assert( $source_revision === ( $agent['meta']['source_version'] ?? '' ), "Native bundle {$native_file} imported source_version must identify the package commit." );
 
 	// agents-api importer required shape.
 	$assert( ( $native_assertions['agent_slug'] ?? '' ) === ( $agent['agent_slug'] ?? '' ), "Native bundle {$native_file} agent_slug mismatch." );
@@ -332,6 +344,25 @@ foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertion
 	foreach ( $native_assertions['required_tools'] ?? array() as $required_tool ) {
 		$assert( in_array( $required_tool, $tools, true ), "Native bundle {$native_file} missing required tool: {$required_tool}" );
 	}
+
+	$workspace_tools = array_values(
+		array_filter(
+			$tools,
+			static fn( $tool ): bool => is_string( $tool ) && str_starts_with( $tool, 'workspace_' )
+		)
+	);
+	$assert( ( $native_assertions['permitted_workspace_tools'] ?? array() ) === $workspace_tools, "Native bundle {$native_file} workspace tools do not match its permitted workspace tool policy." );
+
+	$write_gate_id = $native_assertions['required_write_gate'] ?? '';
+	$write_gates   = array_filter(
+		$config['tool_call_rules'] ?? array(),
+		static fn( $rule ): bool => is_array( $rule ) && $write_gate_id === ( $rule['id'] ?? '' )
+	);
+	$write_gate = reset( $write_gates );
+	$assert( is_array( $write_gate ), "Native bundle {$native_file} must declare its required write gate." );
+	$assert( true === ( $write_gate['require_tool_use'] ?? false ), "Native bundle {$native_file} write gate must require tool use." );
+	$assert( 1 === ( $write_gate['min_tool_calls'] ?? 0 ), "Native bundle {$native_file} write gate must require at least one write." );
+	$assert( array( 'workspace_write', 'workspace_edit', 'workspace_apply_patch' ) === ( $write_gate['require_one_of'] ?? array() ), "Native bundle {$native_file} write gate must require an allowed workspace write tool." );
 
 	// Runner-neutral boundary: no agent-owned publication tools.
 	foreach ( $native_spec['forbidden_publication_tools'] ?? array() as $forbidden_tool ) {

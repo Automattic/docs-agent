@@ -175,6 +175,8 @@ Docs Agent ships portable agent bundles selected by the reusable workflow:
 
 The reusable workflow maps `audience` to the correct bundle, agent identity, pipeline, and maintenance flow.
 
+Each lane also ships native Agents API runtime packages for direct import through `wp_agent_import_runtime_bundles()`: technical docs bootstrap and maintenance, user docs bootstrap and maintenance, and skills maintenance. These packages retain the same source-grounded workspace-only editing boundary and required workspace-write gate as their corresponding bundle lanes.
+
 ## Workflow Operation
 
 Consumer repositories call `.github/workflows/maintain-docs.yml`. The workflow accepts the product-level inputs above, selects the matching Docs Agent bundle, and invokes the native runner contract. The runner publishes or updates the configured Docs Agent pull request when files change.
@@ -200,4 +202,12 @@ php tests/validate-docs-agent-bundle.php
 php tests/repair-docs-links-smoke.php
 ```
 
-CI validates all bundles with `tests/docs-agent.validate-bundle-spec.json`.
+The native import test uses the maintained Agents API pure-PHP smoke harness; clone `Automattic/agents-api` and run:
+
+```bash
+AGENTS_API_DIR=/path/to/agents-api php tests/native-agent-import.php
+```
+
+It imports every native package through `wp_agent_import_runtime_bundles()`, verifies registration and preserved write-gate defaults, and invokes the default native chat handler far enough to resolve each registered agent. It intentionally fails when `AGENTS_API_DIR` is unavailable rather than treating an unexecuted importer as a passing test. It does not execute a model turn because the packages intentionally leave provider/model selection to the caller.
+
+The `Docs Agent Tests` GitHub Actions workflow runs on pull requests and pushes. It runs the structural bundle validator, the docs-link repair smoke test, and the native importer integration test against `Automattic/agents-api` at `5addf598167ec17821954b0f9aa3a9b160b7e36e`.
