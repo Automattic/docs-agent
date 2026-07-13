@@ -39,9 +39,18 @@ jobs:
       writable_paths: README.md,docs/**
     secrets:
       ACCESS_TOKEN: ${{ secrets.DOCS_AGENT_ACCESS_TOKEN }}
+      EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.DOCS_AGENT_EXTERNAL_PACKAGE_SOURCE_POLICY }}
 ```
 
-`ACCESS_TOKEN` is required because the native runner checks out the target repository and may publish the Docs Agent branch and pull request. Docs Agent sets the target to the calling repository, so its normal consumer run is same-repository and the token must write that repository. Configure `DOCS_AGENT_ACCESS_TOKEN` with that access. A same-organization caller may instead use `secrets: inherit` when it defines an `ACCESS_TOKEN` secret. For a cross-organization call, map the caller secret explicitly as shown above. WP Codebox #1751 requires the token to be authorized for every declared target repository when a task targets another repository.
+`ACCESS_TOKEN` is required because the native runner checks out the target repository and may publish the Docs Agent branch and pull request. Docs Agent sets the target to the calling repository, so its normal consumer run is same-repository and the token must write that repository. Configure `DOCS_AGENT_ACCESS_TOKEN` with that access. `EXTERNAL_PACKAGE_SOURCE_POLICY` is a separate required secret: WP Codebox uses it only to authorize fetching the standalone Docs Agent package selected by the lane. A same-organization caller may instead use `secrets: inherit` when it defines both secrets. For a cross-organization call, map each secret explicitly as shown above.
+
+Configure `DOCS_AGENT_EXTERNAL_PACKAGE_SOURCE_POLICY` with this exact v1 JSON value:
+
+```json
+{"version":1,"repositories":{"automattic/docs-agent":["bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json","bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json","bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json","bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json","bundles/skills-agent/native/skills-maintenance-agent.agent.json"]}}
+```
+
+The policy authorizes only public `Automattic/docs-agent` package bytes. It does not grant target-repository publication access; keep `ACCESS_TOKEN` separate.
 
 For repositories that run their own preflight detection, pass `run_agent: false` when no docs work is needed. The workflow records a deterministic skipped run instead of booting the agent runtime.
 
@@ -66,6 +75,7 @@ jobs:
       run_agent: ${{ needs.detect.outputs.should_run == 'true' }}
     secrets:
       ACCESS_TOKEN: ${{ secrets.DOCS_AGENT_ACCESS_TOKEN }}
+      EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.DOCS_AGENT_EXTERNAL_PACKAGE_SOURCE_POLICY }}
 ```
 
 ## Workflow Inputs
@@ -99,7 +109,7 @@ Docs Agent declares the review artifacts it expects the runner to materialize as
 
 `maintain-docs.yml` writes `expected_artifacts` and `artifact_declarations` into a portable Docs Agent recipe and exposes the same declaration objects as `declared_artifacts_json`.
 
-Docs Agent owns the Docs Agent-specific bundle, lane, artifact, prompt, and workspace mapping. Execution, credentials, AI provider selection, sandboxing, and publication are runner-owned concerns outside this repository.
+Docs Agent owns native package selection, lane, artifact, prompt, and workspace mapping. Execution, credentials, AI provider selection, sandboxing, and publication are runner-owned concerns outside this repository.
 
 Portable recipe fields include `docsAgent`, `runner.writablePaths`, artifacts, verification commands, drift checks, and review output mapping suggestions.
 
@@ -165,23 +175,25 @@ Run skills upkeep as its own scheduled lane with `verification_commands`, `drift
 - `examples/consumer-workflow.yml`: scheduled consumer workflow using `maintain-docs.yml` for technical docs.
 - `examples/runner-recipe.example.json`: recipe-oriented config for maintainers debugging the portable Docs Agent contract.
 
-## Bundles
+## Native Packages
 
-Docs Agent ships portable agent bundles selected by the reusable workflow:
+Docs Agent ships standalone native Agents API packages selected by the reusable workflow:
 
-- `bundles/technical-docs-agent`: technical/developer documentation maintenance.
-- `bundles/user-docs-agent`: non-technical product documentation maintenance.
-- `bundles/skills-agent`: live agent skill instruction and packaged-output maintenance.
+- `bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json`
+- `bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json`
+- `bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json`
+- `bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json`
+- `bundles/skills-agent/native/skills-maintenance-agent.agent.json`
 
-The reusable workflow maps `audience` to the correct bundle, agent identity, pipeline, and maintenance flow.
+The reusable workflow maps `audience` and `run_kind` to exactly one package and its canonical agent slug. It pins the source to `github.job_workflow_sha`, the immutable commit GitHub used for the called reusable workflow, rejects a missing or non-SHA value, and supplies a byte-level `sha256-bytes-v1` digest.
 
 Each lane also ships native Agents API runtime packages for direct import through `wp_agent_import_runtime_bundles()`: technical docs bootstrap and maintenance, user docs bootstrap and maintenance, and skills maintenance. These packages retain the same source-grounded workspace-only editing boundary and required workspace-write gate as their corresponding bundle lanes.
 
 ## Workflow Operation
 
-Consumer repositories call `.github/workflows/maintain-docs.yml`. The workflow accepts the product-level inputs above, selects the matching Docs Agent bundle, and invokes the native runner contract. The runner publishes or updates the configured Docs Agent pull request when files change.
+Consumer repositories call `.github/workflows/maintain-docs.yml`. The workflow accepts the product-level inputs above, selects the matching native package, and invokes the native runner contract. The runner publishes or updates the configured Docs Agent pull request when files change.
 
-Maintainers may still use `.github/workflows/docs-agent.yml` to prepare a recipe summary for an arbitrary `target_repo`.
+Maintainers invoke `maintain-docs.yml` from a consumer workflow to run the native reusable workflow contract.
 
 ## Review The Output PR
 
@@ -199,6 +211,7 @@ For skills PRs, also confirm the live instructions match current upstream tool b
 
 ```bash
 php tests/validate-docs-agent-bundle.php
+php tests/validate-external-native-package-sources.php
 php tests/repair-docs-links-smoke.php
 ```
 
@@ -210,4 +223,4 @@ AGENTS_API_DIR=/path/to/agents-api php tests/native-agent-import.php
 
 It imports every native package through `wp_agent_import_runtime_bundles()`, verifies registration and preserved write-gate defaults, and invokes the default native chat handler far enough to resolve each registered agent. It intentionally fails when `AGENTS_API_DIR` is unavailable rather than treating an unexecuted importer as a passing test. It does not execute a model turn because the packages intentionally leave provider/model selection to the caller.
 
-The `Docs Agent Tests` GitHub Actions workflow runs on pull requests and pushes. It runs the structural bundle validator, the docs-link repair smoke test, and the native importer integration test against `Automattic/agents-api` at `5addf598167ec17821954b0f9aa3a9b160b7e36e`.
+The `Docs Agent Tests` GitHub Actions workflow runs on pull requests and pushes. It runs the structural bundle validator, native package descriptor/digest validator, docs-link repair smoke test, and native importer integration test against `Automattic/agents-api` at `5addf598167ec17821954b0f9aa3a9b160b7e36e`.

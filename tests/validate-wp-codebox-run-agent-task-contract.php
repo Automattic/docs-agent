@@ -49,7 +49,7 @@ $assert( 'wp-codebox/reusable-workflow-interface/v1' === ( $contract['schema'] ?
 $assert( '.github/workflows/run-agent-task.yml' === ( $contract['workflow'] ?? null ), 'WP Codebox producer contract targets an unexpected workflow.' );
 
 $workflow = (string) file_get_contents( $root . '/.github/workflows/maintain-docs.yml' );
-$assert( preg_match( '/^\s*uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@/m', $workflow ) === 1, 'Docs Agent must call the producer workflow declared by the contract.' );
+$assert( preg_match( '/^\s*uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@54c2f9a7bc3cd1fe20055d496c83efcfb99afb41$/m', $workflow ) === 1, 'Docs Agent must call the #1754 producer workflow revision.' );
 
 preg_match( '/uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@[^\n]+\n    with:\n(?<inputs>.*?)\n    secrets:\n(?<secrets>(?:      [^\n]*\n?)*)/s', $workflow, $caller );
 $assert( isset( $caller['inputs'], $caller['secrets'] ), 'Docs Agent must declare producer inputs and secrets.' );
@@ -89,7 +89,9 @@ foreach ( $contract['secrets'] ?? array() as $name => $secret ) {
 
 $assert( 'true' === ( $caller_inputs['require_access_token'] ?? null ), 'Docs Agent must require the native runner access token.' );
 $assert( '${{ secrets.ACCESS_TOKEN }}' === ( $caller_secrets['ACCESS_TOKEN'] ?? null ), 'Docs Agent must explicitly forward ACCESS_TOKEN.' );
+$assert( '${{ secrets.EXTERNAL_PACKAGE_SOURCE_POLICY }}' === ( $caller_secrets['EXTERNAL_PACKAGE_SOURCE_POLICY'] ?? null ), 'Docs Agent must explicitly forward the external package policy secret.' );
 $assert( preg_match( '/secrets:\n      ACCESS_TOKEN:\n(?:        .*\n)*        required: true/m', $workflow ) === 1, 'Docs Agent must require ACCESS_TOKEN from reusable-workflow callers.' );
+$assert( preg_match( '/secrets:\n(?:      [A-Z_]+:\n(?:        .*\n)*        required: (?:true|false)\n)*      EXTERNAL_PACKAGE_SOURCE_POLICY:\n(?:        .*\n)*        required: true/m', $workflow ) === 1, 'Docs Agent must require EXTERNAL_PACKAGE_SOURCE_POLICY from reusable-workflow callers.' );
 $assert( '${{ inputs.run_agent }}' === ( $caller_inputs['run_agent'] ?? null ), 'Docs Agent must delegate run_agent so WP Codebox reports deterministic skipped status.' );
 $assert( preg_match( '/\n    if: inputs\.run_agent\n/', $workflow ) !== 1, 'Docs Agent must not skip the producer job outside the producer contract.' );
 
@@ -109,6 +111,9 @@ foreach ( array( 'job_status', 'transcript_summary', 'projected_outputs_json', '
 	$assert( isset( $producer_outputs[ $name ] ), "WP Codebox producer contract does not define {$name}." );
 	$assert( $name === ( $caller_outputs[ $name ] ?? null ), "Docs Agent {$name} must forward the matching WP Codebox producer output." );
 }
+
+$assert( isset( $caller_inputs['external_package_source'] ), 'Docs Agent must provide the required external package descriptor.' );
+$assert( ! isset( $caller_inputs['agent_bundle'] ), 'Docs Agent must not pass the removed agent_bundle input.' );
 
 preg_match( "/output_projections='(?<json>[^']+)'/", $workflow, $projection_match );
 $assert( isset( $projection_match['json'] ), 'Docs Agent must define output projections for the producer.' );

@@ -35,10 +35,6 @@ name: Maintain Docs
         description: Optional maintenance instruction appended to the default Docs Agent prompt.
         type: string
         default: ""
-      docs_agent_ref:
-        description: Ref of Automattic/docs-agent to use for the agent bundle and validation dependency.
-        type: string
-        default: main
       run_agent:
         description: Run the prepared Docs Agent task through the generic Codebox agent-task workflow.
         type: boolean
@@ -46,6 +42,9 @@ name: Maintain Docs
     secrets:
       ACCESS_TOKEN:
         description: GitHub token authorized to read, push, and open pull requests in the calling repository.
+        required: true
+      EXTERNAL_PACKAGE_SOURCE_POLICY:
+        description: Version 1 JSON policy authorizing Docs Agent standalone native packages.
         required: true
     outputs:
       job_status:
@@ -75,7 +74,7 @@ jobs:
       job_status: prepared
       recipe_json: ${{ steps.config.outputs.recipe_json }}
       artifact_declarations: ${{ steps.config.outputs.artifact_declarations }}
-      agent_bundle: ${{ steps.config.outputs.agent_bundle }}
+      external_package_source: ${{ steps.config.outputs.external_package_source }}
       prompt: ${{ steps.config.outputs.prompt }}
       verification_commands: ${{ steps.config.outputs.verification_commands }}
       drift_checks: ${{ steps.config.outputs.drift_checks }}
@@ -92,7 +91,7 @@ jobs:
           INPUT_DRIFT_CHECKS: ${{ inputs.drift_checks }}
           INPUT_PROMPT: ${{ inputs.prompt }}
           INPUT_WRITABLE_PATHS: ${{ inputs.writable_paths }}
-          INPUT_DOCS_AGENT_REF: ${{ inputs.docs_agent_ref }}
+          DOCS_AGENT_REVISION: ${{ github.job_workflow_sha }}
           INPUT_DOCS_BRANCH: ${{ inputs.docs_branch }}
           INPUT_BASE_REF: ${{ inputs.base_ref }}
           GITHUB_REPOSITORY_NAME: ${{ github.repository }}
@@ -103,38 +102,33 @@ jobs:
 
           case "$AUDIENCE:$RUN_KIND" in
             technical:bootstrap)
-              bundle_path="bundles/technical-docs-agent"
-              agent_slug="technical-docs-agent"
-              pipeline_slug="technical-docs-pipeline"
-              flow_slug="technical-docs-bootstrap-flow"
+              package_path="bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json"
+              agent_slug="technical-docs-bootstrap-agent"
+              package_digest="sha256-bytes-v1:9050c9b4364a5a91b057fd51ff5f667efc320f9d6776160ab3e7cf4fd5e4f0e6"
               default_prompt="Bootstrap source-grounded developer documentation that helps developers understand, use, and extend the code in the repository."
               ;;
             technical:maintenance)
-              bundle_path="bundles/technical-docs-agent"
-              agent_slug="technical-docs-agent"
-              pipeline_slug="technical-docs-pipeline"
-              flow_slug="technical-docs-maintenance-flow"
+              package_path="bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json"
+              agent_slug="technical-docs-maintenance-agent"
+              package_digest="sha256-bytes-v1:6057aad4eb7c5f0320ccfbce9da93a5fa1d3fc521478b5571ed81c28129325aa"
               default_prompt="Maintain source-grounded developer documentation that helps developers understand, use, and extend the code in the repository."
               ;;
             user:bootstrap)
-              bundle_path="bundles/user-docs-agent"
-              agent_slug="user-docs-agent"
-              pipeline_slug="user-docs-pipeline"
-              flow_slug="user-docs-bootstrap-flow"
+              package_path="bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json"
+              agent_slug="user-docs-bootstrap-agent"
+              package_digest="sha256-bytes-v1:ee558a73f2a393c1912d62f7f40dbdd4bc31ac0168c3c248316b3430258c55cd"
               default_prompt="Bootstrap source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs."
               ;;
             user:maintenance)
-              bundle_path="bundles/user-docs-agent"
-              agent_slug="user-docs-agent"
-              pipeline_slug="user-docs-pipeline"
-              flow_slug="user-docs-maintenance-flow"
+              package_path="bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json"
+              agent_slug="user-docs-maintenance-agent"
+              package_digest="sha256-bytes-v1:e2248f014c1409a8d4c5cb303ea37c0b24ae05babd02d40c6032160daf60d4c4"
               default_prompt="Maintain source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs."
               ;;
             skills:maintenance)
-              bundle_path="bundles/skills-agent"
-              agent_slug="skills-agent"
-              pipeline_slug="skills-pipeline"
-              flow_slug="skills-maintenance-flow"
+              package_path="bundles/skills-agent/native/skills-maintenance-agent.agent.json"
+              agent_slug="skills-maintenance-agent"
+              package_digest="sha256-bytes-v1:c643f8bd31864cdd607f9025a000694a65a3fdf91532e4311fbac541e708a2b2"
               default_prompt="Maintain live agent skill instructions and generated packaged skill outputs."
               ;;
             *)
@@ -145,6 +139,10 @@ jobs:
 
           verification_commands="$(printf '%s' "$INPUT_VERIFICATION_COMMANDS" | jq -c 'if type == "array" then . else error("verification_commands must be an array") end')"
           drift_checks="$(printf '%s' "$INPUT_DRIFT_CHECKS" | jq -c 'if type == "array" then . else error("drift_checks must be an array") end')"
+          if ! printf '%s' "$DOCS_AGENT_REVISION" | grep -Eq '^[0-9a-fA-F]{40}$'; then
+            printf 'github.job_workflow_sha must be a full immutable Docs Agent commit SHA.\n' >&2
+            exit 1
+          fi
 
           artifact_declarations='[
             {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_transcript","type":"DocsAgentTranscript","artifact_schema":"docs-agent/transcript/v1","description":"Machine-readable transcript for the Docs Agent run.","required":false},
@@ -170,19 +168,19 @@ jobs:
           recipe_json="$(jq -cn \
             --arg targetRepository "$GITHUB_REPOSITORY_NAME" \
             --arg prompt "$prompt" \
-            --arg repository "https://github.com/Automattic/docs-agent.git" \
-            --arg ref "$INPUT_DOCS_AGENT_REF" \
-            --arg bundlePath "$bundle_path" \
+            --arg repository "Automattic/docs-agent" \
+            --arg revision "$DOCS_AGENT_REVISION" \
+            --arg packagePath "$package_path" \
+            --arg packageDigest "$package_digest" \
             --arg agentSlug "$agent_slug" \
-            --arg pipelineSlug "$pipeline_slug" \
-            --arg flowSlug "$flow_slug" \
             --arg writablePaths "$INPUT_WRITABLE_PATHS" \
             --arg baseRef "$INPUT_BASE_REF" \
             --arg docsBranch "$INPUT_DOCS_BRANCH" \
             --argjson verificationCommands "$verification_commands" \
             --argjson driftChecks "$drift_checks" \
             --argjson artifactDeclarations "$artifact_declarations" \
-            '{schema:"docs-agent/runner-recipe/v1",targetRepository:$targetRepository,prompt:$prompt,docsAgent:{repository:$repository,ref:$ref,bundlePath:$bundlePath,agentSlug:$agentSlug,pipelineSlug:$pipelineSlug,flowSlug:$flowSlug},runner:{verificationCommands:$verificationCommands,driftChecks:$driftChecks,writablePaths:$writablePaths,baseRef:$baseRef,docsBranch:$docsBranch},artifacts:{expected:($artifactDeclarations|map(.name)),declarations:$artifactDeclarations}}')"
+            '{schema:"docs-agent/runner-recipe/v1",targetRepository:$targetRepository,prompt:$prompt,docsAgent:{externalPackageSource:{repository:$repository,revision:$revision,path:$packagePath,digest:$packageDigest},agentSlug:$agentSlug},runner:{verificationCommands:$verificationCommands,driftChecks:$driftChecks,writablePaths:$writablePaths,baseRef:$baseRef,docsBranch:$docsBranch},artifacts:{expected:($artifactDeclarations|map(.name)),declarations:$artifactDeclarations}}')"
+          external_package_source="$(jq -cn --arg repository "Automattic/docs-agent" --arg revision "$DOCS_AGENT_REVISION" --arg path "$package_path" --arg digest "$package_digest" '{repository:$repository,revision:$revision,path:$path,digest:$digest}')"
 
           runner_workspace="$(jq -cn \
             --arg repo "$GITHUB_REPOSITORY_NAME" \
@@ -195,7 +193,7 @@ jobs:
           {
             printf 'recipe_json<<EOF\n%s\nEOF\n' "$recipe_json"
             printf 'artifact_declarations<<EOF\n%s\nEOF\n' "$artifact_declarations"
-            printf 'agent_bundle=%s\n' "$bundle_path"
+            printf 'external_package_source=%s\n' "$external_package_source"
             printf 'prompt<<EOF\n%s\nEOF\n' "$prompt"
             printf 'verification_commands<<EOF\n%s\nEOF\n' "$verification_commands"
             printf 'drift_checks<<EOF\n%s\nEOF\n' "$drift_checks"
@@ -207,9 +205,9 @@ jobs:
   run-agent:
     name: Run Docs Agent
     needs: prepare
-    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@main
+    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@54c2f9a7bc3cd1fe20055d496c83efcfb99afb41
     with:
-      agent_bundle: ${{ needs.prepare.outputs.agent_bundle }}
+      external_package_source: ${{ needs.prepare.outputs.external_package_source }}
       workload_id: docs-agent-${{ inputs.audience }}-${{ inputs.run_kind }}
       workload_label: Run Docs Agent
       component_id: docs-agent
@@ -230,3 +228,4 @@ jobs:
       run_agent: ${{ inputs.run_agent }}
     secrets:
       ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.EXTERNAL_PACKAGE_SOURCE_POLICY }}
