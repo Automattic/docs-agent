@@ -49,7 +49,7 @@ $assert( 'wp-codebox/reusable-workflow-interface/v1' === ( $contract['schema'] ?
 $assert( '.github/workflows/run-agent-task.yml' === ( $contract['workflow'] ?? null ), 'WP Codebox producer contract targets an unexpected workflow.' );
 
 $workflow = (string) file_get_contents( $root . '/.github/workflows/maintain-docs.yml' );
-$assert( preg_match( '/^\s*uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@54c2f9a7bc3cd1fe20055d496c83efcfb99afb41$/m', $workflow ) === 1, 'Docs Agent must call the #1754 producer workflow revision.' );
+$assert( preg_match( '/^\s*uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@ca1cc53ea76d09dc53dd02df89e41ad7fe143a27$/m', $workflow ) === 1, 'Docs Agent must call the #1756 producer workflow revision.' );
 
 preg_match( '/uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@[^\n]+\n    with:\n(?<inputs>.*?)\n    secrets:\n(?<secrets>(?:      [^\n]*\n?)*)/s', $workflow, $caller );
 $assert( isset( $caller['inputs'], $caller['secrets'] ), 'Docs Agent must declare producer inputs and secrets.' );

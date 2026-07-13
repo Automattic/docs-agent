@@ -235,7 +235,7 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
-    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@54c2f9a7bc3cd1fe20055d496c83efcfb99afb41
+    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@ca1cc53ea76d09dc53dd02df89e41ad7fe143a27
     with:
       external_package_source: ${{ needs.prepare.outputs.external_package_source }}
       workload_id: docs-agent-${{ inputs.audience }}-${{ inputs.run_kind }}
