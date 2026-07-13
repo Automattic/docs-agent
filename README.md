@@ -64,6 +64,8 @@ jobs:
       docs_branch: docs-agent/my-repo-docs
       writable_paths: README.md,docs/**
       run_agent: ${{ needs.detect.outputs.should_run == 'true' }}
+    secrets:
+      ACCESS_TOKEN: ${{ secrets.DOCS_AGENT_ACCESS_TOKEN }}
 ```
 
 ## Workflow Inputs
@@ -108,7 +110,7 @@ Docs Agent opens or updates one canonical PR for the configured branch.
 - If the selected surface is current, the run succeeds with no changes.
 - If maintenance is needed, changes are written only under `writable_paths`.
 - If the canonical PR is already open, later runs reuse the same `docs_branch` and PR instead of creating duplicates.
-- `job_status`, `transcript_summary`, `credential_mode`, and bounded `projected_outputs_json` are exposed as reusable workflow outputs. `projected_outputs_json` includes the runner publication result when one exists; typed artifact declarations are exposed as `declared_artifacts_json` for review/debugging. Raw engine data is retained in runner artifacts rather than exposed as a workflow output.
+- `job_status`, `transcript_summary`, `credential_mode`, and bounded `projected_outputs_json` are exposed as reusable workflow outputs. A `run_agent: false` call returns `job_status: skipped`; it still requires the documented `ACCESS_TOKEN` mapping because the reusable workflow contract requires that secret. `projected_outputs_json` includes the runner publication URL when one exists; typed artifact declarations are exposed as `declared_artifacts_json` for review/debugging. Raw engine data is retained in runner artifacts rather than exposed as a workflow output.
 
 ## Quality Bar
 
