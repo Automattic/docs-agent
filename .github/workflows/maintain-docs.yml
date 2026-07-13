@@ -91,7 +91,7 @@ jobs:
           INPUT_DRIFT_CHECKS: ${{ inputs.drift_checks }}
           INPUT_PROMPT: ${{ inputs.prompt }}
           INPUT_WRITABLE_PATHS: ${{ inputs.writable_paths }}
-          DOCS_AGENT_REVISION: ${{ github.workflow_sha }}
+          DOCS_AGENT_REVISION: ${{ github.job_workflow_sha }}
           INPUT_DOCS_BRANCH: ${{ inputs.docs_branch }}
           INPUT_BASE_REF: ${{ inputs.base_ref }}
           GITHUB_REPOSITORY_NAME: ${{ github.repository }}
@@ -140,7 +140,7 @@ jobs:
           verification_commands="$(printf '%s' "$INPUT_VERIFICATION_COMMANDS" | jq -c 'if type == "array" then . else error("verification_commands must be an array") end')"
           drift_checks="$(printf '%s' "$INPUT_DRIFT_CHECKS" | jq -c 'if type == "array" then . else error("drift_checks must be an array") end')"
           if ! printf '%s' "$DOCS_AGENT_REVISION" | grep -Eq '^[0-9a-fA-F]{40}$'; then
-            printf 'github.workflow_sha must be a full immutable Docs Agent commit SHA.\n' >&2
+            printf 'github.job_workflow_sha must be a full immutable Docs Agent commit SHA.\n' >&2
             exit 1
           fi
 

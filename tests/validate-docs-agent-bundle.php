@@ -242,29 +242,6 @@ foreach ( array( 'extra-chill/homeboy-extensions/.github/workflows/runtime-agent
 	$assert( ! str_contains( $consumer_example_text, $consumer_internal_contract ), "Consumer runner example must not require transitional runner contract: {$consumer_internal_contract}" );
 }
 
-$docs_agent_workflow = (string) file_get_contents( $root . '/.github/workflows/docs-agent.yml' );
-foreach ( array( 'runner-neutral', 'caller-owned execution environment', 'provider' ) as $required_central_workflow_text ) {
-	$assert( str_contains( $docs_agent_workflow, $required_central_workflow_text ), "docs-agent.yml missing neutral workflow text: {$required_central_workflow_text}" );
-}
-$assert( ! str_contains( $docs_agent_workflow, $transitional_homeboy_extensions_workflow ), 'docs-agent.yml must not call Homeboy Extensions directly.' );
-$assert( ! str_contains( $docs_agent_workflow, $forbidden_docs_agent_codebox_workflow ), 'docs-agent.yml must not call a Codebox-owned Docs Agent wrapper.' );
-$assert( ! str_contains( $docs_agent_workflow, 'uses: Automattic/wp-codebox/' ), 'docs-agent.yml must not call a WordPress-specific runner.' );
-$assert( ! str_contains( $docs_agent_workflow, 'runtime_mounts:' ), 'docs-agent.yml must not pass sandbox policy mounts.' );
-$assert( ! str_contains( $docs_agent_workflow, 'extra_wp_config_defines:' ), 'docs-agent.yml must not pass sandbox policy defines.' );
-$assert( str_contains( $docs_agent_workflow, 'writable_paths:' ), 'docs-agent.yml must collect writable paths for the portable recipe summary.' );
-foreach ( $workflow_internal_fragments as $internal_fragment ) {
-	$assert( ! str_contains( $docs_agent_workflow, $internal_fragment ), "docs-agent.yml must not expose runtime internals: {$internal_fragment}" );
-}
-$assert( ! str_contains( $docs_agent_workflow, 'datamachine-agent-ci.yml' ), 'docs-agent.yml must not use the legacy Data Machine adapter workflow.' );
-$assert( ! str_contains( $docs_agent_workflow, 'bundle_path: ' ), 'docs-agent.yml must use agent_bundle instead of bundle_path.' );
-$assert( ! str_contains( $docs_agent_workflow, 'extra_required_abilities:' ), 'docs-agent.yml must not expose legacy required ability inputs.' );
-$assert( ! str_contains( $docs_agent_workflow, 'required_abilities:' ), 'docs-agent.yml must not expose direct required ability inputs.' );
-$assert( ! str_contains( $docs_agent_workflow, 'agent_runtime:' ), 'docs-agent.yml must use the public Codebox workflow instead of agent_runtime.' );
-$assert( ! str_contains( $docs_agent_workflow, 'agent_runtime_ref:' ), 'docs-agent.yml must use the public Codebox workflow instead of agent_runtime_ref.' );
-$assert( ! str_contains( $docs_agent_workflow, 'wp_codebox_ref:' ), 'docs-agent.yml must not use wp_codebox_ref.' );
-$assert( ! str_contains( $docs_agent_workflow, 'extra_wp_codebox_mounts:' ), 'docs-agent.yml must not use extra_wp_codebox_mounts.' );
-$assert( ! str_contains( $docs_agent_workflow, 'validation_dependencies:' . ' Automattic/agents-api@' ), 'docs-agent.yml must not expose runtime validation dependencies.' );
-
 $declared_artifact_names = array_keys( $expected_artifact_schemas );
 foreach ( $declared_artifact_names as $artifact_name ) {
 	$assert( str_contains( $maintain_docs_workflow, $artifact_name ), "maintain-docs.yml missing typed artifact declaration {$artifact_name}." );

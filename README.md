@@ -185,7 +185,7 @@ Docs Agent ships standalone native Agents API packages selected by the reusable 
 - `bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json`
 - `bundles/skills-agent/native/skills-maintenance-agent.agent.json`
 
-The reusable workflow maps `audience` and `run_kind` to exactly one package and its canonical agent slug. It pins the source to `github.workflow_sha`, rejects a missing or non-SHA value, and supplies a byte-level `sha256-bytes-v1` digest.
+The reusable workflow maps `audience` and `run_kind` to exactly one package and its canonical agent slug. It pins the source to `github.job_workflow_sha`, the immutable commit GitHub used for the called reusable workflow, rejects a missing or non-SHA value, and supplies a byte-level `sha256-bytes-v1` digest.
 
 Each lane also ships native Agents API runtime packages for direct import through `wp_agent_import_runtime_bundles()`: technical docs bootstrap and maintenance, user docs bootstrap and maintenance, and skills maintenance. These packages retain the same source-grounded workspace-only editing boundary and required workspace-write gate as their corresponding bundle lanes.
 
@@ -193,7 +193,7 @@ Each lane also ships native Agents API runtime packages for direct import throug
 
 Consumer repositories call `.github/workflows/maintain-docs.yml`. The workflow accepts the product-level inputs above, selects the matching native package, and invokes the native runner contract. The runner publishes or updates the configured Docs Agent pull request when files change.
 
-Maintainers may still use `.github/workflows/docs-agent.yml` to prepare a recipe summary for an arbitrary `target_repo`.
+Maintainers invoke `maintain-docs.yml` from a consumer workflow to run the native reusable workflow contract.
 
 ## Review The Output PR
 

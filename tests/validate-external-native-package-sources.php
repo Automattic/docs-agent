@@ -41,7 +41,8 @@ foreach ( $packages as $lane => $package ) {
 	$assert( str_contains( $body, 'package_digest="sha256-bytes-v1:' . $package['digest'] . '"' ), "{$lane} must map to its byte digest." );
 }
 
-$assert( str_contains( $workflow, 'DOCS_AGENT_REVISION: ${{ github.workflow_sha }}' ), 'The external source revision must come from github.workflow_sha.' );
+$assert( str_contains( $workflow, 'DOCS_AGENT_REVISION: ${{ github.job_workflow_sha }}' ), 'The external source revision must come from github.job_workflow_sha.' );
+$assert( ! str_contains( $workflow, 'github.workflow_sha' ), 'The external source revision must not use the consumer workflow SHA.' );
 $assert( str_contains( $workflow, "grep -Eq '^[0-9a-fA-F]{40}\$'" ), 'The workflow must fail closed when the source revision is not a full SHA.' );
 $assert( str_contains( $workflow, 'external_package_source: ${{ needs.prepare.outputs.external_package_source }}' ), 'The native runner must receive the descriptor output.' );
 $assert( ! str_contains( $workflow, 'agent_bundle:' ), 'The active workflow must not pass a legacy agent bundle.' );

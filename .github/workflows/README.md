@@ -2,8 +2,6 @@
 
 `maintain-docs.yml` is the consumer-facing reusable workflow for scheduled upkeep. Consumer repositories pass product-level inputs such as `audience`, `base_ref`, `docs_branch`, `writable_paths`, `verification_commands`, `drift_checks`, `prompt`, and `run_agent`.
 
-`docs-agent.yml` is a maintainer/debug workflow for central dispatch against an arbitrary `target_repo`. It uses the same Docs Agent runner recipe as `maintain-docs.yml` and should not be the starting point for consumer repositories.
-
 The consumer workflow supports separate lanes for technical docs, user docs, and live skills maintenance. Use `audience: skills` with skills/package writable paths instead of broad docs paths.
 
 Schedule skills upkeep separately from docs upkeep. The skills lane should use a dedicated branch such as `docs-agent/skills-upkeep`, skill/package writable paths, verification commands, and drift checks through the portable recipe.
