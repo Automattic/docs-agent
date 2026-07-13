@@ -15,13 +15,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: Automattic/wp-codebox
-          ref: 9cea07b37ef4e369eda8ac9c1aaffd8e91008fd9
+          ref: 54c2f9a7bc3cd1fe20055d496c83efcfb99afb41
           path: .wp-codebox
       - name: Validate Docs Agent
         env:
           WP_CODEBOX_DIR: ${{ github.workspace }}/.wp-codebox
         run: |
           php tests/validate-docs-agent-bundle.php
+          php tests/validate-external-native-package-sources.php
           php tests/validate-wp-codebox-run-agent-task-contract.php
           php tests/repair-docs-links-smoke.php
       - name: Lint GitHub Actions workflows

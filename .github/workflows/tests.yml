@@ -31,5 +31,6 @@ jobs:
       - name: Run structural, link, and native importer tests
         run: |
           php tests/validate-docs-agent-bundle.php
+          php tests/validate-external-native-package-sources.php
           php tests/repair-docs-links-smoke.php
           AGENTS_API_DIR="$GITHUB_WORKSPACE/agents-api" php tests/native-agent-import.php
