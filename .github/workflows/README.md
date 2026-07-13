@@ -12,7 +12,7 @@ When verification commands or drift checks are needed, pass them through the reu
 
 The reusable workflow declares the expected typed review artifacts for Docs Agent runs: transcript, change summary, verification report, drift report, and workspace publication links. `maintain-docs.yml` writes those declarations into the portable recipe and exposes the declaration objects through `declared_artifacts_json`.
 
-The target repository needs a token path that can inspect source, write the configured paths, push the canonical branch, and open or update the pull request.
+The target repository must pass `ACCESS_TOKEN`. Docs Agent targets the calling repository, so normal runs require a token that can inspect source, write the configured paths, push the canonical branch, and open or update that repository's pull request. Same-organization callers can use `secrets: inherit` with an `ACCESS_TOKEN` secret; cross-organization callers map it explicitly. WP Codebox #1751 requires a cross-repository task token to reach every declared target repository. The native runner fails before execution when this required credential is absent.
 
 ## Docs Agent Runner Recipe
 

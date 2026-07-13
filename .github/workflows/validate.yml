@@ -1,0 +1,28 @@
+name: Validate Docs Agent
+
+'on':
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout WP Codebox producer contract
+        uses: actions/checkout@v4
+        with:
+          repository: Automattic/wp-codebox
+          ref: 9cea07b37ef4e369eda8ac9c1aaffd8e91008fd9
+          path: .wp-codebox
+      - name: Validate Docs Agent
+        env:
+          WP_CODEBOX_DIR: ${{ github.workspace }}/.wp-codebox
+        run: |
+          php tests/validate-docs-agent-bundle.php
+          php tests/validate-wp-codebox-run-agent-task-contract.php
+          php tests/repair-docs-links-smoke.php
+      - name: Lint GitHub Actions workflows
+        uses: raven-actions/actionlint@v2

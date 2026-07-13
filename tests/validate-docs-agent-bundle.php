@@ -216,58 +216,10 @@ $assert( ! str_contains( $maintain_docs_workflow, 'extra_wp_codebox_mounts:' ), 
 $assert( ! str_contains( $maintain_docs_workflow, 'agents_api_ref:' ), 'maintain-docs.yml must not expose agents_api_ref.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'data_machine_ref:' ), 'maintain-docs.yml must not expose data_machine_ref.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'data_machine_code_ref:' ), 'maintain-docs.yml must not expose data_machine_code_ref.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'output_projections:' ), 'maintain-docs.yml must leave runner output projection mechanics to callers.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'engine_data_outputs:' ), 'maintain-docs.yml must use recipe outputMappings instead of engine_data_outputs.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'runtime_output_projections:' ), 'maintain-docs.yml must use recipe outputMappings instead of runtime_output_projections.' );
-
-preg_match( '/uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@main\n    with:\n(?<inputs>.*?)\n    secrets:/s', $maintain_docs_workflow, $codebox_workflow_match );
-$assert( isset( $codebox_workflow_match['inputs'] ), 'maintain-docs.yml must declare a Codebox reusable workflow input mapping.' );
-preg_match_all( '/^      ([a-z_]+):/m', $codebox_workflow_match['inputs'], $codebox_workflow_input_matches );
-$codebox_workflow_inputs = $codebox_workflow_input_matches[1] ?? array();
-sort( $codebox_workflow_inputs );
-$expected_codebox_workflow_inputs = array(
-	'access_token_repos',
-	'agent_bundle',
-	'allowed_repos',
-	'artifact_declarations',
-	'callback_data',
-	'component_id',
-	'drift_checks',
-	'expected_artifacts',
-	'prompt',
-	'require_access_token',
-	'runner_workspace',
-	'success_requires_pr',
-	'target_repo',
-	'verification_commands',
-	'writable_paths',
-	'workload_id',
-	'workload_label',
-);
-sort( $expected_codebox_workflow_inputs );
-$assert( $expected_codebox_workflow_inputs === $codebox_workflow_inputs, 'maintain-docs.yml must pass only the #1751 executable Codebox workflow inputs.' );
-$expected_codebox_workflow_input_shapes = array(
-	'agent_bundle'           => '${{ needs.prepare.outputs.agent_bundle }}',
-	'workload_id'            => 'docs-agent-${{ inputs.audience }}-${{ inputs.run_kind }}',
-	'workload_label'         => 'Run Docs Agent',
-	'component_id'           => 'docs-agent',
-	'target_repo'            => '${{ github.repository }}',
-	'prompt'                 => '${{ needs.prepare.outputs.prompt }}',
-	'writable_paths'         => '${{ inputs.writable_paths }}',
-	'runner_workspace'       => '${{ needs.prepare.outputs.runner_workspace }}',
-	'verification_commands'  => '${{ needs.prepare.outputs.verification_commands }}',
-	'drift_checks'           => '${{ needs.prepare.outputs.drift_checks }}',
-	'success_requires_pr'    => 'false',
-	'access_token_repos'     => '${{ github.repository }}',
-	'require_access_token'   => 'true',
-	'allowed_repos'          => "'[\"\${{ github.repository }}\"]'",
-	'expected_artifacts'     => '${{ needs.prepare.outputs.expected_artifacts }}',
-	'artifact_declarations'  => '${{ needs.prepare.outputs.artifact_declarations }}',
-	'callback_data'          => '${{ needs.prepare.outputs.recipe_json }}',
-);
-foreach ( $expected_codebox_workflow_input_shapes as $input_name => $input_value ) {
-	$assert( preg_match( '/^      ' . preg_quote( $input_name, '/' ) . ': ' . preg_quote( $input_value, '/' ) . '$/m', $codebox_workflow_match['inputs'] ) === 1, "maintain-docs.yml must preserve the #1751 {$input_name} input shape." );
-}
+$assert( str_contains( $maintain_docs_workflow, 'output_projections:' ), 'maintain-docs.yml must project the bounded runner publication result.' );
+$assert( str_contains( $maintain_docs_workflow, 'ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}' ), 'maintain-docs.yml must explicitly forward ACCESS_TOKEN to the native runner.' );
 
 $workflow_readme = (string) file_get_contents( $root . '/.github/workflows/README.md' );
 foreach ( array( 'Docs Agent Runner Recipe', 'portable recipe', 'Docs Agent owns the Docs Agent-specific bundle' ) as $migration_note_text ) {

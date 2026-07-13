@@ -37,7 +37,11 @@ jobs:
       base_ref: trunk
       docs_branch: docs-agent/my-repo-docs
       writable_paths: README.md,docs/**
+    secrets:
+      ACCESS_TOKEN: ${{ secrets.DOCS_AGENT_ACCESS_TOKEN }}
 ```
+
+`ACCESS_TOKEN` is required because the native runner checks out the target repository and may publish the Docs Agent branch and pull request. Docs Agent sets the target to the calling repository, so its normal consumer run is same-repository and the token must write that repository. Configure `DOCS_AGENT_ACCESS_TOKEN` with that access. A same-organization caller may instead use `secrets: inherit` when it defines an `ACCESS_TOKEN` secret. For a cross-organization call, map the caller secret explicitly as shown above. WP Codebox #1751 requires the token to be authorized for every declared target repository when a task targets another repository.
 
 For repositories that run their own preflight detection, pass `run_agent: false` when no docs work is needed. The workflow records a deterministic skipped run instead of booting the agent runtime.
 
@@ -104,7 +108,7 @@ Docs Agent opens or updates one canonical PR for the configured branch.
 - If the selected surface is current, the run succeeds with no changes.
 - If maintenance is needed, changes are written only under `writable_paths`.
 - If the canonical PR is already open, later runs reuse the same `docs_branch` and PR instead of creating duplicates.
-- Transcript and projected engine data are exposed as reusable workflow outputs, and typed artifact declarations are exposed as `declared_artifacts_json` for review/debugging.
+- `job_status`, `transcript_summary`, `credential_mode`, and bounded `projected_outputs_json` are exposed as reusable workflow outputs. `projected_outputs_json` includes the runner publication result when one exists; typed artifact declarations are exposed as `declared_artifacts_json` for review/debugging. Raw engine data is retained in runner artifacts rather than exposed as a workflow output.
 
 ## Quality Bar
 

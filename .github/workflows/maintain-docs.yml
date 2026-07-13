@@ -43,6 +43,10 @@ name: Maintain Docs
         description: Run the prepared Docs Agent task through the generic Codebox agent-task workflow.
         type: boolean
         default: true
+    secrets:
+      ACCESS_TOKEN:
+        description: GitHub token authorized to read, push, and open pull requests in the calling repository.
+        required: true
     outputs:
       job_status:
         description: Docs Agent run status.
@@ -53,6 +57,15 @@ name: Maintain Docs
       declared_artifacts_json:
         description: Docs Agent typed artifact declarations.
         value: ${{ jobs.prepare.outputs.artifact_declarations }}
+      transcript_summary:
+        description: Compact native runner transcript summary.
+        value: ${{ jobs.run-agent.outputs.transcript_summary }}
+      projected_outputs_json:
+        description: Bounded native runner projections, including Docs Agent publication when available.
+        value: ${{ jobs.run-agent.outputs.projected_outputs_json }}
+      credential_mode:
+        description: Normalized native runner credential mode.
+        value: ${{ jobs.run-agent.outputs.credential_mode }}
 
 jobs:
   prepare:
@@ -68,6 +81,7 @@ jobs:
       drift_checks: ${{ steps.config.outputs.drift_checks }}
       runner_workspace: ${{ steps.config.outputs.runner_workspace }}
       expected_artifacts: ${{ steps.config.outputs.expected_artifacts }}
+      output_projections: ${{ steps.config.outputs.output_projections }}
     steps:
       - name: Resolve Docs Agent settings
         id: config
@@ -176,6 +190,7 @@ jobs:
             --arg baseRef "$INPUT_BASE_REF" \
             '{enabled:true,repo:$repo,clone_url:("https://github.com/" + $repo + ".git"),branch:$branch,branch_prefix:$branch,from:("origin/" + $baseRef)}')"
           expected_artifacts="$(printf '%s' "$artifact_declarations" | jq -c 'map(.name)')"
+          output_projections='{"docs_agent_publication":"publication"}'
 
           {
             printf 'recipe_json<<EOF\n%s\nEOF\n' "$recipe_json"
@@ -186,6 +201,7 @@ jobs:
             printf 'drift_checks<<EOF\n%s\nEOF\n' "$drift_checks"
             printf 'runner_workspace<<EOF\n%s\nEOF\n' "$runner_workspace"
             printf 'expected_artifacts<<EOF\n%s\nEOF\n' "$expected_artifacts"
+            printf 'output_projections<<EOF\n%s\nEOF\n' "$output_projections"
           } >> "$GITHUB_OUTPUT"
 
   run-agent:
@@ -210,5 +226,7 @@ jobs:
       allowed_repos: '["${{ github.repository }}"]'
       expected_artifacts: ${{ needs.prepare.outputs.expected_artifacts }}
       artifact_declarations: ${{ needs.prepare.outputs.artifact_declarations }}
+      output_projections: ${{ needs.prepare.outputs.output_projections }}
       callback_data: ${{ needs.prepare.outputs.recipe_json }}
-    secrets: inherit
+    secrets:
+      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
