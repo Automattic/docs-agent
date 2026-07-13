@@ -192,7 +192,7 @@ $assert( ! str_contains( $maintain_docs_workflow, $transitional_homeboy_extensio
 $assert( ! str_contains( $maintain_docs_workflow, $forbidden_docs_agent_codebox_workflow ), 'maintain-docs.yml must not call a Codebox-owned Docs Agent wrapper.' );
 $assert( str_contains( $maintain_docs_workflow, $generic_codebox_agent_task_workflow ), 'maintain-docs.yml must call the generic Codebox agent-task workflow.' );
 
-$workflow_blocked_runtime_fragments = array_values( array_diff( $blocked_runtime_fragments, array( 'wp-codebox', 'Automattic/wp-codebox' ) ) );
+$workflow_blocked_runtime_fragments = array_values( array_diff( $blocked_runtime_fragments, array( 'wp-codebox', 'Automattic/wp-codebox', 'OPENAI_API_KEY' ) ) );
 $workflow_internal_fragments = array_merge( $workflow_blocked_runtime_fragments, array( 'homeboy_extensions_ref:', 'runtime_ref:', 'runtime_ref }}', 'runtime_provider:', 'runtime_provider }}', 'runtime_profile:', 'runtime_profile }}', 'runtime_profiles:', 'runtime_profiles }}', 'runtime_execution:', 'runtime_execution }}', 'runtime_config:', 'runtime_config }}', 'component_contracts:', 'component_contracts }}', 'ability_requirements:', 'ability_requirements }}', 'runtime_components:', 'runtime_components }}', 'runtime_mounts:', 'runtime_mounts }}', 'required_abilities:', 'required_abilities }}', 'extra_wp_config_defines:' ) );
 foreach ( $workflow_internal_fragments as $internal_fragment ) {
 	$assert( ! str_contains( $maintain_docs_workflow, $internal_fragment ), "maintain-docs.yml must not expose runtime internals: {$internal_fragment}" );
@@ -218,7 +218,8 @@ $assert( ! str_contains( $maintain_docs_workflow, 'data_machine_code_ref:' ), 'm
 $assert( ! str_contains( $maintain_docs_workflow, 'engine_data_outputs:' ), 'maintain-docs.yml must use recipe outputMappings instead of engine_data_outputs.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'runtime_output_projections:' ), 'maintain-docs.yml must use recipe outputMappings instead of runtime_output_projections.' );
 $assert( str_contains( $maintain_docs_workflow, 'output_projections:' ), 'maintain-docs.yml must project the bounded runner publication result.' );
-$assert( str_contains( $maintain_docs_workflow, 'ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}' ), 'maintain-docs.yml must explicitly forward ACCESS_TOKEN to the native runner.' );
+$assert( str_contains( $maintain_docs_workflow, 'OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}' ), 'maintain-docs.yml must explicitly forward OPENAI_API_KEY to the native runner.' );
+$assert( str_contains( $maintain_docs_workflow, 'ACCESS_TOKEN: ${{ github.token }}' ), 'maintain-docs.yml must forward the caller-scoped GitHub token to the native runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.EXTERNAL_PACKAGE_SOURCE_POLICY }}' ), 'maintain-docs.yml must explicitly forward the external package source policy.' );
 
 $workflow_readme = (string) file_get_contents( $root . '/.github/workflows/README.md' );

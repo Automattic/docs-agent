@@ -48,6 +48,8 @@ $assert( str_contains( $workflow, 'external_package_source: ${{ needs.prepare.ou
 $assert( ! str_contains( $workflow, 'agent_bundle:' ), 'The active workflow must not pass a legacy agent bundle.' );
 $assert( ! str_contains( $workflow, 'pipeline_slug' ) && ! str_contains( $workflow, 'flow_slug' ) && ! str_contains( $workflow, 'bundle_path' ), 'The active workflow must not pass legacy bundle envelopes.' );
 $assert( str_contains( $workflow, 'EXTERNAL_PACKAGE_SOURCE_POLICY:' ) && str_contains( $workflow, 'EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.EXTERNAL_PACKAGE_SOURCE_POLICY }}' ), 'The policy secret must be required and forwarded without serialization.' );
-$assert( str_contains( $workflow, 'ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}' ), 'ACCESS_TOKEN must remain a separate publication credential.' );
+$assert( str_contains( $workflow, 'OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}' ), 'OPENAI_API_KEY must be forwarded without serialization.' );
+$assert( str_contains( $workflow, 'ACCESS_TOKEN: ${{ github.token }}' ), 'Same-repository publication must use the caller-scoped GitHub token.' );
+$assert( ! str_contains( $workflow, 'secrets.ACCESS_TOKEN' ), 'Docs Agent must not require a consumer ACCESS_TOKEN override.' );
 
 fwrite( STDOUT, "Docs Agent external native package source validation passed.\n" );

@@ -39,10 +39,14 @@ name: Maintain Docs
         description: Run the prepared Docs Agent task through the generic Codebox agent-task workflow.
         type: boolean
         default: true
+      dry_run:
+        description: Validate the prepared Docs Agent task without starting a live agent run.
+        type: boolean
+        default: false
     secrets:
-      ACCESS_TOKEN:
-        description: GitHub token authorized to read, push, and open pull requests in the calling repository.
-        required: true
+      OPENAI_API_KEY:
+        description: Optional OpenAI credential used for live Docs Agent runs.
+        required: false
       EXTERNAL_PACKAGE_SOURCE_POLICY:
         description: Version 1 JSON policy authorizing Docs Agent standalone native packages.
         required: true
@@ -65,6 +69,9 @@ name: Maintain Docs
       credential_mode:
         description: Normalized native runner credential mode.
         value: ${{ jobs.run-agent.outputs.credential_mode }}
+      success_requires_pr:
+        description: Whether the selected lane requires a published pull request for success.
+        value: ${{ jobs.prepare.outputs.success_requires_pr }}
 
 jobs:
   prepare:
@@ -81,6 +88,7 @@ jobs:
       runner_workspace: ${{ steps.config.outputs.runner_workspace }}
       expected_artifacts: ${{ steps.config.outputs.expected_artifacts }}
       output_projections: ${{ steps.config.outputs.output_projections }}
+      success_requires_pr: ${{ steps.config.outputs.success_requires_pr }}
     steps:
       - name: Resolve Docs Agent settings
         id: config
@@ -91,6 +99,9 @@ jobs:
           INPUT_DRIFT_CHECKS: ${{ inputs.drift_checks }}
           INPUT_PROMPT: ${{ inputs.prompt }}
           INPUT_WRITABLE_PATHS: ${{ inputs.writable_paths }}
+          RUN_AGENT: ${{ inputs.run_agent }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           DOCS_AGENT_REVISION: ${{ github.job_workflow_sha }}
           INPUT_DOCS_BRANCH: ${{ inputs.docs_branch }}
           INPUT_BASE_REF: ${{ inputs.base_ref }}
@@ -105,30 +116,35 @@ jobs:
               package_path="bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json"
               agent_slug="technical-docs-bootstrap-agent"
               package_digest="sha256-bytes-v1:9050c9b4364a5a91b057fd51ff5f667efc320f9d6776160ab3e7cf4fd5e4f0e6"
+              success_requires_pr=true
               default_prompt="Bootstrap source-grounded developer documentation that helps developers understand, use, and extend the code in the repository."
               ;;
             technical:maintenance)
               package_path="bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json"
               agent_slug="technical-docs-maintenance-agent"
               package_digest="sha256-bytes-v1:6057aad4eb7c5f0320ccfbce9da93a5fa1d3fc521478b5571ed81c28129325aa"
+              success_requires_pr=false
               default_prompt="Maintain source-grounded developer documentation that helps developers understand, use, and extend the code in the repository."
               ;;
             user:bootstrap)
               package_path="bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json"
               agent_slug="user-docs-bootstrap-agent"
               package_digest="sha256-bytes-v1:ee558a73f2a393c1912d62f7f40dbdd4bc31ac0168c3c248316b3430258c55cd"
+              success_requires_pr=true
               default_prompt="Bootstrap source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs."
               ;;
             user:maintenance)
               package_path="bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json"
               agent_slug="user-docs-maintenance-agent"
               package_digest="sha256-bytes-v1:e2248f014c1409a8d4c5cb303ea37c0b24ae05babd02d40c6032160daf60d4c4"
+              success_requires_pr=false
               default_prompt="Maintain source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs."
               ;;
             skills:maintenance)
               package_path="bundles/skills-agent/native/skills-maintenance-agent.agent.json"
               agent_slug="skills-maintenance-agent"
               package_digest="sha256-bytes-v1:c643f8bd31864cdd607f9025a000694a65a3fdf91532e4311fbac541e708a2b2"
+              success_requires_pr=false
               default_prompt="Maintain live agent skill instructions and generated packaged skill outputs."
               ;;
             *)
@@ -136,6 +152,11 @@ jobs:
               exit 1
               ;;
           esac
+
+          if [ "$RUN_AGENT" = true ] && [ "$DRY_RUN" != true ] && [ -z "$OPENAI_API_KEY" ]; then
+            printf 'OPENAI_API_KEY is required when run_agent=true for the openai provider. Set run_agent=false or dry_run=true for an explicit non-live path.\n' >&2
+            exit 1
+          fi
 
           verification_commands="$(printf '%s' "$INPUT_VERIFICATION_COMMANDS" | jq -c 'if type == "array" then . else error("verification_commands must be an array") end')"
           drift_checks="$(printf '%s' "$INPUT_DRIFT_CHECKS" | jq -c 'if type == "array" then . else error("drift_checks must be an array") end')"
@@ -176,10 +197,11 @@ jobs:
             --arg writablePaths "$INPUT_WRITABLE_PATHS" \
             --arg baseRef "$INPUT_BASE_REF" \
             --arg docsBranch "$INPUT_DOCS_BRANCH" \
+            --argjson successRequiresPr "$success_requires_pr" \
             --argjson verificationCommands "$verification_commands" \
             --argjson driftChecks "$drift_checks" \
             --argjson artifactDeclarations "$artifact_declarations" \
-            '{schema:"docs-agent/runner-recipe/v1",targetRepository:$targetRepository,prompt:$prompt,docsAgent:{externalPackageSource:{repository:$repository,revision:$revision,path:$packagePath,digest:$packageDigest},agentSlug:$agentSlug},runner:{verificationCommands:$verificationCommands,driftChecks:$driftChecks,writablePaths:$writablePaths,baseRef:$baseRef,docsBranch:$docsBranch},artifacts:{expected:($artifactDeclarations|map(.name)),declarations:$artifactDeclarations}}')"
+            '{schema:"docs-agent/runner-recipe/v1",targetRepository:$targetRepository,prompt:$prompt,docsAgent:{externalPackageSource:{repository:$repository,revision:$revision,path:$packagePath,digest:$packageDigest},agentSlug:$agentSlug},runner:{verificationCommands:$verificationCommands,driftChecks:$driftChecks,writablePaths:$writablePaths,baseRef:$baseRef,docsBranch:$docsBranch,successRequiresPr:$successRequiresPr},artifacts:{expected:($artifactDeclarations|map(.name)),declarations:$artifactDeclarations}}')"
           external_package_source="$(jq -cn --arg repository "Automattic/docs-agent" --arg revision "$DOCS_AGENT_REVISION" --arg path "$package_path" --arg digest "$package_digest" '{repository:$repository,revision:$revision,path:$path,digest:$digest}')"
 
           runner_workspace="$(jq -cn \
@@ -200,11 +222,16 @@ jobs:
             printf 'runner_workspace<<EOF\n%s\nEOF\n' "$runner_workspace"
             printf 'expected_artifacts<<EOF\n%s\nEOF\n' "$expected_artifacts"
             printf 'output_projections<<EOF\n%s\nEOF\n' "$output_projections"
+            printf 'success_requires_pr=%s\n' "$success_requires_pr"
           } >> "$GITHUB_OUTPUT"
 
   run-agent:
     name: Run Docs Agent
     needs: prepare
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@54c2f9a7bc3cd1fe20055d496c83efcfb99afb41
     with:
       external_package_source: ${{ needs.prepare.outputs.external_package_source }}
@@ -217,7 +244,7 @@ jobs:
       runner_workspace: ${{ needs.prepare.outputs.runner_workspace }}
       verification_commands: ${{ needs.prepare.outputs.verification_commands }}
       drift_checks: ${{ needs.prepare.outputs.drift_checks }}
-      success_requires_pr: false
+      success_requires_pr: ${{ needs.prepare.outputs.success_requires_pr == 'true' }}
       access_token_repos: ${{ github.repository }}
       require_access_token: true
       allowed_repos: '["${{ github.repository }}"]'
@@ -226,6 +253,8 @@ jobs:
       output_projections: ${{ needs.prepare.outputs.output_projections }}
       callback_data: ${{ needs.prepare.outputs.recipe_json }}
       run_agent: ${{ inputs.run_agent }}
+      dry_run: ${{ inputs.dry_run }}
     secrets:
-      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ACCESS_TOKEN: ${{ github.token }}
       EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.EXTERNAL_PACKAGE_SOURCE_POLICY }}
