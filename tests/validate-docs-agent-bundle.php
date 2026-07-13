@@ -149,7 +149,16 @@ foreach ( $spec['example_assertions'] ?? array() as $key => $expected ) {
 
 $assert( 'docs-agent/runner-recipe/v1' === ( $example['schema'] ?? null ), 'Example config must use the portable Docs Agent runner recipe schema.' );
 $assert( 'docs-agent/runner-recipe/v1' === ( $recipe['schema'] ?? null ), 'Runner recipe must use the portable Docs Agent runner recipe schema.' );
-$assert( 'https://github.com/Automattic/docs-agent.git' === ( $example['docsAgent']['repository'] ?? null ), 'Example config must point docsAgent.repository at Docs Agent.' );
+$expected_package_source = array(
+	'repository' => 'Automattic/docs-agent',
+	'revision'   => '7b2df969c34de112ec7ad13189ba94226a7f76f3',
+	'path'       => 'bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json',
+	'digest'     => 'sha256-bytes-v1:6057aad4eb7c5f0320ccfbce9da93a5fa1d3fc521478b5571ed81c28129325aa',
+);
+foreach ( array( $recipe, $example ) as $runner_recipe ) {
+	$assert( $expected_package_source === ( $runner_recipe['docsAgent']['externalPackageSource'] ?? null ), 'Runner recipes must use the immutable Docs Agent package source.' );
+	$assert( 'technical-docs-maintenance-agent' === ( $runner_recipe['docsAgent']['agentSlug'] ?? null ), 'Runner recipes must use the package agent slug.' );
+}
 
 $recipe_text = (string) file_get_contents( $root . '/ci/docs-agent-runner-recipe.json' );
 $blocked_runtime_fragments = array( 'wp-codebox', 'Automattic/wp-codebox', 'Extra-Chill/homeboy', 'homeboy-extensions', 'datamachine/', 'datamachine-agent-ci', 'runtime_task_ability', 'runtime_bundle_ability', 'runtime_workflow_ability', 'runtime_components', 'Automattic/agents-api@', 'Extra-Chill/data-machine@', 'Extra-Chill/data-machine-code@', 'workspace_policy', '/wordpress/wp-content/mu-plugins', 'required_abilities', 'disable_datamachine_directives', 'provider: openai', 'OPENAI_API_KEY', 'default_provider', 'default_model' );

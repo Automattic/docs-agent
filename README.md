@@ -187,7 +187,9 @@ Docs Agent ships standalone native Agents API packages selected by the reusable 
 - `bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json`
 - `bundles/skills-agent/native/skills-maintenance-agent.agent.json`
 
-The reusable workflow maps `audience` and `run_kind` to exactly one package and its canonical agent slug. It pins the source to `github.job_workflow_sha`, the immutable commit GitHub used for the called reusable workflow, rejects a missing or non-SHA value, and supplies a byte-level `sha256-bytes-v1` digest.
+The reusable workflow maps `audience` and `run_kind` to exactly one package and its canonical agent slug. Every descriptor uses the package-source revision `7b2df969c34de112ec7ad13189ba94226a7f76f3`, independently of the revision that invokes the reusable workflow, and supplies a byte-level `sha256-bytes-v1` digest.
+
+Package updates advance the package-source revision and all five declared digests atomically. The immutable-source validator reads each package blob from that Git revision, recomputes its digest and canonical slug, and rejects a descriptor that does not match those historical bytes.
 
 Each lane also ships native Agents API runtime packages for direct import through `wp_agent_import_runtime_bundles()`: technical docs bootstrap and maintenance, user docs bootstrap and maintenance, and skills maintenance. These packages retain the same source-grounded workspace-only editing boundary and required workspace-write gate as their corresponding bundle lanes.
 
@@ -216,7 +218,7 @@ php tests/validate-docs-agent-bundle.php
 php tests/validate-external-native-package-sources.php
 php tests/repair-docs-links-smoke.php
 WP_CODEBOX_DIR=/path/to/wp-codebox php tests/validate-wp-codebox-run-agent-task-contract.php
-actionlint -config-file .github/actionlint.yaml .github/workflows/*.yml
+actionlint .github/workflows/*.yml
 git diff --check
 ```
 
@@ -228,4 +230,4 @@ AGENTS_API_DIR=/path/to/agents-api php tests/native-agent-import.php
 
 It imports every native package through `wp_agent_import_runtime_bundles()`, verifies registration and preserved write-gate defaults, and invokes the default native chat handler far enough to resolve each registered agent. It intentionally fails when `AGENTS_API_DIR` is unavailable rather than treating an unexecuted importer as a passing test. It does not execute a model turn because the packages intentionally leave provider/model selection to the caller.
 
-The `Docs Agent Tests` GitHub Actions workflow runs on pull requests and pushes. It runs the structural bundle validator, native package descriptor/digest validator, docs-link repair smoke test, and native importer integration test against `Automattic/agents-api` at `5addf598167ec17821954b0f9aa3a9b160b7e36e`.
+The `Docs Agent Tests` GitHub Actions workflow runs on pull requests and pushes. It fetches Docs Agent history so it can run the immutable native package source validator, then runs the structural bundle validator, docs-link repair smoke test, and native importer integration test against `Automattic/agents-api` at `5addf598167ec17821954b0f9aa3a9b160b7e36e`.

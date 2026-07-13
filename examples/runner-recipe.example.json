@@ -3,13 +3,13 @@
   "targetRepository": "OWNER/REPO",
   "prompt": "Run the technical docs maintenance flow. Update developer-facing living documentation only where source evidence shows stale, missing, fragmented, or misleading coverage.",
   "docsAgent": {
-    "repository": "https://github.com/Automattic/docs-agent.git",
-    "ref": "v0.1.0",
-    "bundlePath": "bundles/technical-docs-agent",
-    "bundlePathInRepo": "bundles/technical-docs-agent",
-    "agentSlug": "technical-docs-agent",
-    "pipelineSlug": "technical-docs-pipeline",
-    "flowSlug": "technical-docs-maintenance-flow"
+    "externalPackageSource": {
+      "repository": "Automattic/docs-agent",
+      "revision": "7b2df969c34de112ec7ad13189ba94226a7f76f3",
+      "path": "bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json",
+      "digest": "sha256-bytes-v1:6057aad4eb7c5f0320ccfbce9da93a5fa1d3fc521478b5571ed81c28129325aa"
+    },
+    "agentSlug": "technical-docs-maintenance-agent"
   },
   "runner": {
     "verificationCommands": [],
