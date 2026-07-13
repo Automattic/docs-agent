@@ -38,11 +38,11 @@ jobs:
       docs_branch: docs-agent/my-repo-docs
       writable_paths: README.md,docs/**
     secrets:
-      ACCESS_TOKEN: ${{ secrets.DOCS_AGENT_ACCESS_TOKEN }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.DOCS_AGENT_EXTERNAL_PACKAGE_SOURCE_POLICY }}
 ```
 
-`ACCESS_TOKEN` is required because the native runner checks out the target repository and may publish the Docs Agent branch and pull request. Docs Agent sets the target to the calling repository, so its normal consumer run is same-repository and the token must write that repository. Configure `DOCS_AGENT_ACCESS_TOKEN` with that access. `EXTERNAL_PACKAGE_SOURCE_POLICY` is a separate required secret: WP Codebox uses it only to authorize fetching the standalone Docs Agent package selected by the lane. A same-organization caller may instead use `secrets: inherit` when it defines both secrets. For a cross-organization call, map each secret explicitly as shown above.
+Docs Agent targets the calling repository and forwards its scoped `${{ github.token }}` to WP Codebox for checkout and publication. The consumer must grant `contents: write`, `pull-requests: write`, and `issues: write`; no `ACCESS_TOKEN` secret is required for this same-repository contract. `OPENAI_API_KEY` is optional in the reusable workflow schema but required for a live `run_agent: true` OpenAI run. `EXTERNAL_PACKAGE_SOURCE_POLICY` is a separate required secret: WP Codebox uses it only to authorize fetching the standalone Docs Agent package selected by the lane. Map both secrets explicitly, including for cross-organization calls.
 
 Configure `DOCS_AGENT_EXTERNAL_PACKAGE_SOURCE_POLICY` with this exact v1 JSON value:
 
@@ -50,7 +50,7 @@ Configure `DOCS_AGENT_EXTERNAL_PACKAGE_SOURCE_POLICY` with this exact v1 JSON va
 {"version":1,"repositories":{"automattic/docs-agent":["bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json","bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json","bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json","bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json","bundles/skills-agent/native/skills-maintenance-agent.agent.json"]}}
 ```
 
-The policy authorizes only public `Automattic/docs-agent` package bytes. It does not grant target-repository publication access; keep `ACCESS_TOKEN` separate.
+The policy authorizes only public `Automattic/docs-agent` package bytes. It does not grant target-repository publication access.
 
 For repositories that run their own preflight detection, pass `run_agent: false` when no docs work is needed. The workflow records a deterministic skipped run instead of booting the agent runtime.
 
@@ -74,7 +74,7 @@ jobs:
       writable_paths: README.md,docs/**
       run_agent: ${{ needs.detect.outputs.should_run == 'true' }}
     secrets:
-      ACCESS_TOKEN: ${{ secrets.DOCS_AGENT_ACCESS_TOKEN }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.DOCS_AGENT_EXTERNAL_PACKAGE_SOURCE_POLICY }}
 ```
 
@@ -85,6 +85,7 @@ The consumer API is product-level. Consumer repositories configure the documenta
 | Input | Default | Description |
 | --- | --- | --- |
 | `audience` | `technical` | `technical` for developer/operator docs, `user` for non-technical product docs, or `skills` for live skill upkeep. |
+| `run_kind` | `maintenance` | `bootstrap` establishes initial documentation and requires publication; `maintenance` permits a no-change result. |
 | `base_ref` | `main` | Base branch or ref for the maintenance PR. |
 | `docs_branch` | `docs-agent/docs-upkeep` | Stable branch reused for the canonical Docs Agent PR. |
 | `writable_paths` | `README.md,docs/**` | Comma-separated allowlist of paths Docs Agent may edit. |
@@ -92,6 +93,7 @@ The consumer API is product-level. Consumer repositories configure the documenta
 | `drift_checks` | `[]` | JSON array of canonical runner drift checks executed after verification. |
 | `prompt` | empty | Optional additional maintenance instruction. |
 | `run_agent` | `true` | Set `false` to skip after deterministic preflight says docs are current. |
+| `dry_run` | `false` | Set `true` to validate the prepared task without starting a live agent run. |
 
 `verification_commands` and `drift_checks` are executable runner inputs. Docs Agent keeps the target repository as the only writable PR boundary; the reusable runner executes the selected native agent task.
 
@@ -120,7 +122,7 @@ Docs Agent opens or updates one canonical PR for the configured branch.
 - If the selected surface is current, the run succeeds with no changes.
 - If maintenance is needed, changes are written only under `writable_paths`.
 - If the canonical PR is already open, later runs reuse the same `docs_branch` and PR instead of creating duplicates.
-- `job_status`, `transcript_summary`, `credential_mode`, and bounded `projected_outputs_json` are exposed as reusable workflow outputs. A `run_agent: false` call returns `job_status: skipped`; it still requires the documented `ACCESS_TOKEN` mapping because the reusable workflow contract requires that secret. `projected_outputs_json` includes the runner publication URL when one exists; typed artifact declarations are exposed as `declared_artifacts_json` for review/debugging. Raw engine data is retained in runner artifacts rather than exposed as a workflow output.
+- `job_status`, `transcript_summary`, `credential_mode`, `success_requires_pr`, and bounded `projected_outputs_json` are exposed as reusable workflow outputs. A `run_agent: false` call returns `job_status: skipped`; a `dry_run: true` call validates without starting a model run. `OPENAI_API_KEY` is only required for a live OpenAI run and is never included in recipes, workflow outputs, or artifacts. Bootstrap lanes require a published pull request for success and expose its URL through `projected_outputs_json`; maintenance lanes allow a no-change result. Typed artifact declarations are exposed as `declared_artifacts_json` for review/debugging. Raw engine data is retained in runner artifacts rather than exposed as a workflow output.
 
 ## Quality Bar
 
@@ -213,6 +215,9 @@ For skills PRs, also confirm the live instructions match current upstream tool b
 php tests/validate-docs-agent-bundle.php
 php tests/validate-external-native-package-sources.php
 php tests/repair-docs-links-smoke.php
+WP_CODEBOX_DIR=/path/to/wp-codebox php tests/validate-wp-codebox-run-agent-task-contract.php
+actionlint -config-file .github/actionlint.yaml .github/workflows/*.yml
+git diff --check
 ```
 
 The native import test uses the maintained Agents API pure-PHP smoke harness; clone `Automattic/agents-api` and run:

@@ -1,6 +1,6 @@
 # Docs Agent Workflows
 
-`maintain-docs.yml` is the consumer-facing reusable workflow for scheduled upkeep. Consumer repositories pass product-level inputs such as `audience`, `base_ref`, `docs_branch`, `writable_paths`, `verification_commands`, `drift_checks`, `prompt`, and `run_agent`.
+`maintain-docs.yml` is the consumer-facing reusable workflow for scheduled upkeep. Consumer repositories pass product-level inputs such as `audience`, `base_ref`, `docs_branch`, `writable_paths`, `verification_commands`, `drift_checks`, `prompt`, `run_agent`, and `dry_run`.
 
 The consumer workflow supports separate lanes for technical docs, user docs, and live skills maintenance. Use `audience: skills` with skills/package writable paths instead of broad docs paths.
 
@@ -10,7 +10,7 @@ When verification commands or drift checks are needed, pass them through the reu
 
 The reusable workflow declares the expected typed review artifacts for Docs Agent runs: transcript, change summary, verification report, drift report, and workspace publication links. `maintain-docs.yml` writes those declarations into the portable recipe and exposes the declaration objects through `declared_artifacts_json`.
 
-The target repository must pass `ACCESS_TOKEN` and `EXTERNAL_PACKAGE_SOURCE_POLICY`. `ACCESS_TOKEN` authorizes target-repository publication. The policy is a separate v1 JSON secret that authorizes only the selected public standalone Docs Agent package; it is forwarded to WP Codebox as a secret and never serialized into the task descriptor. Same-organization callers can use `secrets: inherit` with both secrets; cross-organization callers map each secret explicitly.
+The target repository grants `contents: write`, `pull-requests: write`, and `issues: write`. Docs Agent forwards the caller-scoped `${{ github.token }}` to WP Codebox for same-repository publication, so consumers do not configure `ACCESS_TOKEN`. `OPENAI_API_KEY` is an optional workflow secret and is required only for a live OpenAI run; skipped and dry-run calls do not require it. `EXTERNAL_PACKAGE_SOURCE_POLICY` remains a separate required v1 JSON secret that authorizes only the selected public standalone Docs Agent package. Both secrets are forwarded to WP Codebox without serialization into the task descriptor.
 
 ## Docs Agent Runner Recipe
 

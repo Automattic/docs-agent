@@ -30,4 +30,6 @@ jobs:
       writable_paths: README.md,docs/**
       prompt: ${{ github.event_name == 'workflow_dispatch' && inputs.prompt || '' }}
       run_agent: ${{ github.event_name != 'workflow_dispatch' || inputs.run_agent }}
-    secrets: inherit
+    secrets:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.DOCS_AGENT_EXTERNAL_PACKAGE_SOURCE_POLICY }}
