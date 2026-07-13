@@ -1,5 +1,9 @@
 {
-  "native_bundles_dir": "../bundles/technical-docs-agent/native",
+  "native_bundle_dirs": {
+    "technical-docs-agent": "../bundles/technical-docs-agent/native",
+    "user-docs-agent": "../bundles/user-docs-agent/native",
+    "skills-agent": "../bundles/skills-agent/native"
+  },
   "forbidden_dm_fragments": [
     "pipeline_slug",
     "prompt_queue",
@@ -21,6 +25,7 @@
   ],
   "agents": {
     "technical-docs-bootstrap-agent.agent.json": {
+      "bundle": "technical-docs-agent",
       "agent_slug": "technical-docs-bootstrap-agent",
       "required_tools": [
         "get_github_file",
@@ -30,6 +35,8 @@
         "workspace_git_status",
         "workspace_git_diff"
       ],
+      "permitted_workspace_tools": ["workspace_show", "workspace_ls", "workspace_read", "workspace_grep", "workspace_write", "workspace_edit", "workspace_apply_patch", "workspace_git_status", "workspace_git_diff"],
+      "required_write_gate": "require-doc-write",
       "instructions_must_contain": [
         "living documentation",
         "understand, use, and extend",
@@ -47,6 +54,7 @@
       ]
     },
     "technical-docs-maintenance-agent.agent.json": {
+      "bundle": "technical-docs-agent",
       "agent_slug": "technical-docs-maintenance-agent",
       "required_tools": [
         "get_github_file",
@@ -56,6 +64,8 @@
         "workspace_git_status",
         "workspace_git_diff"
       ],
+      "permitted_workspace_tools": ["workspace_show", "workspace_ls", "workspace_read", "workspace_grep", "workspace_write", "workspace_edit", "workspace_apply_patch", "workspace_git_status", "workspace_git_diff"],
+      "required_write_gate": "require-doc-write",
       "instructions_must_contain": [
         "living documentation",
         "understand, use, and extend",
@@ -66,6 +76,30 @@
         "workspace_git_status",
         "workspace_git_diff"
       ]
+    },
+    "user-docs-bootstrap-agent.agent.json": {
+      "bundle": "user-docs-agent",
+      "agent_slug": "user-docs-bootstrap-agent",
+      "required_tools": ["get_github_file", "workspace_read", "workspace_grep", "workspace_write", "workspace_git_status", "workspace_git_diff"],
+      "permitted_workspace_tools": ["workspace_show", "workspace_ls", "workspace_read", "workspace_grep", "workspace_write", "workspace_edit", "workspace_apply_patch", "workspace_git_status", "workspace_git_diff"],
+      "required_write_gate": "require-doc-write",
+      "instructions_must_contain": ["non-technical product documentation", "frontend users", "one-shot first-run user documentation generation pass", "product-facing evidence", "complete initial documentation system", "docs/user/", "consumer-declared writable paths", "required documentation write", "workspace_git_status", "workspace_git_diff"]
+    },
+    "user-docs-maintenance-agent.agent.json": {
+      "bundle": "user-docs-agent",
+      "agent_slug": "user-docs-maintenance-agent",
+      "required_tools": ["get_github_file", "workspace_read", "workspace_grep", "workspace_edit", "workspace_git_status", "workspace_git_diff"],
+      "permitted_workspace_tools": ["workspace_show", "workspace_ls", "workspace_read", "workspace_grep", "workspace_write", "workspace_edit", "workspace_apply_patch", "workspace_git_status", "workspace_git_diff"],
+      "required_write_gate": "require-doc-write",
+      "instructions_must_contain": ["non-technical product documentation", "maintenance pass", "product-facing evidence", "docs/user/", "consumer-declared writable paths", "no_changes", "required documentation write", "workspace_git_status", "workspace_git_diff"]
+    },
+    "skills-maintenance-agent.agent.json": {
+      "bundle": "skills-agent",
+      "agent_slug": "skills-maintenance-agent",
+      "required_tools": ["get_github_file", "workspace_read", "workspace_grep", "workspace_edit", "workspace_git_status", "workspace_git_diff"],
+      "permitted_workspace_tools": ["workspace_show", "workspace_ls", "workspace_read", "workspace_grep", "workspace_write", "workspace_edit", "workspace_apply_patch", "workspace_git_status", "workspace_git_diff"],
+      "required_write_gate": "require-skill-write",
+      "instructions_must_contain": ["live agent skill instructions", "generated packaged skill outputs", "skills maintenance lane", "technical docs document skills", "consumer-declared writable paths", "build commands", "repository checks", "generated-output drift checks", "required skill write", "workspace_git_status", "workspace_git_diff"]
     }
   }
 }

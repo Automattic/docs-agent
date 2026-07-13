@@ -170,6 +170,8 @@ Docs Agent ships portable agent bundles selected by the reusable workflow:
 
 The reusable workflow maps `audience` to the correct bundle, agent identity, pipeline, and maintenance flow.
 
+Each lane also ships native Agents API runtime packages for direct import through `wp_agent_import_runtime_bundles()`: technical docs bootstrap and maintenance, user docs bootstrap and maintenance, and skills maintenance. These packages retain the same source-grounded workspace-only editing boundary and required workspace-write gate as their corresponding bundle lanes.
+
 ## Workflow Operation
 
 Consumer repositories call `.github/workflows/maintain-docs.yml`. The workflow accepts the product-level inputs above, selects the matching Docs Agent bundle, and prepares a runner-neutral recipe. A caller-owned runner consumes that recipe and publishes or updates the configured Docs Agent pull request when files change.
