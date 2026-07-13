@@ -1,5 +1,0 @@
-# actionlint 1.7.12 predates GitHub's job_workflow_sha reusable-workflow context.
-paths:
-  .github/workflows/maintain-docs.yml:
-    ignore:
-      - 'property "job_workflow_sha" is not defined in object type'

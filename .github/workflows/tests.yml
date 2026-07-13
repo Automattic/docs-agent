@@ -17,6 +17,7 @@ jobs:
         with:
           repository: Automattic/docs-agent
           ref: ${{ github.sha }}
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Check out Agents API
