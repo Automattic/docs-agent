@@ -313,6 +313,11 @@ foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertion
 
 	$agent = $native_bundle['agent'] ?? array();
 	$assert( is_array( $agent ), "Native bundle {$native_file} must declare an agent object." );
+	$source_revision = (string) ( $native_assertions['source_revision'] ?? '' );
+	$assert( '' !== $source_revision, "Native bundle {$native_file} must declare its immutable source revision in the test spec." );
+	$assert( "Automattic/docs-agent@{$source_revision}" === ( $native_bundle['source_ref'] ?? '' ), "Native bundle {$native_file} source_ref must resolve to the commit that contains this package." );
+	$assert( $source_revision === ( $native_bundle['source_revision'] ?? '' ), "Native bundle {$native_file} source_revision must identify the commit that contains this package." );
+	$assert( $source_revision === ( $agent['meta']['source_version'] ?? '' ), "Native bundle {$native_file} imported source_version must identify the package commit." );
 
 	// agents-api importer required shape.
 	$assert( ( $native_assertions['agent_slug'] ?? '' ) === ( $agent['agent_slug'] ?? '' ), "Native bundle {$native_file} agent_slug mismatch." );

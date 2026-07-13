@@ -2,8 +2,8 @@
   "schema_version": 1,
   "bundle_slug": "skills-maintenance-agent",
   "bundle_version": "0.1.0",
-  "source_ref": "Automattic/docs-agent@v0.3.0",
-  "source_revision": "11ce01d37dde3c757c08243942dbf4a1c27caa60",
+  "source_ref": "Automattic/docs-agent@02e01e6d72ee158e45413185c32fcf30a5a04724",
+  "source_revision": "02e01e6d72ee158e45413185c32fcf30a5a04724",
   "agent": {
     "agent_slug": "skills-maintenance-agent",
     "agent_name": "Skills Maintenance Agent",
@@ -46,7 +46,7 @@
     "meta": {
       "source_type": "runtime-agent-package",
       "source_package": "skills-agent",
-      "source_version": "0.3.0",
+      "source_version": "02e01e6d72ee158e45413185c32fcf30a5a04724",
       "role": "skills-maintenance",
       "runtime": "agents-api-native-chat",
       "default_provider": "openai",

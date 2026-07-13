@@ -27,6 +27,7 @@
     "technical-docs-bootstrap-agent.agent.json": {
       "bundle": "technical-docs-agent",
       "agent_slug": "technical-docs-bootstrap-agent",
+      "source_revision": "3da1b8076359db9bf9f4ee7dadcc3932c080ed71",
       "required_tools": [
         "get_github_file",
         "workspace_read",
@@ -56,6 +57,7 @@
     "technical-docs-maintenance-agent.agent.json": {
       "bundle": "technical-docs-agent",
       "agent_slug": "technical-docs-maintenance-agent",
+      "source_revision": "3da1b8076359db9bf9f4ee7dadcc3932c080ed71",
       "required_tools": [
         "get_github_file",
         "workspace_read",
@@ -80,6 +82,7 @@
     "user-docs-bootstrap-agent.agent.json": {
       "bundle": "user-docs-agent",
       "agent_slug": "user-docs-bootstrap-agent",
+      "source_revision": "02e01e6d72ee158e45413185c32fcf30a5a04724",
       "required_tools": ["get_github_file", "workspace_read", "workspace_grep", "workspace_write", "workspace_git_status", "workspace_git_diff"],
       "permitted_workspace_tools": ["workspace_show", "workspace_ls", "workspace_read", "workspace_grep", "workspace_write", "workspace_edit", "workspace_apply_patch", "workspace_git_status", "workspace_git_diff"],
       "required_write_gate": "require-doc-write",
@@ -88,6 +91,7 @@
     "user-docs-maintenance-agent.agent.json": {
       "bundle": "user-docs-agent",
       "agent_slug": "user-docs-maintenance-agent",
+      "source_revision": "02e01e6d72ee158e45413185c32fcf30a5a04724",
       "required_tools": ["get_github_file", "workspace_read", "workspace_grep", "workspace_edit", "workspace_git_status", "workspace_git_diff"],
       "permitted_workspace_tools": ["workspace_show", "workspace_ls", "workspace_read", "workspace_grep", "workspace_write", "workspace_edit", "workspace_apply_patch", "workspace_git_status", "workspace_git_diff"],
       "required_write_gate": "require-doc-write",
@@ -96,6 +100,7 @@
     "skills-maintenance-agent.agent.json": {
       "bundle": "skills-agent",
       "agent_slug": "skills-maintenance-agent",
+      "source_revision": "02e01e6d72ee158e45413185c32fcf30a5a04724",
       "required_tools": ["get_github_file", "workspace_read", "workspace_grep", "workspace_edit", "workspace_git_status", "workspace_git_diff"],
       "permitted_workspace_tools": ["workspace_show", "workspace_ls", "workspace_read", "workspace_grep", "workspace_write", "workspace_edit", "workspace_apply_patch", "workspace_git_status", "workspace_git_diff"],
       "required_write_gate": "require-skill-write",
