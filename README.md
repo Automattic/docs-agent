@@ -205,4 +205,4 @@ AGENTS_API_DIR=/path/to/agents-api php tests/native-agent-import.php
 
 It imports every native package through `wp_agent_import_runtime_bundles()`, verifies registration and preserved write-gate defaults, and invokes the default native chat handler far enough to resolve each registered agent. It intentionally fails when `AGENTS_API_DIR` is unavailable rather than treating an unexecuted importer as a passing test. It does not execute a model turn because the packages intentionally leave provider/model selection to the caller.
 
-CI validates all bundle declarations with `tests/docs-agent.validate-bundle-spec.json`.
+The `Docs Agent Tests` GitHub Actions workflow runs on pull requests and pushes. It runs the structural bundle validator, the docs-link repair smoke test, and the native importer integration test against `Automattic/agents-api` at `5addf598167ec17821954b0f9aa3a9b160b7e36e`.
