@@ -55,9 +55,9 @@ jobs:
 
           {
             printf '## Docs Agent recipe\n\n'
-            printf -- '- Target repository: `%s`\n' "$TARGET_REPO"
-            printf -- '- Flow: `%s`\n' "$FLOW_KIND"
-            printf -- '- Bundle: `%s`\n' "$bundle_path"
-            printf -- '- Writable paths: `%s`\n' "$WRITABLE_PATHS"
+            printf '%s\n' "- Target repository: \`$TARGET_REPO\`"
+            printf '%s\n' "- Flow: \`$FLOW_KIND\`"
+            printf '%s\n' "- Bundle: \`$bundle_path\`"
+            printf '%s\n' "- Writable paths: \`$WRITABLE_PATHS\`"
             printf '\nThis workflow is runner-neutral. Run the selected bundle with a caller-owned execution environment and provider.\n'
           } >> "$GITHUB_STEP_SUMMARY"

@@ -12,8 +12,6 @@
     "flowSlug": "technical-docs-maintenance-flow"
   },
   "runner": {
-    "validationDependencies": "Automattic/docs-agent@v0.1.0",
-    "contextRepositories": [],
     "verificationCommands": [],
     "driftChecks": [],
     "writablePaths": "README.md,docs/**",
@@ -33,7 +31,6 @@
   },
   "runtime": {
     "maxTurns": 12,
-    "stepBudget": 16,
     "timeBudgetMs": 600000
   },
   "artifacts": {

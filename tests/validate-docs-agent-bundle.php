@@ -161,11 +161,21 @@ foreach ( $blocked_runtime_fragments as $internal_fragment ) {
 $runner_workspace = $example['runner']['workspace'] ?? array();
 $assert( ! empty( $runner_workspace['enabled'] ), 'Example config must enable runner-owned workspace provisioning.' );
 $assert( 'docs/agent-run' === ( $runner_workspace['branch_prefix'] ?? null ), 'Example config must declare the docs branch prefix.' );
-$assert( 'Automattic/docs-agent@v0.1.0' === ( $example['runner']['validationDependencies'] ?? null ), 'Example config must keep Docs Agent as a validation dependency.' );
 $assert( is_file( $root . '/scripts/repair-docs-links.php' ), 'Docs link repair script must be available to consumer workflows.' );
 
+foreach ( array( $recipe, $example ) as $runner_recipe ) {
+	$runner_controls = $runner_recipe['runner'] ?? array();
+	$policy_controls = $runner_recipe['policy'] ?? array();
+	$runtime_controls = $runner_recipe['runtime'] ?? array();
+	foreach ( array( 'validationDependencies', 'contextRepositories', 'workspaceContractChecks' ) as $removed_runner_control ) {
+		$assert( ! array_key_exists( $removed_runner_control, $runner_controls ), "Runner recipe must not expose removed control {$removed_runner_control}." );
+	}
+	$assert( ! array_key_exists( 'successCompletionOutcomes', $policy_controls ), 'Runner recipe must not expose removed successCompletionOutcomes.' );
+	$assert( ! array_key_exists( 'stepBudget', $runtime_controls ), 'Runner recipe must not expose removed stepBudget.' );
+}
+
 $maintain_docs_workflow = (string) file_get_contents( $root . '/.github/workflows/maintain-docs.yml' );
-foreach ( array( 'context_repositories:', 'verification_commands:', 'drift_checks:', 'bootstrap_contract:', 'schema:"docs-agent/runner-recipe/v1"', 'bootstrapContract:$bootstrapContract' ) as $required_workflow_text ) {
+foreach ( array( 'verification_commands:', 'drift_checks:', 'schema:"docs-agent/runner-recipe/v1"' ) as $required_workflow_text ) {
 	$assert( str_contains( $maintain_docs_workflow, $required_workflow_text ), "maintain-docs.yml missing required text: {$required_workflow_text}" );
 }
 $assert( str_contains( $maintain_docs_workflow, 'recipe_json:' ), 'maintain-docs.yml must expose a portable recipe output.' );
@@ -206,9 +216,10 @@ $assert( ! str_contains( $maintain_docs_workflow, 'extra_wp_codebox_mounts:' ), 
 $assert( ! str_contains( $maintain_docs_workflow, 'agents_api_ref:' ), 'maintain-docs.yml must not expose agents_api_ref.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'data_machine_ref:' ), 'maintain-docs.yml must not expose data_machine_ref.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'data_machine_code_ref:' ), 'maintain-docs.yml must not expose data_machine_code_ref.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'output_projections:' ), 'maintain-docs.yml must leave runner output projection mechanics to callers.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'engine_data_outputs:' ), 'maintain-docs.yml must use recipe outputMappings instead of engine_data_outputs.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'runtime_output_projections:' ), 'maintain-docs.yml must use recipe outputMappings instead of runtime_output_projections.' );
+$assert( str_contains( $maintain_docs_workflow, 'output_projections:' ), 'maintain-docs.yml must project the bounded runner publication result.' );
+$assert( str_contains( $maintain_docs_workflow, 'ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}' ), 'maintain-docs.yml must explicitly forward ACCESS_TOKEN to the native runner.' );
 
 $workflow_readme = (string) file_get_contents( $root . '/.github/workflows/README.md' );
 foreach ( array( 'Docs Agent Runner Recipe', 'portable recipe', 'Docs Agent owns the Docs Agent-specific bundle' ) as $migration_note_text ) {

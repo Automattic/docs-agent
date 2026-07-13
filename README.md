@@ -37,7 +37,11 @@ jobs:
       base_ref: trunk
       docs_branch: docs-agent/my-repo-docs
       writable_paths: README.md,docs/**
+    secrets:
+      ACCESS_TOKEN: ${{ secrets.DOCS_AGENT_ACCESS_TOKEN }}
 ```
+
+`ACCESS_TOKEN` is required because the native runner checks out the target repository and may publish the Docs Agent branch and pull request. Docs Agent sets the target to the calling repository, so its normal consumer run is same-repository and the token must write that repository. Configure `DOCS_AGENT_ACCESS_TOKEN` with that access. A same-organization caller may instead use `secrets: inherit` when it defines an `ACCESS_TOKEN` secret. For a cross-organization call, map the caller secret explicitly as shown above. WP Codebox #1751 requires the token to be authorized for every declared target repository when a task targets another repository.
 
 For repositories that run their own preflight detection, pass `run_agent: false` when no docs work is needed. The workflow records a deterministic skipped run instead of booting the agent runtime.
 
@@ -60,11 +64,13 @@ jobs:
       docs_branch: docs-agent/my-repo-docs
       writable_paths: README.md,docs/**
       run_agent: ${{ needs.detect.outputs.should_run == 'true' }}
+    secrets:
+      ACCESS_TOKEN: ${{ secrets.DOCS_AGENT_ACCESS_TOKEN }}
 ```
 
 ## Workflow Inputs
 
-The consumer API is product-level. Consumer repositories configure the documentation lane, target branch, writable paths, optional context repositories, verification commands, drift checks, and run gating through reusable workflow inputs.
+The consumer API is product-level. Consumer repositories configure the documentation lane, target branch, writable paths, executable verification commands, drift checks, and run gating through reusable workflow inputs.
 
 | Input | Default | Description |
 | --- | --- | --- |
@@ -72,13 +78,12 @@ The consumer API is product-level. Consumer repositories configure the documenta
 | `base_ref` | `main` | Base branch or ref for the maintenance PR. |
 | `docs_branch` | `docs-agent/docs-upkeep` | Stable branch reused for the canonical Docs Agent PR. |
 | `writable_paths` | `README.md,docs/**` | Comma-separated allowlist of paths Docs Agent may edit. |
-| `context_repositories` | `[]` | JSON array of canonical read-only context repositories. |
 | `verification_commands` | `[]` | JSON array of canonical runner verification commands executed in the target workspace. |
 | `drift_checks` | `[]` | JSON array of canonical runner drift checks executed after verification. |
 | `prompt` | empty | Optional additional maintenance instruction. |
 | `run_agent` | `true` | Set `false` to skip after deterministic preflight says docs are current. |
 
-`context_repositories`, `verification_commands`, and `drift_checks` are canonical recipe inputs. Docs Agent keeps the target repository as the only writable PR boundary; the caller-owned runner decides how to execute the recipe.
+`verification_commands` and `drift_checks` are executable runner inputs. Docs Agent keeps the target repository as the only writable PR boundary; the reusable runner executes the selected native agent task.
 
 ## Review Artifacts
 
@@ -105,7 +110,7 @@ Docs Agent opens or updates one canonical PR for the configured branch.
 - If the selected surface is current, the run succeeds with no changes.
 - If maintenance is needed, changes are written only under `writable_paths`.
 - If the canonical PR is already open, later runs reuse the same `docs_branch` and PR instead of creating duplicates.
-- Transcript and projected engine data are exposed as reusable workflow outputs, and typed artifact declarations are exposed as `declared_artifacts_json` for review/debugging.
+- `job_status`, `transcript_summary`, `credential_mode`, and bounded `projected_outputs_json` are exposed as reusable workflow outputs. A `run_agent: false` call returns `job_status: skipped`; it still requires the documented `ACCESS_TOKEN` mapping because the reusable workflow contract requires that secret. `projected_outputs_json` includes the runner publication URL when one exists; typed artifact declarations are exposed as `declared_artifacts_json` for review/debugging. Raw engine data is retained in runner artifacts rather than exposed as a workflow output.
 
 ## Quality Bar
 
@@ -153,7 +158,7 @@ Keep the writable scope narrow. It is the main safety boundary for generated cha
 - User docs commonly use a dedicated namespace such as `docs/user/**`.
 - Skills maintenance commonly uses `skills/**,plugins/**/skills/**,plugins/**/README.md`, plus generated MCP or plugin config files only when build scripts intentionally update them.
 
-Run skills upkeep as its own scheduled lane with `context_repositories`, `verification_commands`, `drift_checks`, a dedicated branch such as `docs-agent/skills-upkeep`, and writable paths such as `skills/**,packages/**/skills/**,packages/**/README.md`.
+Run skills upkeep as its own scheduled lane with `verification_commands`, `drift_checks`, a dedicated branch such as `docs-agent/skills-upkeep`, and writable paths such as `skills/**,packages/**/skills/**,packages/**/README.md`.
 
 ## Examples
 
@@ -172,7 +177,7 @@ The reusable workflow maps `audience` to the correct bundle, agent identity, pip
 
 ## Workflow Operation
 
-Consumer repositories call `.github/workflows/maintain-docs.yml`. The workflow accepts the product-level inputs above, selects the matching Docs Agent bundle, and prepares a runner-neutral recipe. A caller-owned runner consumes that recipe and publishes or updates the configured Docs Agent pull request when files change.
+Consumer repositories call `.github/workflows/maintain-docs.yml`. The workflow accepts the product-level inputs above, selects the matching Docs Agent bundle, and invokes the native runner contract. The runner publishes or updates the configured Docs Agent pull request when files change.
 
 Maintainers may still use `.github/workflows/docs-agent.yml` to prepare a recipe summary for an arbitrary `target_repo`.
 
