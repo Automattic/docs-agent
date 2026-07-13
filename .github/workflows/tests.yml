@@ -25,7 +25,7 @@ jobs:
           repository: Automattic/agents-api
           ref: 5addf598167ec17821954b0f9aa3a9b160b7e36e
           path: agents-api
-          token: ''
+          token: ${{ github.token }}
           persist-credentials: false
 
       - name: Run structural, link, and native importer tests
