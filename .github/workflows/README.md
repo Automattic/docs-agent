@@ -12,6 +12,8 @@ The reusable workflow declares the expected typed review artifacts for Docs Agen
 
 The target repository grants `contents: write`, `pull-requests: write`, and `issues: write`. Docs Agent forwards the caller-scoped `${{ github.token }}` to WP Codebox for same-repository publication, so consumers do not configure `ACCESS_TOKEN`. `OPENAI_API_KEY` is an optional workflow secret and is required only for a live OpenAI run; skipped and dry-run calls do not require it. `EXTERNAL_PACKAGE_SOURCE_POLICY` remains a separate required v1 JSON secret that authorizes only the selected public standalone Docs Agent package. Both secrets are forwarded to WP Codebox without serialization into the task descriptor.
 
+Docs Agent pins the WP Codebox producer to [#1756](https://github.com/Automattic/wp-codebox/pull/1756) (`ca1cc53ea76d09dc53dd02df89e41ad7fe143a27`). That producer pins its helper checkout independently of reusable-workflow caller context, preventing the helper-resolution regression recorded by failed Build runs `29281470179` and `29281470159`.
+
 ## Docs Agent Runner Recipe
 
 Docs Agent workflow call sites prepare a portable recipe instead of calling a concrete runner. Docs Agent owns the native package, lane, artifact, prompt, and workspace mapping. Consumers depend on Docs Agent inputs and review artifacts, not runner internals.

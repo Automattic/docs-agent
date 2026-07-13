@@ -196,7 +196,7 @@ $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 
 
 $transitional_homeboy_extensions_workflow = 'uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main';
 $forbidden_docs_agent_codebox_workflow = 'uses: Automattic/wp-codebox/.github/workflows/docs-agent-runner.yml@main';
-$generic_codebox_agent_task_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@54c2f9a7bc3cd1fe20055d496c83efcfb99afb41';
+$generic_codebox_agent_task_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@ca1cc53ea76d09dc53dd02df89e41ad7fe143a27';
 $assert( ! str_contains( $maintain_docs_workflow, $transitional_homeboy_extensions_workflow ), 'maintain-docs.yml must not call Homeboy Extensions directly.' );
 $assert( ! str_contains( $maintain_docs_workflow, $forbidden_docs_agent_codebox_workflow ), 'maintain-docs.yml must not call a Codebox-owned Docs Agent wrapper.' );
 $assert( str_contains( $maintain_docs_workflow, $generic_codebox_agent_task_workflow ), 'maintain-docs.yml must call the generic Codebox agent-task workflow.' );
@@ -235,6 +235,8 @@ $workflow_readme = (string) file_get_contents( $root . '/.github/workflows/READM
 foreach ( array( 'Docs Agent Runner Recipe', 'portable recipe', 'Docs Agent owns the native package' ) as $migration_note_text ) {
 	$assert( str_contains( $workflow_readme, $migration_note_text ), "Workflow README missing agent runtime note: {$migration_note_text}" );
 }
+$assert( str_contains( $workflow_readme, 'ca1cc53ea76d09dc53dd02df89e41ad7fe143a27' ), 'Workflow README must record the #1756 WP Codebox producer revision.' );
+$assert( str_contains( $workflow_readme, '29281470179' ) && str_contains( $workflow_readme, '29281470159' ), 'Workflow README must retain the failed Build run regression references.' );
 $assert( str_contains( $workflow_readme, 'blocks concrete runner workflow calls' ), 'Workflow README must document blocked concrete runner calls.' );
 $assert( str_contains( $workflow_readme, 'runtime ability names, component paths, mount directives, provider defaults, and define directives' ), 'Workflow README must document blocked runtime substrate surfaces.' );
 
