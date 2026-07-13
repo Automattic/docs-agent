@@ -12,12 +12,9 @@
     "flowSlug": "technical-docs-maintenance-flow"
   },
   "runner": {
-    "validationDependencies": "Automattic/docs-agent@main",
-    "contextRepositories": [],
     "verificationCommands": [],
     "driftChecks": [],
     "writablePaths": "README.md,docs/**",
-    "workspaceContractChecks": {},
     "workspace": {
       "enabled": true,
       "repo": "OWNER/REPO",
@@ -29,14 +26,12 @@
   },
   "policy": {
     "successRequiresPr": false,
-    "successCompletionOutcomes": [],
     "appTokenRepositories": "OWNER/REPO",
     "requireAppToken": true,
     "allowedRepositories": ["OWNER/REPO"]
   },
   "runtime": {
     "maxTurns": 12,
-    "stepBudget": 16,
     "timeBudgetMs": 600000
   },
   "artifacts": {

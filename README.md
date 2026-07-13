@@ -64,7 +64,7 @@ jobs:
 
 ## Workflow Inputs
 
-The consumer API is product-level. Consumer repositories configure the documentation lane, target branch, writable paths, optional context repositories, verification commands, drift checks, and run gating through reusable workflow inputs.
+The consumer API is product-level. Consumer repositories configure the documentation lane, target branch, writable paths, executable verification commands, drift checks, and run gating through reusable workflow inputs.
 
 | Input | Default | Description |
 | --- | --- | --- |
@@ -72,13 +72,12 @@ The consumer API is product-level. Consumer repositories configure the documenta
 | `base_ref` | `main` | Base branch or ref for the maintenance PR. |
 | `docs_branch` | `docs-agent/docs-upkeep` | Stable branch reused for the canonical Docs Agent PR. |
 | `writable_paths` | `README.md,docs/**` | Comma-separated allowlist of paths Docs Agent may edit. |
-| `context_repositories` | `[]` | JSON array of canonical read-only context repositories. |
 | `verification_commands` | `[]` | JSON array of canonical runner verification commands executed in the target workspace. |
 | `drift_checks` | `[]` | JSON array of canonical runner drift checks executed after verification. |
 | `prompt` | empty | Optional additional maintenance instruction. |
 | `run_agent` | `true` | Set `false` to skip after deterministic preflight says docs are current. |
 
-`context_repositories`, `verification_commands`, and `drift_checks` are canonical recipe inputs. Docs Agent keeps the target repository as the only writable PR boundary; the caller-owned runner decides how to execute the recipe.
+`verification_commands` and `drift_checks` are executable runner inputs. Docs Agent keeps the target repository as the only writable PR boundary; the reusable runner executes the selected native agent task.
 
 ## Review Artifacts
 
@@ -153,7 +152,7 @@ Keep the writable scope narrow. It is the main safety boundary for generated cha
 - User docs commonly use a dedicated namespace such as `docs/user/**`.
 - Skills maintenance commonly uses `skills/**,plugins/**/skills/**,plugins/**/README.md`, plus generated MCP or plugin config files only when build scripts intentionally update them.
 
-Run skills upkeep as its own scheduled lane with `context_repositories`, `verification_commands`, `drift_checks`, a dedicated branch such as `docs-agent/skills-upkeep`, and writable paths such as `skills/**,packages/**/skills/**,packages/**/README.md`.
+Run skills upkeep as its own scheduled lane with `verification_commands`, `drift_checks`, a dedicated branch such as `docs-agent/skills-upkeep`, and writable paths such as `skills/**,packages/**/skills/**,packages/**/README.md`.
 
 ## Examples
 
@@ -172,7 +171,7 @@ The reusable workflow maps `audience` to the correct bundle, agent identity, pip
 
 ## Workflow Operation
 
-Consumer repositories call `.github/workflows/maintain-docs.yml`. The workflow accepts the product-level inputs above, selects the matching Docs Agent bundle, and prepares a runner-neutral recipe. A caller-owned runner consumes that recipe and publishes or updates the configured Docs Agent pull request when files change.
+Consumer repositories call `.github/workflows/maintain-docs.yml`. The workflow accepts the product-level inputs above, selects the matching Docs Agent bundle, and invokes the native runner contract. The runner publishes or updates the configured Docs Agent pull request when files change.
 
 Maintainers may still use `.github/workflows/docs-agent.yml` to prepare a recipe summary for an arbitrary `target_repo`.
 
