@@ -53,6 +53,7 @@ $assert( is_string( $release_tag ) && preg_match( '/^v\d+\.\d+\.\d+$/', $release
 $assert( substr( $release_tag, 1 ) === ( $release['package_version'] ?? null ), 'WP Codebox release fixture package version must match its tag.' );
 $run = $release['run'] ?? null;
 $assert( is_string( $run ) && preg_match( '/^\d+$/', $run ) === 1, 'WP Codebox release fixture must retain the regression run reference.' );
+$assert( true === ( $release['private_runtime_path_sanitization'] ?? null ), 'WP Codebox release fixture must require private runtime-path sanitization.' );
 $native_result_path = $release['native_result_path'] ?? null;
 $workflow_result_path = $release['workflow_result_path'] ?? null;
 $assert( '.codebox/native-agent-task-result.json' === $native_result_path, 'WP Codebox release fixture must declare the controlled native result path.' );
@@ -71,7 +72,9 @@ $producer_workflow = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) .
 $producer_execute = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/scripts/run-agent-task/execute-native-agent-task.mjs' );
 $producer_runtime_sources = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/scripts/run-agent-task/materialize-external-native-package.mjs' );
 $producer_upload = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/scripts/run-agent-task/prepare-agent-task-upload.mjs' );
+$producer_sanitizer = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/scripts/run-agent-task/runtime-source-sanitizer.mjs' );
 $producer_result = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/contracts/agent-task-workflow-result.fixture.json' );
+$producer_path_regression = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/fixtures/agent-task-runtime-paths-run-' . $run . '.json' );
 $assert( str_contains( $producer_workflow, $workflow_result_path ), 'WP Codebox producer workflow must upload the workflow result file.' );
 $assert( str_contains( $producer_execute, '"--result-file", nativeResultPath' ), 'WP Codebox producer must pass the native result-file argument.' );
 $assert( str_contains( $producer_execute, 'const nativeResultPath = join(controlledCodeboxPath, "native-agent-task-result.json")' ), 'WP Codebox producer must constrain the native result path to .codebox.' );
@@ -202,9 +205,17 @@ $assert( str_contains( $producer_runtime_sources, 'provider_plugin_paths:' ) && 
 $assert( str_contains( $producer_runtime_sources, 'runtime_overlays:' ) && str_contains( $producer_runtime_sources, 'kind: "bundled-library"' ), 'WP Codebox must lower bundled libraries through runtime overlays.' );
 $assert( str_contains( $producer_runtime_sources, 'metadata.providers must be a non-empty canonical list of provider ids.' ), 'WP Codebox must require provider-plugin metadata to declare canonical provider ids.' );
 $assert( str_contains( $producer_runtime_sources, 'Requested provider ${provider} is not declared by an authorized runtime provider plugin.' ), 'WP Codebox must authorize the selected provider against runtime metadata before execution.' );
-$assert( str_contains( $producer_upload, 'function runtimeSourceProvenance(source)' ), 'WP Codebox artifacts must derive runtime-source provenance separately from materialized runtime paths.' );
-$assert( str_contains( $producer_upload, 'if (key === "runtime_sources" && Array.isArray(entry)) return [[key, entry.map(runtimeSourceProvenance)]]' ), 'WP Codebox artifacts must emit provenance-only runtime sources.' );
-$assert( str_contains( $producer_upload, 'if (descriptor.role === "provider_plugin" && Array.isArray(descriptor.metadata?.providers)) provenance.providers = descriptor.metadata.providers' ), 'WP Codebox provenance artifacts must retain the canonical provider allowlist.' );
+$assert( str_contains( $producer_sanitizer, 'function runtimeSourceProvenance(source)' ), 'WP Codebox artifacts must derive runtime-source provenance separately from materialized runtime paths.' );
+$assert( str_contains( $producer_sanitizer, 'if (key === "runtime_sources" && Array.isArray(entry)) return [[key, entry.map(runtimeSourceProvenance).map((source) => sanitizeRuntimeSourceValue(source, root))]]' ), 'WP Codebox artifacts must emit sanitized provenance-only runtime sources.' );
+$assert( str_contains( $producer_sanitizer, 'if (descriptor.role === "provider_plugin" && Array.isArray(descriptor.metadata?.providers)) provenance.providers = descriptor.metadata.providers' ), 'WP Codebox provenance artifacts must retain the canonical provider allowlist.' );
+$assert( str_contains( $producer_execute, 'sanitizeRuntimeSourceValue(nativeRuntimeResult, privateRuntimeSourceRootForSanitization)' ), 'WP Codebox must sanitize private runtime paths from native task results before persistence.' );
+$assert( str_contains( $producer_upload, 'sanitizeRuntimeSourceJson(text, runtimeSourceRoots)' ), 'WP Codebox must sanitize private runtime paths from artifact uploads.' );
+$assert( str_contains( $producer_sanitizer, 'RUNTIME_SOURCE_PLACEHOLDER = "[runtime-source]"' ), 'WP Codebox must replace private runtime paths with the published placeholder.' );
+$assert( str_contains( $producer_sanitizer, 'PRIVATE_RUNTIME_SOURCE_FIELDS = new Set(["source_package_root"])' ), 'WP Codebox must remove private runtime source-root fields.' );
+$private_runtime_root = $producer_path_regression['runtime_root'] ?? null;
+$assert( is_string( $private_runtime_root ) && '' !== $private_runtime_root, 'WP Codebox private-path regression fixture must declare the private runtime root.' );
+$assert( str_contains( (string) ( $producer_path_regression['failure']['stack'] ?? '' ), $private_runtime_root ), 'WP Codebox private-path regression fixture must cover stack traces.' );
+$assert( array_key_exists( $private_runtime_root . '/key', $producer_path_regression['success']['outputs']['metadata']['nested'] ?? array() ), 'WP Codebox private-path regression fixture must cover object keys.' );
 $assert( ! array_intersect( array( 'MODEL_PROVIDER_SECRET_1', 'MODEL_PROVIDER_SECRET_2', 'MODEL_PROVIDER_SECRET_3', 'MODEL_PROVIDER_SECRET_4', 'MODEL_PROVIDER_SECRET_5' ), array_keys( $caller_secrets ) ), 'Docs Agent must forward only the OPENAI_API_KEY provider secret name.' );
 
 preg_match( "/output_projections='(?<json>[^']+)'/", $workflow, $projection_match );
