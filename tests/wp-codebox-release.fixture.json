@@ -1,7 +1,7 @@
 {
-  "tag": "v0.12.13",
-  "package_version": "0.12.13",
-  "run": "29309360438",
+  "tag": "v0.12.14",
+  "package_version": "0.12.14",
+  "run": "29311239264",
   "diagnostic_regression_run": "29307978522",
   "upload_regression_run": "29306539573",
   "successful_noop_optional_artifacts": true,
@@ -13,6 +13,10 @@
   "normalized_failures": true,
   "diagnostic_class_names_allowed": true,
   "php_shaped_source_blocked": true,
+  "imported_package_identity_execution": true,
+  "sandbox_local_copy_on_write_workspace_tools": true,
+  "host_patch_apply_verification_publication": true,
+  "provenance_only_uploads": true,
   "native_result_path": ".codebox/native-agent-task-result.json",
   "workflow_result_path": ".codebox/agent-task-workflow-result.json"
 }
