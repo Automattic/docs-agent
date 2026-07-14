@@ -4,6 +4,8 @@
 
 The consumer workflow supports separate lanes for technical docs, user docs, and live skills maintenance. Use `audience: skills` with skills/package writable paths instead of broad docs paths.
 
+The canonical execution architecture consists of exactly five native Agents API packages: technical bootstrap, technical maintenance, user bootstrap, user maintenance, and skills maintenance. Each `.agent.json` package is the sole executable instruction authority for its lane; `maintain-docs.yml` selects one immutable package without a separate manifest, flow, pipeline, or memory envelope.
+
 Schedule skills upkeep separately from docs upkeep. The skills lane should use a dedicated branch such as `docs-agent/skills-upkeep`, skill/package writable paths, verification commands, and drift checks through the portable recipe.
 
 When validation setup, verification commands, or drift checks are needed, pass them through the reusable workflow inputs above. `validation_dependencies` is an optional caller-owned command that runs before verification during a live execution. The reusable workflow includes those executable inputs in the portable recipe and keeps the target repository as the writable Docs Agent workspace.
@@ -22,4 +24,6 @@ The recipe boundary covers standalone native package selection, complete native 
 
 Native package selection is expressed through recipe `docsAgent.externalPackageSource`. Workspace boundaries are expressed through recipe `runner` fields so agents remain workspace editors while caller-owned execution handles sandboxing and publication handoff.
 
-Run `php tests/validate-docs-agent-bundle.php` after workflow changes so workflow routing and runner config stay aligned.
+Direct consumers of the removed legacy manifests, flows, pipelines, or memory envelopes must migrate to the corresponding native `.agent.json` package. Existing `maintain-docs.yml` consumers already select native packages and are unaffected.
+
+Run `php tests/validate-docs-agent-packages.php` after workflow changes so package structure, workflow routing, and runner config stay aligned.

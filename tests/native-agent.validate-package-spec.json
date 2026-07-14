@@ -1,5 +1,5 @@
 {
-  "native_bundle_dirs": {
+  "native_package_dirs": {
     "technical-docs-agent": "../bundles/technical-docs-agent/native",
     "user-docs-agent": "../bundles/user-docs-agent/native",
     "skills-agent": "../bundles/skills-agent/native"
@@ -25,7 +25,7 @@
   ],
   "agents": {
     "technical-docs-bootstrap-agent.agent.json": {
-      "bundle": "technical-docs-agent",
+      "package": "technical-docs-agent",
       "agent_slug": "technical-docs-bootstrap-agent",
       "source_revision": "3da1b8076359db9bf9f4ee7dadcc3932c080ed71",
       "required_tools": [
@@ -55,7 +55,7 @@
       ]
     },
     "technical-docs-maintenance-agent.agent.json": {
-      "bundle": "technical-docs-agent",
+      "package": "technical-docs-agent",
       "agent_slug": "technical-docs-maintenance-agent",
       "source_revision": "3da1b8076359db9bf9f4ee7dadcc3932c080ed71",
       "required_tools": [
@@ -80,7 +80,7 @@
       ]
     },
     "user-docs-bootstrap-agent.agent.json": {
-      "bundle": "user-docs-agent",
+      "package": "user-docs-agent",
       "agent_slug": "user-docs-bootstrap-agent",
       "source_revision": "02e01e6d72ee158e45413185c32fcf30a5a04724",
       "required_tools": ["get_github_file", "workspace_read", "workspace_grep", "workspace_write", "workspace_git_status", "workspace_git_diff"],
@@ -89,7 +89,7 @@
       "instructions_must_contain": ["non-technical product documentation", "frontend users", "one-shot first-run user documentation generation pass", "product-facing evidence", "complete initial documentation system", "docs/user/", "consumer-declared writable paths", "required documentation write", "workspace_git_status", "workspace_git_diff"]
     },
     "user-docs-maintenance-agent.agent.json": {
-      "bundle": "user-docs-agent",
+      "package": "user-docs-agent",
       "agent_slug": "user-docs-maintenance-agent",
       "source_revision": "02e01e6d72ee158e45413185c32fcf30a5a04724",
       "required_tools": ["get_github_file", "workspace_read", "workspace_grep", "workspace_edit", "workspace_git_status", "workspace_git_diff"],
@@ -98,7 +98,7 @@
       "instructions_must_contain": ["non-technical product documentation", "maintenance pass", "product-facing evidence", "docs/user/", "consumer-declared writable paths", "no_changes", "required documentation write", "workspace_git_status", "workspace_git_diff"]
     },
     "skills-maintenance-agent.agent.json": {
-      "bundle": "skills-agent",
+      "package": "skills-agent",
       "agent_slug": "skills-maintenance-agent",
       "source_revision": "02e01e6d72ee158e45413185c32fcf30a5a04724",
       "required_tools": ["get_github_file", "workspace_read", "workspace_grep", "workspace_edit", "workspace_git_status", "workspace_git_diff"],

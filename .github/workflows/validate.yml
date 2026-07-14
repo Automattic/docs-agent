@@ -23,7 +23,7 @@ jobs:
         env:
           WP_CODEBOX_DIR: ${{ github.workspace }}/.wp-codebox
         run: |
-          php tests/validate-docs-agent-bundle.php
+          php tests/validate-docs-agent-packages.php
           php tests/validate-external-native-package-sources.php
           php tests/validate-wp-codebox-run-agent-task-contract.php
           php tests/repair-docs-links-smoke.php
