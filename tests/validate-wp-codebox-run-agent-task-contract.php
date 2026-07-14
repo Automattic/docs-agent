@@ -70,6 +70,7 @@ $assert( str_contains( $workflow_readme, 'run `' . $run . '`' ), 'Workflow docum
 $producer_workflow = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/workflows/run-agent-task.yml' );
 $producer_execute = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/scripts/run-agent-task/execute-native-agent-task.mjs' );
 $producer_runtime_sources = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/scripts/run-agent-task/materialize-external-native-package.mjs' );
+$producer_upload = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/scripts/run-agent-task/prepare-agent-task-upload.mjs' );
 $producer_result = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/contracts/agent-task-workflow-result.fixture.json' );
 $assert( str_contains( $producer_workflow, $workflow_result_path ), 'WP Codebox producer workflow must upload the workflow result file.' );
 $assert( str_contains( $producer_execute, '"--result-file", nativeResultPath' ), 'WP Codebox producer must pass the native result-file argument.' );
@@ -108,6 +109,9 @@ foreach ( $contract['inputs'] ?? array() as $name => $input ) {
 
 $assert( $release_tag === ( $caller_inputs['wp_codebox_release_ref'] ?? null ), 'Docs Agent must pass the WP Codebox release tag required by the producer contract.' );
 $assert( '${{ needs.prepare.outputs.runtime_sources }}' === ( $caller_inputs['runtime_sources'] ?? null ), 'Docs Agent must pass its prepared runtime closure to WP Codebox.' );
+$assert( ! isset( $caller_inputs['provider'], $caller_inputs['model'] ), 'Docs Agent must leave provider/model selection to the published WP Codebox contract.' );
+$assert( 'string' === ( $contract['inputs']['provider']['type'] ?? null ) && 'openai' === ( $contract['inputs']['provider']['default'] ?? null ), 'WP Codebox must publish the OpenAI provider input.' );
+$assert( 'string' === ( $contract['inputs']['model']['type'] ?? null ) && 'gpt-5.5' === ( $contract['inputs']['model']['default'] ?? null ), 'WP Codebox must publish the default model input.' );
 $is_coherent_release_pair = static function ( string $consumer_workflow ): bool {
 	preg_match( '/uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@(?<workflow_tag>[^\s]+)/', $consumer_workflow, $workflow_match );
 	preg_match( '/^\s+wp_codebox_release_ref: (?<helper_tag>[^\s]+)$/m', $consumer_workflow, $helper_match );
@@ -183,7 +187,7 @@ $assert( array(
 	'version' => 1,
 	'role' => 'provider_plugin',
 	'source' => array( 'type' => 'https_zip', 'url' => 'https://downloads.wordpress.org/plugin/ai-provider-for-openai.1.0.3.zip', 'sha256' => '48f3c0c714b3164cda79d320829830d5a0ea1116e0b19653da8af898a22d3bb6', 'archive_root' => 'ai-provider-for-openai' ),
-	'metadata' => array( 'slug' => 'ai-provider-for-openai', 'pluginFile' => 'plugin.php', 'activate' => true ),
+	'metadata' => array( 'slug' => 'ai-provider-for-openai', 'pluginFile' => 'plugin.php', 'activate' => true, 'providers' => array( 'openai' ) ),
 ) === ( $runtime_sources[1] ?? null ), 'Docs Agent must declare the checksum-pinned activated OpenAI provider.' );
 $assert( array(
 	'version' => 1,
@@ -196,6 +200,11 @@ $assert( array(
 $assert( str_contains( $producer_runtime_sources, 'return { component_contracts:' ), 'WP Codebox must lower component runtime sources through component contracts.' );
 $assert( str_contains( $producer_runtime_sources, 'provider_plugin_paths:' ) && str_contains( $producer_runtime_sources, 'provider_plugins:' ), 'WP Codebox must lower provider runtime sources through provider plugin inputs.' );
 $assert( str_contains( $producer_runtime_sources, 'runtime_overlays:' ) && str_contains( $producer_runtime_sources, 'kind: "bundled-library"' ), 'WP Codebox must lower bundled libraries through runtime overlays.' );
+$assert( str_contains( $producer_runtime_sources, 'metadata.providers must be a non-empty canonical list of provider ids.' ), 'WP Codebox must require provider-plugin metadata to declare canonical provider ids.' );
+$assert( str_contains( $producer_runtime_sources, 'Requested provider ${provider} is not declared by an authorized runtime provider plugin.' ), 'WP Codebox must authorize the selected provider against runtime metadata before execution.' );
+$assert( str_contains( $producer_upload, 'function runtimeSourceProvenance(source)' ), 'WP Codebox artifacts must derive runtime-source provenance separately from materialized runtime paths.' );
+$assert( str_contains( $producer_upload, 'if (key === "runtime_sources" && Array.isArray(entry)) return [[key, entry.map(runtimeSourceProvenance)]]' ), 'WP Codebox artifacts must emit provenance-only runtime sources.' );
+$assert( str_contains( $producer_upload, 'if (descriptor.role === "provider_plugin" && Array.isArray(descriptor.metadata?.providers)) provenance.providers = descriptor.metadata.providers' ), 'WP Codebox provenance artifacts must retain the canonical provider allowlist.' );
 $assert( ! array_intersect( array( 'MODEL_PROVIDER_SECRET_1', 'MODEL_PROVIDER_SECRET_2', 'MODEL_PROVIDER_SECRET_3', 'MODEL_PROVIDER_SECRET_4', 'MODEL_PROVIDER_SECRET_5' ), array_keys( $caller_secrets ) ), 'Docs Agent must forward only the OPENAI_API_KEY provider secret name.' );
 
 preg_match( "/output_projections='(?<json>[^']+)'/", $workflow, $projection_match );
