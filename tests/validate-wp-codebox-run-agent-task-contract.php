@@ -51,11 +51,15 @@ $release = $read_json( $root . '/tests/wp-codebox-release.fixture.json' );
 $release_tag = $release['tag'] ?? null;
 $assert( is_string( $release_tag ) && preg_match( '/^v\d+\.\d+\.\d+$/', $release_tag ) === 1, 'WP Codebox release fixture must declare an exact release tag.' );
 $assert( substr( $release_tag, 1 ) === ( $release['package_version'] ?? null ), 'WP Codebox release fixture package version must match its tag.' );
+$failed_run = $release['failed_run'] ?? null;
+$assert( is_string( $failed_run ) && preg_match( '/^\d+$/', $failed_run ) === 1, 'WP Codebox release fixture must retain the failed-run regression reference.' );
 $producer_package = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/package.json' );
 $assert( ( $release['package_version'] ?? null ) === ( $producer_package['version'] ?? null ), 'Checked-out WP Codebox package version must match the release fixture.' );
 
 $workflow = (string) file_get_contents( $root . '/.github/workflows/maintain-docs.yml' );
 $assert( preg_match( '/^\s*uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@' . preg_quote( $release_tag, '/' ) . '$/m', $workflow ) === 1, 'Docs Agent must call the released WP Codebox workflow tag.' );
+$workflow_readme = (string) file_get_contents( $root . '/.github/workflows/README.md' );
+$assert( str_contains( $workflow_readme, 'failed run `' . $failed_run . '`' ), 'Workflow documentation must retain the failed-run regression reference.' );
 
 preg_match( '/uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@[^\n]+\n    with:\n(?<inputs>.*?)\n    secrets:\n(?<secrets>(?:      [^\n]*\n?)*)/s', $workflow, $caller );
 $assert( isset( $caller['inputs'], $caller['secrets'] ), 'Docs Agent must declare producer inputs and secrets.' );
