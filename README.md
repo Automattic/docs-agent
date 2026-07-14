@@ -180,7 +180,7 @@ Run skills upkeep as its own scheduled lane with `verification_commands`, `drift
 
 ## Native Packages
 
-Docs Agent ships standalone native Agents API packages selected by the reusable workflow:
+Docs Agent has one canonical architecture: five standalone native Agents API packages selected by the reusable workflow:
 
 - `bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json`
 - `bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json`
@@ -188,11 +188,15 @@ Docs Agent ships standalone native Agents API packages selected by the reusable 
 - `bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json`
 - `bundles/skills-agent/native/skills-maintenance-agent.agent.json`
 
-The reusable workflow maps `audience` and `run_kind` to exactly one package and its canonical agent slug. Every descriptor uses the package-source revision `7b2df969c34de112ec7ad13189ba94226a7f76f3`, independently of the revision that invokes the reusable workflow, and supplies a byte-level `sha256-bytes-v1` digest.
+These five `.agent.json` files are the complete executable package surface. Each package is the sole executable instruction authority for its lane. The reusable workflow maps `audience` and `run_kind` to exactly one package and its canonical agent slug; it does not select a separate manifest, flow, pipeline, or memory envelope. Every descriptor uses the package-source revision `7b2df969c34de112ec7ad13189ba94226a7f76f3`, independently of the revision that invokes the reusable workflow, and supplies a byte-level `sha256-bytes-v1` digest.
 
 Package updates advance the package-source revision and all five declared digests atomically. The immutable-source validator reads each package blob from that Git revision, recomputes its digest and canonical slug, and rejects a descriptor that does not match those historical bytes.
 
-Each lane also ships native Agents API runtime packages for direct import through `wp_agent_import_runtime_bundles()`: technical docs bootstrap and maintenance, user docs bootstrap and maintenance, and skills maintenance. These packages retain the same source-grounded workspace-only editing boundary and required workspace-write gate as their corresponding bundle lanes.
+All five packages support direct import through `wp_agent_import_runtime_bundles()` and retain the source-grounded workspace-only editing boundary and required workspace-write gate.
+
+### Compatibility Impact
+
+Direct consumers of the removed legacy `manifest.json`, `flows/`, `pipelines/`, or memory envelopes must migrate to the corresponding native `.agent.json` package listed above. Consumers of `maintain-docs.yml` already use these native packages and require no workflow migration.
 
 ## Workflow Operation
 
@@ -215,7 +219,7 @@ For skills PRs, also confirm the live instructions match current upstream tool b
 ## Validation
 
 ```bash
-php tests/validate-docs-agent-bundle.php
+php tests/validate-docs-agent-packages.php
 php tests/validate-external-native-package-sources.php
 php tests/repair-docs-links-smoke.php
 WP_CODEBOX_DIR=/path/to/wp-codebox php tests/validate-wp-codebox-run-agent-task-contract.php
@@ -231,4 +235,4 @@ AGENTS_API_DIR=/path/to/agents-api php tests/native-agent-import.php
 
 It imports every native package through `wp_agent_import_runtime_bundles()`, verifies registration and preserved write-gate defaults, and invokes the default native chat handler far enough to resolve each registered agent. It intentionally fails when `AGENTS_API_DIR` is unavailable rather than treating an unexecuted importer as a passing test. It does not execute a model turn because the packages intentionally leave provider/model selection to the caller.
 
-The `Docs Agent Tests` GitHub Actions workflow runs on pull requests and pushes. It fetches Docs Agent history so it can run the immutable native package source validator, then runs the structural bundle validator, docs-link repair smoke test, and native importer integration test against `Automattic/agents-api` at `fbd5641d412af76a1b8288426a577e750838b4be`, the merged commit from [Agents API #425](https://github.com/Automattic/agents-api/pull/425).
+The `Docs Agent Tests` GitHub Actions workflow runs on pull requests and pushes. It fetches Docs Agent history so it can run the immutable native package source validator, then runs the structural package validator, docs-link repair smoke test, and native importer integration test against `Automattic/agents-api` at `fbd5641d412af76a1b8288426a577e750838b4be`, the merged commit from [Agents API #425](https://github.com/Automattic/agents-api/pull/425).

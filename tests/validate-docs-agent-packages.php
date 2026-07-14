@@ -1,8 +1,8 @@
 <?php
 /**
- * Validate the reusable Docs Agent bundle shape.
+ * Validate the reusable Docs Agent native package shape.
  *
- * Run: php tests/validate-docs-agent-bundle.php
+ * Run: php tests/validate-docs-agent-packages.php
  */
 
 declare( strict_types=1 );
@@ -36,118 +36,11 @@ $expected_artifact_schemas = array(
 	'docs_agent_workspace_publication' => 'docs-agent/workspace-publication/v1',
 );
 
-$spec = $read_json( $root . '/tests/docs-agent.validate-bundle-spec.json' );
-
-foreach ( $spec['bundles'] ?? array() as $bundle_name => $bundle_spec ) {
-	$bundle_dir = realpath( $root . '/tests/' . ( $bundle_spec['bundle_dir'] ?? '' ) );
-	$assert( is_string( $bundle_dir ) && is_dir( $bundle_dir ), "Spec bundle_dir must point to an existing directory for {$bundle_name}." );
-
-	$manifest = $read_json( $bundle_dir . '/manifest.json' );
-	$assert( ( $bundle_spec['bundle_slug'] ?? '' ) === ( $manifest['bundle_slug'] ?? '' ), "Manifest bundle_slug mismatch for {$bundle_name}." );
-	$assert( ( $bundle_spec['agent_slug'] ?? '' ) === ( $manifest['agent']['slug'] ?? '' ), "Manifest agent slug mismatch for {$bundle_name}." );
-	$assert( preg_match( '/^Automattic\/docs-agent@v\d+\.\d+\.\d+$/', (string) ( $manifest['source_ref'] ?? '' ) ) === 1, "Manifest source_ref must point at a Docs Agent release tag for {$bundle_name}." );
-	$assert( preg_match( '/^[0-9a-f]{40}$/', (string) ( $manifest['source_revision'] ?? '' ) ) === 1, "Manifest source_revision must be a 40-character commit SHA for {$bundle_name}." );
-	$assert( ! str_contains( strtolower( (string) ( $manifest['source_revision'] ?? '' ) ), 'initial-' ), "Manifest source_revision must not use placeholder provenance for {$bundle_name}." );
-
-	foreach ( $bundle_spec['memory_files'] ?? array() as $memory_file ) {
-		$assert( is_file( $bundle_dir . '/memory/agent/' . $memory_file ), "Missing {$bundle_name} memory file: {$memory_file}" );
-	}
-
-	foreach ( $bundle_spec['expected_pipelines'] ?? array() as $pipeline_slug ) {
-		$assert( in_array( $pipeline_slug, $manifest['included']['pipelines'] ?? array(), true ), "Manifest {$bundle_name} must include pipeline {$pipeline_slug}." );
-		$pipeline      = $read_json( $bundle_dir . '/pipelines/' . $pipeline_slug . '.json' );
-		$pipeline_spec = $spec['pipeline_assertions'][ $pipeline_slug ] ?? array();
-		$assert( $pipeline_slug === ( $pipeline['slug'] ?? '' ), "Pipeline slug mismatch for {$pipeline_slug}." );
-
-		$system_prompt = (string) ( $pipeline['steps'][0]['step_config']['system_prompt'] ?? '' );
-		if ( isset( $pipeline_spec['system_prompt_must_contain'] ) ) {
-			$assert( str_contains( $system_prompt, (string) $pipeline_spec['system_prompt_must_contain'] ), "Pipeline {$pipeline_slug} system prompt missing required text." );
-		}
-		foreach ( $pipeline_spec['system_prompt_must_contain_all'] ?? array() as $required ) {
-			$assert( str_contains( $system_prompt, (string) $required ), "Pipeline {$pipeline_slug} system prompt missing required text: {$required}" );
-		}
-		foreach ( $pipeline_spec['system_prompt_forbidden'] ?? array() as $forbidden ) {
-			$assert( ! str_contains( $system_prompt, (string) $forbidden ), "Pipeline {$pipeline_slug} system prompt must not contain: {$forbidden}" );
-		}
-		if ( str_contains( $pipeline_slug, 'docs-' ) || str_contains( $pipeline_slug, 'skills-' ) ) {
-			foreach ( array( 'runner', 'workspace_git_add', 'workspace_git_commit', 'workspace_git_push', 'create_github_pull_request', 'commit, push', 'open one reviewable pull request' ) as $forbidden_prompt_text ) {
-				$assert( ! str_contains( $system_prompt, $forbidden_prompt_text ), "Pipeline {$pipeline_slug} system prompt must not reference agent-owned publication: {$forbidden_prompt_text}" );
-			}
-			$assert( str_contains( $system_prompt, 'provided workspace' ) || str_contains( $system_prompt, 'selected flow' ), "Pipeline {$pipeline_slug} must keep agent instructions scoped to workspace editing." );
-		}
-		$assert( str_contains( strtolower( $system_prompt ), 'living documentation' ), "Pipeline {$pipeline_slug} must describe living documentation." );
-	}
-
-	foreach ( $bundle_spec['expected_flows'] ?? array() as $flow_slug ) {
-		$assert( in_array( $flow_slug, $manifest['included']['flows'] ?? array(), true ), "Manifest {$bundle_name} must include flow {$flow_slug}." );
-		$flow      = $read_json( $bundle_dir . '/flows/' . $flow_slug . '.json' );
-		$flow_spec = $spec['flow_assertions'][ $flow_slug ] ?? array();
-		$assert( $flow_slug === ( $flow['slug'] ?? '' ), "Flow slug mismatch for {$flow_slug}." );
-		$assert( ( $flow_spec['pipeline_slug'] ?? '' ) === ( $flow['pipeline_slug'] ?? '' ), "Flow {$flow_slug} pipeline slug mismatch." );
-
-		$step  = $flow['steps'][0] ?? array();
-		$tools = $step['enabled_tools'] ?? array();
-		foreach ( $flow_spec['ai_step_required_tools'] ?? array() as $required_tool ) {
-			$assert( in_array( $required_tool, $tools, true ), "Flow {$flow_slug} missing required tool: {$required_tool}" );
-		}
-
-		if ( ! empty( $flow_spec['completion_assertions_empty'] ) ) {
-			$assert( empty( $step['completion_assertions'] ?? array() ), "Flow {$flow_slug} must allow no-op success without required PR tools." );
-		}
-
-		$flow_prompt = strtolower( (string) ( $step['prompt_queue'][0]['prompt'] ?? '' ) );
-		foreach ( $flow_spec['prompt_forbidden'] ?? array() as $forbidden ) {
-			$assert( ! str_contains( $flow_prompt, strtolower( (string) $forbidden ) ), "Flow {$flow_slug} prompt must not contain: {$forbidden}" );
-		}
-		foreach ( $flow_spec['prompt_must_contain'] ?? array() as $required ) {
-			$assert( str_contains( $flow_prompt, strtolower( (string) $required ) ), "Flow {$flow_slug} prompt missing required text: {$required}" );
-		}
-		if ( str_contains( $flow_slug, 'bootstrap' ) ) {
-			$completion_assertions = $step['completion_assertions'] ?? array();
-			$assert( empty( $completion_assertions['required_tool_names'] ?? array() ), "Bootstrap flow {$flow_slug} must not require publication tools." );
-			$assert( str_contains( $flow_prompt, 'provided workspace' ), "Bootstrap flow {$flow_slug} must direct agents to use the provided workspace." );
-			foreach ( array( 'workspace_git_add', 'workspace_git_commit', 'workspace_git_push', 'create_github_pull_request', 'comment_github_pull_request' ) as $forbidden_tool ) {
-				$assert( ! in_array( $forbidden_tool, $tools, true ), "Bootstrap flow {$flow_slug} must not enable {$forbidden_tool}." );
-			}
-			foreach ( array( 'workspace_git_add', 'workspace_git_commit', 'workspace_git_push', 'create_github_pull_request' ) as $forbidden_prompt_text ) {
-				$assert( ! str_contains( $flow_prompt, $forbidden_prompt_text ), "Bootstrap flow {$flow_slug} prompt must not reference {$forbidden_prompt_text}." );
-			}
-			$assert( ! str_contains( $flow_prompt, 'create_or_update_github_file' ), "Bootstrap flow {$flow_slug} must not reference direct GitHub file writes." );
-			foreach ( array( 'future coverage', 'deferred', 'saved for later', 'backlog' ) as $backlog_phrase ) {
-				$assert( ! str_contains( $flow_prompt, $backlog_phrase ), "Bootstrap flow {$flow_slug} must avoid backlog language: {$backlog_phrase}" );
-			}
-
-			$required_phrases = array( 'complete initial documentation system', 'documentation information architecture', 'separate', 'digestible', 'hierarchy mirrors', 'parent/child relationships', 'cross-links', 'completed written documentation system', 'write topic pages first', 'index last', 'link to pages that exist in the repository', 'bootstrap contract', 'required paths', 'required glob counts', 'entry point links', 'positive completion criteria' );
-			$required_phrases = array_merge( $required_phrases, str_starts_with( $flow_slug, 'technical-' ) ? array( 'source inventory', 'preserve or improve', 'reference-level details', 'representative payloads or examples', 'reconcile the written docs against the source inventory' ) : array( 'private inventory', 'frontend users', 'user docs index', 'docs/user/', 'practical product details', 'reconcile the written docs against the private product inventory' ) );
-			foreach ( $required_phrases as $phrase ) {
-				$assert( str_contains( $flow_prompt, strtolower( $phrase ) ), "Bootstrap flow {$flow_slug} missing phrase: {$phrase}" );
-			}
-		}
-		if ( str_contains( $flow_slug, 'maintenance' ) ) {
-			foreach ( array( 'maintenance pass', 'focused updates', 'no_changes' ) as $phrase ) {
-				$assert( str_contains( $flow_prompt, $phrase ), "Maintenance flow {$flow_slug} missing phrase: {$phrase}" );
-			}
-		}
-		if ( str_contains( $flow_slug, 'docs-' ) || str_contains( $flow_slug, 'skills-' ) ) {
-			foreach ( array( 'workspace_git_add', 'workspace_git_commit', 'workspace_git_push', 'create_github_pull_request', 'comment_github_pull_request' ) as $forbidden_tool ) {
-				$assert( ! in_array( $forbidden_tool, $tools, true ), "Workspace-editing flow {$flow_slug} must not enable {$forbidden_tool}." );
-			}
-			foreach ( array( 'runner', 'workspace_git_add', 'workspace_git_commit', 'workspace_git_push', 'create_github_pull_request', 'commit, push', 'publish the pull request', 'open one' ) as $forbidden_prompt_text ) {
-				$assert( ! str_contains( $flow_prompt, $forbidden_prompt_text ), "Workspace-editing flow {$flow_slug} prompt must not reference {$forbidden_prompt_text}." );
-			}
-			$assert( str_contains( $flow_prompt, 'workspace_git_status' ) && str_contains( $flow_prompt, 'workspace_git_diff' ), "Workspace-editing flow {$flow_slug} must end by inspecting status and diff." );
-		}
-	}
-}
-
-$example_path = $root . '/tests/' . ( $spec['example_runner_config'] ?? '' );
+$example_path = $root . '/examples/runner-recipe.example.json';
 $example      = $read_json( $example_path );
 $recipe       = $read_json( $root . '/ci/docs-agent-runner-recipe.json' );
-foreach ( $spec['example_assertions'] ?? array() as $key => $expected ) {
-	$assert( $expected === ( $example[ $key ] ?? null ), "Example config {$key} mismatch." );
-}
-
 $assert( 'docs-agent/runner-recipe/v1' === ( $example['schema'] ?? null ), 'Example config must use the portable Docs Agent runner recipe schema.' );
+$assert( 'OWNER/REPO' === ( $example['targetRepository'] ?? null ), 'Example config must use the portable target repository placeholder.' );
 $assert( 'docs-agent/runner-recipe/v1' === ( $recipe['schema'] ?? null ), 'Runner recipe must use the portable Docs Agent runner recipe schema.' );
 $expected_package_source = array(
 	'repository' => 'Automattic/docs-agent',
@@ -248,12 +141,7 @@ $assert( str_contains( $workflow_readme, 'https://github.com/Automattic/wp-codeb
 $assert( str_contains( $workflow_readme, 'Docs Agent declares the runtime sources' ), 'Workflow README must document Docs Agent ownership of the runtime closure.' );
 $assert( str_contains( $workflow_readme, 'WP Codebox materializes and lowers them under its generic runtime contract' ), 'Workflow README must document the generic producer lowering boundary.' );
 
-$public_docs = strtolower(
-	(string) file_get_contents( $root . '/README.md' ) . "\n" .
-	(string) file_get_contents( $root . '/.github/workflows/README.md' ) . "\n" .
-	(string) file_get_contents( $root . '/bundles/user-docs-agent/memory/agent/MEMORY.md' ) . "\n" .
-	(string) file_get_contents( $root . '/bundles/user-docs-agent/pipelines/user-docs-pipeline.json' )
-);
+$public_docs = strtolower( (string) file_get_contents( $root . '/README.md' ) . "\n" . (string) file_get_contents( $root . '/.github/workflows/README.md' ) );
 foreach ( array( 'hidden internals', 'implementation details', 'compatibility plumbing', 'consumers should not know', 'should not know', 'implementation internals', 'implementation evidence internal', 'plumbing to consumer workflows' ) as $old_boundary_phrase ) {
 	$assert( ! str_contains( $public_docs, $old_boundary_phrase ), "Public Docs Agent docs must use product-level API wording instead of: {$old_boundary_phrase}" );
 }
@@ -292,54 +180,70 @@ foreach ( $expected_artifact_schemas as $name => $schema ) {
 }
 
 /*
- * Native agents-api agent bundle validation.
+ * Native Agents API package validation.
  *
- * The native bundles are flat agent specs that import through the agents-api
+ * The native packages are flat agent specs that import through the Agents API
  * runtime bundle importer (`wp_agent_import_runtime_bundles`), which requires
- * `agent.{agent_slug, agent_name, agent_config, meta}`. They carry no Data
- * Machine pipeline/flow envelope and must preserve the same runner-neutral
- * editing boundary as the reusable Data Machine bundle: workspace edits only,
- * no agent-owned git/PR publication.
+ * `agent.{agent_slug, agent_name, agent_config, meta}`. Each package is the sole
+ * instruction authority for its lane and preserves a workspace-only editing
+ * boundary with no agent-owned git/PR publication.
  */
-$native_spec = $read_json( $root . '/tests/native-agent.validate-bundle-spec.json' );
+$native_spec = $read_json( $root . '/tests/native-agent.validate-package-spec.json' );
 $native_dirs = array();
-foreach ( $native_spec['native_bundle_dirs'] ?? array() as $bundle_name => $native_bundle_dir ) {
-	$native_dir = realpath( $root . '/tests/' . $native_bundle_dir );
-	$assert( is_string( $native_dir ) && is_dir( $native_dir ), "Native bundle dir must point to an existing directory for {$bundle_name}." );
-	$native_dirs[ $bundle_name ] = $native_dir;
+foreach ( $native_spec['native_package_dirs'] ?? array() as $package_name => $native_package_dir ) {
+	$native_dir = realpath( $root . '/tests/' . $native_package_dir );
+	$assert( is_string( $native_dir ) && is_dir( $native_dir ), "Native package dir must point to an existing directory for {$package_name}." );
+	$native_dirs[ $package_name ] = $native_dir;
+}
+
+$expected_native_paths = array();
+foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertions ) {
+	$expected_native_paths[] = $native_dirs[ $native_assertions['package'] ] . '/' . $native_file;
+}
+sort( $expected_native_paths );
+$actual_native_paths = glob( $root . '/bundles/*/native/*.agent.json' ) ?: array();
+sort( $actual_native_paths );
+$assert( $expected_native_paths === $actual_native_paths, 'Docs Agent must expose exactly the five declared native packages.' );
+
+foreach ( array_keys( $native_dirs ) as $package_name ) {
+	$package_dir = $root . '/bundles/' . $package_name;
+	$assert( ! is_file( $package_dir . '/manifest.json' ), "{$package_name} must not expose a legacy manifest." );
+	foreach ( array( 'flows/*.json', 'pipelines/*.json', 'memory/agent/*' ) as $legacy_glob ) {
+		$assert( array() === ( glob( $package_dir . '/' . $legacy_glob ) ?: array() ), "{$package_name} must not expose legacy {$legacy_glob} descriptors." );
+	}
 }
 
 foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertions ) {
-	$native_bundle_name = $native_assertions['bundle'] ?? '';
-	$native_dir         = $native_dirs[ $native_bundle_name ] ?? null;
-	$assert( is_string( $native_dir ), "Native bundle {$native_file} must name an existing native bundle directory." );
+	$native_package_name = $native_assertions['package'] ?? '';
+	$native_dir          = $native_dirs[ $native_package_name ] ?? null;
+	$assert( is_string( $native_dir ), "Native package {$native_file} must name an existing native package directory." );
 	$native_path = $native_dir . '/' . $native_file;
-	$assert( is_file( $native_path ), "Missing native agent bundle file: {$native_file}" );
+	$assert( is_file( $native_path ), "Missing native agent package file: {$native_file}" );
 
-	$native_text   = (string) file_get_contents( $native_path );
-	$native_bundle = $read_json( $native_path );
+	$native_text    = (string) file_get_contents( $native_path );
+	$native_package = $read_json( $native_path );
 
-	$agent = $native_bundle['agent'] ?? array();
-	$assert( is_array( $agent ), "Native bundle {$native_file} must declare an agent object." );
+	$agent = $native_package['agent'] ?? array();
+	$assert( is_array( $agent ), "Native package {$native_file} must declare an agent object." );
 	$source_revision = (string) ( $native_assertions['source_revision'] ?? '' );
-	$assert( '' !== $source_revision, "Native bundle {$native_file} must declare its immutable source revision in the test spec." );
-	$assert( "Automattic/docs-agent@{$source_revision}" === ( $native_bundle['source_ref'] ?? '' ), "Native bundle {$native_file} source_ref must resolve to the commit that contains this package." );
-	$assert( $source_revision === ( $native_bundle['source_revision'] ?? '' ), "Native bundle {$native_file} source_revision must identify the commit that contains this package." );
-	$assert( $source_revision === ( $agent['meta']['source_version'] ?? '' ), "Native bundle {$native_file} imported source_version must identify the package commit." );
+	$assert( '' !== $source_revision, "Native package {$native_file} must declare its immutable source revision in the test spec." );
+	$assert( "Automattic/docs-agent@{$source_revision}" === ( $native_package['source_ref'] ?? '' ), "Native package {$native_file} source_ref must resolve to the commit that contains this package." );
+	$assert( $source_revision === ( $native_package['source_revision'] ?? '' ), "Native package {$native_file} source_revision must identify the commit that contains this package." );
+	$assert( $source_revision === ( $agent['meta']['source_version'] ?? '' ), "Native package {$native_file} imported source_version must identify the package commit." );
 
 	// agents-api importer required shape.
-	$assert( ( $native_assertions['agent_slug'] ?? '' ) === ( $agent['agent_slug'] ?? '' ), "Native bundle {$native_file} agent_slug mismatch." );
-	$assert( is_string( $agent['agent_name'] ?? null ) && '' !== trim( (string) $agent['agent_name'] ), "Native bundle {$native_file} must declare a non-empty agent_name." );
-	$assert( is_array( $agent['agent_config'] ?? null ), "Native bundle {$native_file} must declare an agent_config object." );
-	$assert( is_array( $agent['meta'] ?? null ), "Native bundle {$native_file} must declare a meta object." );
+	$assert( ( $native_assertions['agent_slug'] ?? '' ) === ( $agent['agent_slug'] ?? '' ), "Native package {$native_file} agent_slug mismatch." );
+	$assert( is_string( $agent['agent_name'] ?? null ) && '' !== trim( (string) $agent['agent_name'] ), "Native package {$native_file} must declare a non-empty agent_name." );
+	$assert( is_array( $agent['agent_config'] ?? null ), "Native package {$native_file} must declare an agent_config object." );
+	$assert( is_array( $agent['meta'] ?? null ), "Native package {$native_file} must declare a meta object." );
 
 	$config = $agent['agent_config'];
-	$assert( is_string( $config['instructions'] ?? null ) && '' !== trim( (string) $config['instructions'] ), "Native bundle {$native_file} agent_config.instructions must be a non-empty string." );
+	$assert( is_string( $config['instructions'] ?? null ) && '' !== trim( (string) $config['instructions'] ), "Native package {$native_file} agent_config.instructions must be a non-empty string." );
 	$tools = $config['enabled_tools'] ?? array();
-	$assert( is_array( $tools ) && array() !== $tools, "Native bundle {$native_file} agent_config.enabled_tools must be a non-empty list." );
+	$assert( is_array( $tools ) && array() !== $tools, "Native package {$native_file} agent_config.enabled_tools must be a non-empty list." );
 
 	foreach ( $native_assertions['required_tools'] ?? array() as $required_tool ) {
-		$assert( in_array( $required_tool, $tools, true ), "Native bundle {$native_file} missing required tool: {$required_tool}" );
+		$assert( in_array( $required_tool, $tools, true ), "Native package {$native_file} missing required tool: {$required_tool}" );
 	}
 
 	$workspace_tools = array_values(
@@ -348,7 +252,7 @@ foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertion
 			static fn( $tool ): bool => is_string( $tool ) && str_starts_with( $tool, 'workspace_' )
 		)
 	);
-	$assert( ( $native_assertions['permitted_workspace_tools'] ?? array() ) === $workspace_tools, "Native bundle {$native_file} workspace tools do not match its permitted workspace tool policy." );
+	$assert( ( $native_assertions['permitted_workspace_tools'] ?? array() ) === $workspace_tools, "Native package {$native_file} workspace tools do not match its permitted workspace tool policy." );
 
 	$write_gate_id = $native_assertions['required_write_gate'] ?? '';
 	$write_gates   = array_filter(
@@ -356,25 +260,25 @@ foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertion
 		static fn( $rule ): bool => is_array( $rule ) && $write_gate_id === ( $rule['id'] ?? '' )
 	);
 	$write_gate = reset( $write_gates );
-	$assert( is_array( $write_gate ), "Native bundle {$native_file} must declare its required write gate." );
-	$assert( true === ( $write_gate['require_tool_use'] ?? false ), "Native bundle {$native_file} write gate must require tool use." );
-	$assert( 1 === ( $write_gate['min_tool_calls'] ?? 0 ), "Native bundle {$native_file} write gate must require at least one write." );
-	$assert( array( 'workspace_write', 'workspace_edit', 'workspace_apply_patch' ) === ( $write_gate['require_one_of'] ?? array() ), "Native bundle {$native_file} write gate must require an allowed workspace write tool." );
+	$assert( is_array( $write_gate ), "Native package {$native_file} must declare its required write gate." );
+	$assert( true === ( $write_gate['require_tool_use'] ?? false ), "Native package {$native_file} write gate must require tool use." );
+	$assert( 1 === ( $write_gate['min_tool_calls'] ?? 0 ), "Native package {$native_file} write gate must require at least one write." );
+	$assert( array( 'workspace_write', 'workspace_edit', 'workspace_apply_patch' ) === ( $write_gate['require_one_of'] ?? array() ), "Native package {$native_file} write gate must require an allowed workspace write tool." );
 
 	// Runner-neutral boundary: no agent-owned publication tools.
 	foreach ( $native_spec['forbidden_publication_tools'] ?? array() as $forbidden_tool ) {
-		$assert( ! in_array( $forbidden_tool, $tools, true ), "Native bundle {$native_file} must not enable publication tool: {$forbidden_tool}" );
+		$assert( ! in_array( $forbidden_tool, $tools, true ), "Native package {$native_file} must not enable publication tool: {$forbidden_tool}" );
 	}
 
-	// No Data Machine coupling in the native bundle text.
+	// Native package documents must not carry legacy execution-envelope keys.
 	foreach ( $native_spec['forbidden_dm_fragments'] ?? array() as $dm_fragment ) {
-		$assert( ! str_contains( $native_text, $dm_fragment ), "Native bundle {$native_file} must not contain Data Machine fragment: {$dm_fragment}" );
+		$assert( ! str_contains( $native_text, $dm_fragment ), "Native package {$native_file} must not contain Data Machine fragment: {$dm_fragment}" );
 	}
 
 	$instructions = strtolower( (string) $config['instructions'] );
 	foreach ( $native_assertions['instructions_must_contain'] ?? array() as $required_phrase ) {
-		$assert( str_contains( $instructions, strtolower( (string) $required_phrase ) ), "Native bundle {$native_file} instructions missing required text: {$required_phrase}" );
+		$assert( str_contains( $instructions, strtolower( (string) $required_phrase ) ), "Native package {$native_file} instructions missing required text: {$required_phrase}" );
 	}
 }
 
-fwrite( STDOUT, "Docs Agent bundle validation passed.\n" );
+fwrite( STDOUT, "Docs Agent native package validation passed.\n" );
