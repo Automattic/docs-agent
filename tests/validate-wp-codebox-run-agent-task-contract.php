@@ -51,15 +51,30 @@ $release = $read_json( $root . '/tests/wp-codebox-release.fixture.json' );
 $release_tag = $release['tag'] ?? null;
 $assert( is_string( $release_tag ) && preg_match( '/^v\d+\.\d+\.\d+$/', $release_tag ) === 1, 'WP Codebox release fixture must declare an exact release tag.' );
 $assert( substr( $release_tag, 1 ) === ( $release['package_version'] ?? null ), 'WP Codebox release fixture package version must match its tag.' );
-$failed_run = $release['failed_run'] ?? null;
-$assert( is_string( $failed_run ) && preg_match( '/^\d+$/', $failed_run ) === 1, 'WP Codebox release fixture must retain the failed-run regression reference.' );
+$run = $release['run'] ?? null;
+$assert( is_string( $run ) && preg_match( '/^\d+$/', $run ) === 1, 'WP Codebox release fixture must retain the regression run reference.' );
+$native_result_path = $release['native_result_path'] ?? null;
+$workflow_result_path = $release['workflow_result_path'] ?? null;
+$assert( '.codebox/native-agent-task-result.json' === $native_result_path, 'WP Codebox release fixture must declare the controlled native result path.' );
+$assert( '.codebox/agent-task-workflow-result.json' === $workflow_result_path, 'WP Codebox release fixture must declare the workflow result path.' );
 $producer_package = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/package.json' );
 $assert( ( $release['package_version'] ?? null ) === ( $producer_package['version'] ?? null ), 'Checked-out WP Codebox package version must match the release fixture.' );
 
 $workflow = (string) file_get_contents( $root . '/.github/workflows/maintain-docs.yml' );
 $assert( preg_match( '/^\s*uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@' . preg_quote( $release_tag, '/' ) . '$/m', $workflow ) === 1, 'Docs Agent must call the released WP Codebox workflow tag.' );
 $workflow_readme = (string) file_get_contents( $root . '/.github/workflows/README.md' );
-$assert( str_contains( $workflow_readme, 'failed run `' . $failed_run . '`' ), 'Workflow documentation must retain the failed-run regression reference.' );
+$assert( str_contains( $workflow_readme, 'run `' . $run . '`' ), 'Workflow documentation must retain the regression run reference.' );
+
+$producer_workflow = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/workflows/run-agent-task.yml' );
+$producer_execute = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/scripts/run-agent-task/execute-native-agent-task.mjs' );
+$producer_result = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/contracts/agent-task-workflow-result.fixture.json' );
+$assert( str_contains( $producer_workflow, $workflow_result_path ), 'WP Codebox producer workflow must upload the workflow result file.' );
+$assert( str_contains( $producer_execute, '"--result-file", nativeResultPath' ), 'WP Codebox producer must pass the native result-file argument.' );
+$assert( str_contains( $producer_execute, 'const nativeResultPath = join(controlledCodeboxPath, "native-agent-task-result.json")' ), 'WP Codebox producer must constrain the native result path to .codebox.' );
+$assert( str_contains( $producer_execute, 'const resultPath = join(workspace, ".codebox", "agent-task-workflow-result.json")' ), 'WP Codebox producer must write the workflow result at the declared path.' );
+$assert( 'wp-codebox/agent-task-workflow-result/v1' === ( $producer_result['schema'] ?? null ), 'WP Codebox workflow-result fixture schema mismatch.' );
+$assert( 'skipped' === ( $producer_result['status'] ?? null ), 'WP Codebox workflow-result fixture must model the skipped contract.' );
+$assert( '.codebox/agent-task-request.json' === ( $producer_result['request_path'] ?? null ), 'WP Codebox workflow-result fixture request path mismatch.' );
 
 preg_match( '/uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@[^\n]+\n    with:\n(?<inputs>.*?)\n    secrets:\n(?<secrets>(?:      [^\n]*\n?)*)/s', $workflow, $caller );
 $assert( isset( $caller['inputs'], $caller['secrets'] ), 'Docs Agent must declare producer inputs and secrets.' );
