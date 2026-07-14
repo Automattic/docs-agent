@@ -1,7 +1,7 @@
 {
-  "tag": "v0.12.16",
-  "package_version": "0.12.16",
-  "run": "29342892920",
+  "tag": "v0.12.17",
+  "package_version": "0.12.17",
+  "run": "29344070545",
   "diagnostic_regression_run": "29307978522",
   "upload_regression_run": "29306539573",
   "successful_noop_optional_artifacts": true,
@@ -21,6 +21,8 @@
   "external_secret_filtered_seed_snapshot": true,
   "actionable_patch_normalization": true,
   "failure_evidence_preserved": true,
+  "canonical_compact_reviewer_transcript_upload": true,
+  "canonical_transcript_privacy_boundary": true,
   "native_result_path": ".codebox/native-agent-task-result.json",
   "workflow_result_path": ".codebox/agent-task-workflow-result.json"
 }
