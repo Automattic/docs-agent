@@ -76,4 +76,14 @@ $assert( str_contains( $workflow, 'OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 $assert( str_contains( $workflow, 'ACCESS_TOKEN: ${{ github.token }}' ), 'Same-repository publication must use the caller-scoped GitHub token.' );
 $assert( ! str_contains( $workflow, 'secrets.ACCESS_TOKEN' ), 'Docs Agent must not require a consumer ACCESS_TOKEN override.' );
 
+$readme = (string) file_get_contents( $root . '/README.md' );
+$policy_json = '{"version":1,"repositories":{"automattic/docs-agent":["bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json","bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json","bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json","bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json","bundles/skills-agent/native/skills-maintenance-agent.agent.json"]},"runtime_sources":{"automattic/agents-api":["."],"wordpress/php-ai-client":["."]},"runtime_artifacts":[{"url":"https://downloads.wordpress.org/plugin/ai-provider-for-openai.1.0.3.zip","sha256":"48f3c0c714b3164cda79d320829830d5a0ea1116e0b19653da8af898a22d3bb6"}]}';
+$assert( str_contains( $readme, $policy_json ), 'README must provide the exact copyable v1 external package source policy.' );
+$policy = json_decode( $policy_json, true );
+$assert( is_array( $policy ), 'The documented external package source policy must be valid JSON.' );
+$assert( 5 === count( $policy['repositories']['automattic/docs-agent'] ?? array() ), 'The policy must authorize all five Docs Agent package paths.' );
+$assert( array( '.' ) === ( $policy['runtime_sources']['automattic/agents-api'] ?? null ), 'The policy must authorize the Agents API root only.' );
+$assert( array( '.' ) === ( $policy['runtime_sources']['wordpress/php-ai-client'] ?? null ), 'The policy must authorize the PHP AI Client root only.' );
+$assert( array( array( 'url' => 'https://downloads.wordpress.org/plugin/ai-provider-for-openai.1.0.3.zip', 'sha256' => '48f3c0c714b3164cda79d320829830d5a0ea1116e0b19653da8af898a22d3bb6' ) ) === ( $policy['runtime_artifacts'] ?? null ), 'The policy must authorize only the checksum-pinned OpenAI provider artifact.' );
+
 fwrite( STDOUT, "Docs Agent external native package source validation passed.\n" );
