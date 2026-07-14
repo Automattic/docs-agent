@@ -72,6 +72,10 @@ $assert( str_contains( $producer_workflow, $workflow_result_path ), 'WP Codebox 
 $assert( str_contains( $producer_execute, '"--result-file", nativeResultPath' ), 'WP Codebox producer must pass the native result-file argument.' );
 $assert( str_contains( $producer_execute, 'const nativeResultPath = join(controlledCodeboxPath, "native-agent-task-result.json")' ), 'WP Codebox producer must constrain the native result path to .codebox.' );
 $assert( str_contains( $producer_execute, 'const resultPath = join(workspace, ".codebox", "agent-task-workflow-result.json")' ), 'WP Codebox producer must write the workflow result at the declared path.' );
+$assert( str_contains( $producer_execute, 'sandbox_tool_policy: {' ), 'WP Codebox producer must include an explicit sandbox tool-policy in the native task request.' );
+$assert( str_contains( $producer_execute, 'schema: "wp-codebox/sandbox-tool-policy/v1"' ), 'WP Codebox producer sandbox tool-policy must use the published schema.' );
+$assert( str_contains( $producer_execute, 'version: 1' ), 'WP Codebox producer sandbox tool-policy must declare its contract version.' );
+$assert( str_contains( $producer_execute, 'tools: runnerWorkspaceTools.map((id) => ({ id, runtime_tool_id: id, execution_location: "parent", transport_visibility: "visible", allowed: true' ), 'WP Codebox producer sandbox tool-policy must preserve the allowlisted parent tool mapping.' );
 $assert( 'wp-codebox/agent-task-workflow-result/v1' === ( $producer_result['schema'] ?? null ), 'WP Codebox workflow-result fixture schema mismatch.' );
 $assert( 'skipped' === ( $producer_result['status'] ?? null ), 'WP Codebox workflow-result fixture must model the skipped contract.' );
 $assert( '.codebox/agent-task-request.json' === ( $producer_result['request_path'] ?? null ), 'WP Codebox workflow-result fixture request path mismatch.' );
