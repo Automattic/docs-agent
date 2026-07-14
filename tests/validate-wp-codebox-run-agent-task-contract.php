@@ -53,9 +53,13 @@ $assert( is_string( $release_tag ) && preg_match( '/^v\d+\.\d+\.\d+$/', $release
 $assert( substr( $release_tag, 1 ) === ( $release['package_version'] ?? null ), 'WP Codebox release fixture package version must match its tag.' );
 $run = $release['run'] ?? null;
 $assert( is_string( $run ) && preg_match( '/^\d+$/', $run ) === 1, 'WP Codebox release fixture must retain the regression run reference.' );
+$upload_regression_run = $release['upload_regression_run'] ?? null;
+$assert( is_string( $upload_regression_run ) && preg_match( '/^\d+$/', $upload_regression_run ) === 1, 'WP Codebox release fixture must retain the upload-layout regression run reference.' );
 $assert( true === ( $release['private_runtime_path_sanitization'] ?? null ), 'WP Codebox release fixture must require private runtime-path sanitization.' );
 $assert( true === ( $release['allowlisted_uploads'] ?? null ), 'WP Codebox release fixture must require allowlisted uploads.' );
 $assert( true === ( $release['normalized_failures'] ?? null ), 'WP Codebox release fixture must require normalized failures.' );
+$assert( true === ( $release['diagnostic_class_names_allowed'] ?? null ), 'WP Codebox release fixture must permit diagnostic class names.' );
+$assert( true === ( $release['php_shaped_source_blocked'] ?? null ), 'WP Codebox release fixture must block PHP-shaped runtime source.' );
 $native_result_path = $release['native_result_path'] ?? null;
 $workflow_result_path = $release['workflow_result_path'] ?? null;
 $assert( '.codebox/native-agent-task-result.json' === $native_result_path, 'WP Codebox release fixture must declare the controlled native result path.' );
@@ -76,7 +80,8 @@ $producer_runtime_sources = (string) file_get_contents( rtrim( $wp_codebox_dir, 
 $producer_upload = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/scripts/run-agent-task/prepare-agent-task-upload.mjs' );
 $producer_sanitizer = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/scripts/run-agent-task/runtime-source-sanitizer.mjs' );
 $producer_result = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/contracts/agent-task-workflow-result.fixture.json' );
-$producer_upload_regression = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/fixtures/agent-task-upload-run-' . $run . '.json' );
+$producer_diagnostic_regression = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/fixtures/agent-task-upload-run-' . $run . '.json' );
+$producer_upload_regression = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/fixtures/agent-task-upload-run-' . $upload_regression_run . '.json' );
 $assert( str_contains( $producer_workflow, 'workspace/.codebox/agent-task-upload' ), 'WP Codebox producer workflow must upload the controlled task bundle.' );
 $assert( str_contains( $producer_execute, '"--result-file", nativeResultPath' ), 'WP Codebox producer must pass the native result-file argument.' );
 $assert( str_contains( $producer_execute, 'const nativeResultPath = join(controlledCodeboxPath, "native-agent-task-result.json")' ), 'WP Codebox producer must constrain the native result path to .codebox.' );
@@ -86,6 +91,8 @@ $assert( str_contains( $producer_execute, 'status: "failed"' ) && str_contains( 
 $assert( str_contains( $producer_upload, 'const declaredPaths = new Set(declaredArtifactPaths(result, declarations(request)))' ), 'WP Codebox uploads must derive artifacts from the declared allowlist.' );
 $assert( str_contains( $producer_upload, 'for (const path of declaredPaths)' ), 'WP Codebox uploads must stage only declared reviewer artifacts.' );
 $assert( str_contains( $producer_upload, 'agent-task-artifacts", "exclusions.json' ), 'WP Codebox uploads must report excluded source and undeclared artifacts.' );
+$assert( str_contains( $producer_upload, 'function containsRuntimeSourceContent(text)' ), 'WP Codebox must distinguish source-shaped content from diagnostics.' );
+$assert( str_contains( $producer_upload, 'const PHP_OPENING_TAG' ) && str_contains( $producer_upload, 'const PHP_DECLARATION' ) && str_contains( $producer_upload, 'const WORDPRESS_PLUGIN_HEADER' ), 'WP Codebox source detection must require PHP-shaped source evidence.' );
 $assert( str_contains( $producer_workflow, 'workspace/.codebox/agent-task-upload' ) && str_contains( $producer_workflow, 'include-hidden-files: true' ), 'WP Codebox must upload the complete controlled hidden-file bundle.' );
 $assert( str_contains( $producer_execute, 'sandbox_tool_policy: {' ), 'WP Codebox producer must include an explicit sandbox tool-policy in the native task request.' );
 $assert( str_contains( $producer_execute, 'schema: "wp-codebox/sandbox-tool-policy/v1"' ), 'WP Codebox producer sandbox tool-policy must use the published schema.' );
@@ -220,7 +227,10 @@ $assert( str_contains( $producer_execute, 'sanitizeRuntimeSourceValue(nativeRunt
 $assert( str_contains( $producer_upload, 'sanitizeRuntimeSourceJson(text, runtimeSourceRoots)' ), 'WP Codebox must sanitize private runtime paths from artifact uploads.' );
 $assert( str_contains( $producer_sanitizer, 'RUNTIME_SOURCE_PLACEHOLDER = "[runtime-source]"' ), 'WP Codebox must replace private runtime paths with the published placeholder.' );
 $assert( str_contains( $producer_sanitizer, 'PRIVATE_RUNTIME_SOURCE_FIELDS = new Set(["source_package_root"])' ), 'WP Codebox must remove private runtime source-root fields.' );
-$assert( (string) $run === ( $producer_upload_regression['run_id'] ?? null ), 'WP Codebox upload regression fixture must match the recorded run.' );
+$assert( (string) $upload_regression_run === ( $producer_upload_regression['run_id'] ?? null ), 'WP Codebox upload regression fixture must match the recorded run.' );
+$assert( (string) $run === ( $producer_diagnostic_regression['run_id'] ?? null ), 'WP Codebox diagnostic regression fixture must match the recorded run.' );
+$diagnostic = $producer_diagnostic_regression['result']['diagnostics'][0] ?? null;
+$assert( is_array( $diagnostic ) && str_contains( (string) ( $diagnostic['message'] ?? null ), 'OpenAiProvider' ) && str_contains( (string) ( $diagnostic['stack'] ?? null ), 'WP_Agents_Registry' ), 'WP Codebox diagnostic regression fixture must preserve runtime class names.' );
 $assert( 'failed-on-runtime-source' === ( $producer_upload_regression['observed']['upload_preparation'] ?? null ), 'WP Codebox upload regression fixture must retain the runtime-source failure.' );
 $assert( in_array( '.codebox/agent-task-request.json', $producer_upload_regression['observed']['uploaded'] ?? array(), true ), 'WP Codebox upload regression fixture must retain the controlled request upload.' );
 $assert( ! array_intersect( array( 'MODEL_PROVIDER_SECRET_1', 'MODEL_PROVIDER_SECRET_2', 'MODEL_PROVIDER_SECRET_3', 'MODEL_PROVIDER_SECRET_4', 'MODEL_PROVIDER_SECRET_5' ), array_keys( $caller_secrets ) ), 'Docs Agent must forward only the OPENAI_API_KEY provider secret name.' );
