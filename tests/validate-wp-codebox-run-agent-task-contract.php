@@ -76,6 +76,7 @@ $assert( true === ( $release['actionable_patch_normalization'] ?? null ), 'WP Co
 $assert( true === ( $release['failure_evidence_preserved'] ?? null ), 'WP Codebox release fixture must preserve normalized runtime evidence on failures.' );
 $assert( true === ( $release['canonical_compact_reviewer_transcript_upload'] ?? null ), 'WP Codebox release fixture must upload the canonical compact reviewer transcript.' );
 $assert( true === ( $release['canonical_transcript_privacy_boundary'] ?? null ), 'WP Codebox release fixture must preserve the canonical transcript privacy boundary.' );
+$assert( true === ( $release['pre_sanitization_canonical_reviewer_evidence_descriptor'] ?? null ), 'WP Codebox release fixture must preserve the pre-sanitization canonical reviewer-evidence descriptor.' );
 $native_result_path = $release['native_result_path'] ?? null;
 $workflow_result_path = $release['workflow_result_path'] ?? null;
 $assert( '.codebox/native-agent-task-result.json' === $native_result_path, 'WP Codebox release fixture must declare the controlled native result path.' );
@@ -257,7 +258,11 @@ $assert( str_contains( $producer_execute, 'verifyRunnerWorkspaceIntegrity(worksp
 $assert( str_contains( $producer_execute, 'runtime_result: redact(runtimeRecord)' ) && str_contains( $producer_execute, '...(downstreamFailure ? { failure:' ), 'WP Codebox must retain normalized runtime evidence when downstream execution fails.' );
 $assert( str_contains( $producer_upload, 'function runtimeProvenance(request)' ) && str_contains( $producer_upload, 'runtime-provenance.json' ), 'WP Codebox uploads must retain runtime provenance without prepared source content.' );
 $assert( str_contains( $producer_upload, 'function compactNativeInput(text)' ) && str_contains( $producer_upload, 'Temporary runner workspace seed paths must never be persisted in artifact uploads.' ), 'WP Codebox uploads must preserve seed provenance without exposing secret-filtered snapshot paths.' );
-$assert( str_contains( $producer_upload, 'async function canonicalTranscript(result)' ) && str_contains( $producer_upload, 'Canonical transcript requires exactly one trusted codebox-transcript path.' ), 'WP Codebox must derive reviewer evidence from exactly one normalized canonical transcript ref.' );
+$assert( str_contains( $producer_execute, 'async function canonicalReviewerTranscript(nativeRuntimeResult, artifactsPath)' ) && str_contains( $producer_execute, 'Canonical transcript requires exactly one distinct existing file.' ), 'WP Codebox must canonicalize reviewer evidence from one trusted transcript before sanitization.' );
+$assert( str_contains( $producer_execute, 'reviewerEvidence = await canonicalReviewerTranscript(nativeRuntimeResult, artifactsPath)' ) && str_contains( $producer_execute, 'let runtimeResult = sanitizeRuntimeSourceValue(nativeRuntimeResult, privateRuntimeSourceRootForSanitization)' ), 'WP Codebox must capture reviewer evidence before runtime-result sanitization.' );
+$assert( str_contains( $producer_execute, '...(reviewerEvidence ? { reviewer_evidence: reviewerEvidence } : {})' ), 'WP Codebox must persist the canonical reviewer-evidence descriptor in workflow results.' );
+$assert( str_contains( $producer_upload, 'const descriptor = record(record(result).reviewer_evidence).transcript' ) && str_contains( $producer_upload, 'Reviewer evidence transcript descriptor is malformed.' ), 'WP Codebox uploads must consume only the persisted reviewer-evidence descriptor.' );
+$assert( str_contains( $producer_upload, 'Canonical transcript digest does not match its reviewer evidence descriptor.' ) && str_contains( $producer_upload, 'Canonical transcript size does not match its reviewer evidence descriptor.' ), 'WP Codebox uploads must revalidate canonical reviewer-evidence digest and size.' );
 $assert( str_contains( $producer_upload, 'schema: "wp-codebox/reviewer-agent-transcript/v1"' ) && str_contains( $producer_upload, '".codebox", "agent-task-artifacts", "transcript.json"' ), 'WP Codebox must upload the compact reviewer transcript at its controlled path.' );
 $assert( str_contains( $producer_upload, 'source_sha256: actualDigest, projection_sha256: projectionDigest' ) && str_contains( $producer_upload, 'canonical_transcripts: [transcript]' ), 'WP Codebox must retain verified canonical transcript provenance.' );
 $assert( str_contains( $producer_upload, 'omitted_payloads' ) && str_contains( $producer_upload, '[host-path]' ) && str_contains( $producer_upload, '[redacted-source-content]' ), 'WP Codebox reviewer transcripts must omit payloads and redact private paths or source content.' );
@@ -269,7 +274,7 @@ $assert( 'failed-on-runtime-source' === ( $producer_upload_regression['observed'
 $assert( in_array( '.codebox/agent-task-request.json', $producer_upload_regression['observed']['uploaded'] ?? array(), true ), 'WP Codebox upload regression fixture must retain the controlled request upload.' );
 $assert( ! array_intersect( array( 'MODEL_PROVIDER_SECRET_1', 'MODEL_PROVIDER_SECRET_2', 'MODEL_PROVIDER_SECRET_3', 'MODEL_PROVIDER_SECRET_4', 'MODEL_PROVIDER_SECRET_5' ), array_keys( $caller_secrets ) ), 'Docs Agent must forward only the OPENAI_API_KEY provider secret name.' );
 
-$assert( str_contains( $workflow, 'output_projections="$(jq -cn --arg path \'metadata.runner_workspace_publication.url\' --argjson required "$success_requires_pr" \'{docs_agent_publication:{path:$path,required:$required}}\')"' ), 'Docs Agent must define the v0.12.17 publication projection descriptor.' );
+$assert( str_contains( $workflow, 'output_projections="$(jq -cn --arg path \'metadata.runner_workspace_publication.url\' --argjson required "$success_requires_pr" \'{docs_agent_publication:{path:$path,required:$required}}\')"' ), 'Docs Agent must define the v0.12.18 publication projection descriptor.' );
 $docs_projections = array(
 	'docs_agent_publication' => array(
 		'path'     => 'metadata.runner_workspace_publication.url',
@@ -279,7 +284,7 @@ $docs_projections = array(
 $publication_descriptor = $docs_projections['docs_agent_publication'] ?? null;
 $assert( is_array( $publication_descriptor ), 'Docs Agent must define the docs_agent_publication projection descriptor.' );
 $publication_path = $publication_descriptor['path'] ?? null;
-$assert( 'metadata.runner_workspace_publication.url' === $publication_path, 'Docs Agent publication projection must use the v0.12.17 runner workspace publication URL path.' );
+$assert( 'metadata.runner_workspace_publication.url' === $publication_path, 'Docs Agent publication projection must use the v0.12.18 runner workspace publication URL path.' );
 
 $producer_request_fixture = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/contracts/agent-task-workflow-request.fixture.json' );
 $producer_projection_paths = array_values( $producer_request_fixture['outputs']['projections'] ?? array() );
