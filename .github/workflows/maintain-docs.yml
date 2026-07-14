@@ -27,6 +27,10 @@ env:
         description: Comma-separated paths Docs Agent may edit.
         type: string
         default: README.md,docs/**
+      validation_dependencies:
+        description: Optional caller-owned command that installs dependencies needed before validation.
+        type: string
+        default: ""
       verification_commands:
         description: JSON array of canonical runner verification commands executed in the target workspace.
         type: string
@@ -76,6 +80,9 @@ env:
       success_requires_pr:
         description: Whether the selected lane requires a published pull request for success.
         value: ${{ jobs.prepare.outputs.success_requires_pr }}
+      validation_dependencies:
+        description: Caller-owned validation dependency command included in the runner recipe.
+        value: ${{ jobs.prepare.outputs.validation_dependencies }}
 
 jobs:
   prepare:
@@ -88,6 +95,7 @@ jobs:
       external_package_source: ${{ steps.config.outputs.external_package_source }}
       runtime_sources: ${{ steps.config.outputs.runtime_sources }}
       prompt: ${{ steps.config.outputs.prompt }}
+      validation_dependencies: ${{ steps.config.outputs.validation_dependencies }}
       verification_commands: ${{ steps.config.outputs.verification_commands }}
       drift_checks: ${{ steps.config.outputs.drift_checks }}
       runner_workspace: ${{ steps.config.outputs.runner_workspace }}
@@ -102,6 +110,7 @@ jobs:
           RUN_KIND: ${{ inputs.run_kind }}
           INPUT_VERIFICATION_COMMANDS: ${{ inputs.verification_commands }}
           INPUT_DRIFT_CHECKS: ${{ inputs.drift_checks }}
+          INPUT_VALIDATION_DEPENDENCIES: ${{ inputs.validation_dependencies }}
           INPUT_PROMPT: ${{ inputs.prompt }}
           INPUT_WRITABLE_PATHS: ${{ inputs.writable_paths }}
           RUN_AGENT: ${{ inputs.run_agent }}
@@ -201,11 +210,12 @@ jobs:
             --arg writablePaths "$INPUT_WRITABLE_PATHS" \
             --arg baseRef "$INPUT_BASE_REF" \
             --arg docsBranch "$INPUT_DOCS_BRANCH" \
+            --arg validationDependencies "$INPUT_VALIDATION_DEPENDENCIES" \
             --argjson successRequiresPr "$success_requires_pr" \
             --argjson verificationCommands "$verification_commands" \
             --argjson driftChecks "$drift_checks" \
             --argjson artifactDeclarations "$artifact_declarations" \
-            '{schema:"docs-agent/runner-recipe/v1",targetRepository:$targetRepository,prompt:$prompt,docsAgent:{externalPackageSource:{repository:$repository,revision:$revision,path:$packagePath,digest:$packageDigest},agentSlug:$agentSlug},runner:{verificationCommands:$verificationCommands,driftChecks:$driftChecks,writablePaths:$writablePaths,baseRef:$baseRef,docsBranch:$docsBranch,successRequiresPr:$successRequiresPr},artifacts:{expected:($artifactDeclarations|map(.name)),declarations:$artifactDeclarations}}')"
+            '{schema:"docs-agent/runner-recipe/v1",targetRepository:$targetRepository,prompt:$prompt,docsAgent:{externalPackageSource:{repository:$repository,revision:$revision,path:$packagePath,digest:$packageDigest},agentSlug:$agentSlug},runner:{validationDependencies:$validationDependencies,verificationCommands:$verificationCommands,driftChecks:$driftChecks,writablePaths:$writablePaths,baseRef:$baseRef,docsBranch:$docsBranch,successRequiresPr:$successRequiresPr},artifacts:{expected:($artifactDeclarations|map(.name)),declarations:$artifactDeclarations}}')"
           external_package_source="$(jq -cn --arg repository "Automattic/docs-agent" --arg revision "$DOCS_AGENT_PACKAGE_REVISION" --arg path "$package_path" --arg digest "$package_digest" '{repository:$repository,revision:$revision,path:$path,digest:$digest}')"
           runtime_sources='[{"version":1,"role":"component","repository":"Automattic/agents-api","revision":"59d1e6b473f22498e40e279130bbb4f9bcde3b73","path":".","metadata":{"slug":"agents-api","loadAs":"mu-plugin","pluginFile":"agents-api.php"}},{"version":1,"role":"provider_plugin","source":{"type":"https_zip","url":"https://downloads.wordpress.org/plugin/ai-provider-for-openai.1.0.3.zip","sha256":"48f3c0c714b3164cda79d320829830d5a0ea1116e0b19653da8af898a22d3bb6","archive_root":"ai-provider-for-openai"},"metadata":{"slug":"ai-provider-for-openai","pluginFile":"plugin.php","activate":true,"providers":["openai"]}},{"version":1,"role":"bundled_library","repository":"WordPress/php-ai-client","revision":"631704201d15ffeff7091ad3bc7156db74054956","path":".","metadata":{"library":"php-ai-client","strategy":"wordpress-scoped-bundle"}}]'
 
@@ -215,7 +225,7 @@ jobs:
             --arg baseRef "$INPUT_BASE_REF" \
             '{enabled:true,repo:$repo,clone_url:("https://github.com/" + $repo + ".git"),branch:$branch,branch_prefix:$branch,from:("origin/" + $baseRef)}')"
           expected_artifacts="$(printf '%s' "$artifact_declarations" | jq -c 'map(.name)')"
-          output_projections='{"docs_agent_publication":"metadata.runner_workspace_publication.url"}'
+          output_projections="$(jq -cn --arg path 'metadata.runner_workspace_publication.url' --argjson required "$success_requires_pr" '{docs_agent_publication:{path:$path,required:$required}}')"
 
           {
             printf 'recipe_json<<EOF\n%s\nEOF\n' "$recipe_json"
@@ -223,6 +233,7 @@ jobs:
             printf 'external_package_source=%s\n' "$external_package_source"
             printf 'runtime_sources<<EOF\n%s\nEOF\n' "$runtime_sources"
             printf 'prompt<<EOF\n%s\nEOF\n' "$prompt"
+            printf 'validation_dependencies<<EOF\n%s\nEOF\n' "$INPUT_VALIDATION_DEPENDENCIES"
             printf 'verification_commands<<EOF\n%s\nEOF\n' "$verification_commands"
             printf 'drift_checks<<EOF\n%s\nEOF\n' "$drift_checks"
             printf 'runner_workspace<<EOF\n%s\nEOF\n' "$runner_workspace"
@@ -238,9 +249,9 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
-    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@v0.12.12
+    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@v0.12.13
     with:
-      wp_codebox_release_ref: v0.12.12
+      wp_codebox_release_ref: v0.12.13
       external_package_source: ${{ needs.prepare.outputs.external_package_source }}
       runtime_sources: ${{ needs.prepare.outputs.runtime_sources }}
       workload_id: docs-agent-${{ inputs.audience }}-${{ inputs.run_kind }}
@@ -250,6 +261,7 @@ jobs:
       prompt: ${{ needs.prepare.outputs.prompt }}
       writable_paths: ${{ inputs.writable_paths }}
       runner_workspace: ${{ needs.prepare.outputs.runner_workspace }}
+      validation_dependencies: ${{ needs.prepare.outputs.validation_dependencies }}
       verification_commands: ${{ needs.prepare.outputs.verification_commands }}
       drift_checks: ${{ needs.prepare.outputs.drift_checks }}
       success_requires_pr: ${{ needs.prepare.outputs.success_requires_pr == 'true' }}

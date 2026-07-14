@@ -53,8 +53,14 @@ $assert( is_string( $release_tag ) && preg_match( '/^v\d+\.\d+\.\d+$/', $release
 $assert( substr( $release_tag, 1 ) === ( $release['package_version'] ?? null ), 'WP Codebox release fixture package version must match its tag.' );
 $run = $release['run'] ?? null;
 $assert( is_string( $run ) && preg_match( '/^\d+$/', $run ) === 1, 'WP Codebox release fixture must retain the regression run reference.' );
+$diagnostic_regression_run = $release['diagnostic_regression_run'] ?? null;
+$assert( is_string( $diagnostic_regression_run ) && preg_match( '/^\d+$/', $diagnostic_regression_run ) === 1, 'WP Codebox release fixture must retain the diagnostic regression run reference.' );
 $upload_regression_run = $release['upload_regression_run'] ?? null;
 $assert( is_string( $upload_regression_run ) && preg_match( '/^\d+$/', $upload_regression_run ) === 1, 'WP Codebox release fixture must retain the upload-layout regression run reference.' );
+$assert( true === ( $release['successful_noop_optional_artifacts'] ?? null ), 'WP Codebox release fixture must cover successful no-op optional artifacts.' );
+$assert( true === ( $release['optional_output_projections'] ?? null ), 'WP Codebox release fixture must cover optional output projections.' );
+$assert( true === ( $release['validation_dependencies_caller_owned'] ?? null ), 'WP Codebox release fixture must cover caller-owned validation dependencies.' );
+$assert( true === ( $release['private_runtime_sources_absent'] ?? null ), 'WP Codebox release fixture must cover private runtime-source isolation.' );
 $assert( true === ( $release['private_runtime_path_sanitization'] ?? null ), 'WP Codebox release fixture must require private runtime-path sanitization.' );
 $assert( true === ( $release['allowlisted_uploads'] ?? null ), 'WP Codebox release fixture must require allowlisted uploads.' );
 $assert( true === ( $release['normalized_failures'] ?? null ), 'WP Codebox release fixture must require normalized failures.' );
@@ -80,7 +86,7 @@ $producer_runtime_sources = (string) file_get_contents( rtrim( $wp_codebox_dir, 
 $producer_upload = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/scripts/run-agent-task/prepare-agent-task-upload.mjs' );
 $producer_sanitizer = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/scripts/run-agent-task/runtime-source-sanitizer.mjs' );
 $producer_result = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/contracts/agent-task-workflow-result.fixture.json' );
-$producer_diagnostic_regression = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/fixtures/agent-task-upload-run-' . $run . '.json' );
+$producer_diagnostic_regression = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/fixtures/agent-task-upload-run-' . $diagnostic_regression_run . '.json' );
 $producer_upload_regression = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/fixtures/agent-task-upload-run-' . $upload_regression_run . '.json' );
 $assert( str_contains( $producer_workflow, 'workspace/.codebox/agent-task-upload' ), 'WP Codebox producer workflow must upload the controlled task bundle.' );
 $assert( str_contains( $producer_execute, '"--result-file", nativeResultPath' ), 'WP Codebox producer must pass the native result-file argument.' );
@@ -127,6 +133,7 @@ foreach ( $contract['inputs'] ?? array() as $name => $input ) {
 
 $assert( $release_tag === ( $caller_inputs['wp_codebox_release_ref'] ?? null ), 'Docs Agent must pass the WP Codebox release tag required by the producer contract.' );
 $assert( '${{ needs.prepare.outputs.runtime_sources }}' === ( $caller_inputs['runtime_sources'] ?? null ), 'Docs Agent must pass its prepared runtime closure to WP Codebox.' );
+$assert( '${{ needs.prepare.outputs.validation_dependencies }}' === ( $caller_inputs['validation_dependencies'] ?? null ), 'Docs Agent must pass caller-owned validation dependencies to WP Codebox.' );
 $assert( ! isset( $caller_inputs['provider'], $caller_inputs['model'] ), 'Docs Agent must leave provider/model selection to the published WP Codebox contract.' );
 $assert( 'string' === ( $contract['inputs']['provider']['type'] ?? null ) && 'openai' === ( $contract['inputs']['provider']['default'] ?? null ), 'WP Codebox must publish the OpenAI provider input.' );
 $assert( 'string' === ( $contract['inputs']['model']['type'] ?? null ) && 'gpt-5.5' === ( $contract['inputs']['model']['default'] ?? null ), 'WP Codebox must publish the default model input.' );
@@ -162,6 +169,7 @@ $assert( preg_match( '/secrets:\n      ACCESS_TOKEN:/m', $workflow ) !== 1, 'Doc
 $assert( preg_match( '/secrets:\n(?:      [A-Z_]+:\n(?:        .*\n)*        required: (?:true|false)\n)*      EXTERNAL_PACKAGE_SOURCE_POLICY:\n(?:        .*\n)*        required: true/m', $workflow ) === 1, 'Docs Agent must require EXTERNAL_PACKAGE_SOURCE_POLICY from reusable-workflow callers.' );
 $assert( '${{ inputs.run_agent }}' === ( $caller_inputs['run_agent'] ?? null ), 'Docs Agent must delegate run_agent so WP Codebox reports deterministic skipped status.' );
 $assert( '${{ inputs.dry_run }}' === ( $caller_inputs['dry_run'] ?? null ), 'Docs Agent must delegate dry_run so WP Codebox validates without starting a live run.' );
+$assert( preg_match( '/validation_dependencies:\n        description: Optional caller-owned command that installs dependencies needed before validation\.\n        type: string\n        default: ""/', $workflow ) === 1, 'Docs Agent must expose validation_dependencies as an optional empty-string reusable-workflow input.' );
 $assert( preg_match( '/\n    if: inputs\.run_agent\n/', $workflow ) !== 1, 'Docs Agent must not skip the producer job outside the producer contract.' );
 $assert( preg_match( '/permissions:\n      contents: write\n      pull-requests: write\n      issues: write/', $workflow ) === 1, 'Docs Agent must declare caller-token publication permissions.' );
 $assert( str_contains( $workflow, 'if [ "$RUN_AGENT" = true ] && [ "$DRY_RUN" != true ] && [ -z "$OPENAI_API_KEY" ]; then' ), 'Docs Agent must fail closed for a live OpenAI run without OPENAI_API_KEY.' );
@@ -224,23 +232,29 @@ $assert( str_contains( $producer_sanitizer, 'function runtimeSourceProvenance(so
 $assert( str_contains( $producer_sanitizer, 'if (key === "runtime_sources" && Array.isArray(entry)) return [[key, entry.map(runtimeSourceProvenance).map((source) => sanitizeRuntimeSourceValue(source, root))]]' ), 'WP Codebox artifacts must emit sanitized provenance-only runtime sources.' );
 $assert( str_contains( $producer_sanitizer, 'if (descriptor.role === "provider_plugin" && Array.isArray(descriptor.metadata?.providers)) provenance.providers = descriptor.metadata.providers' ), 'WP Codebox provenance artifacts must retain the canonical provider allowlist.' );
 $assert( str_contains( $producer_execute, 'sanitizeRuntimeSourceValue(nativeRuntimeResult, privateRuntimeSourceRootForSanitization)' ), 'WP Codebox must sanitize private runtime paths from native task results before persistence.' );
+$assert( str_contains( $producer_execute, 'forbiddenRoots: [workspace, artifactsPath]' ) && str_contains( $producer_execute, 'const privatePreparationRoot = privateRuntimeSourceRoot ? join(privateRuntimeSourceRoot, "prepared-runtime-sources") : ""' ), 'WP Codebox must keep private runtime sources outside the workspace and artifact roots.' );
 $assert( str_contains( $producer_upload, 'sanitizeRuntimeSourceJson(text, runtimeSourceRoots)' ), 'WP Codebox must sanitize private runtime paths from artifact uploads.' );
 $assert( str_contains( $producer_sanitizer, 'RUNTIME_SOURCE_PLACEHOLDER = "[runtime-source]"' ), 'WP Codebox must replace private runtime paths with the published placeholder.' );
 $assert( str_contains( $producer_sanitizer, 'PRIVATE_RUNTIME_SOURCE_FIELDS = new Set(["source_package_root"])' ), 'WP Codebox must remove private runtime source-root fields.' );
 $assert( (string) $upload_regression_run === ( $producer_upload_regression['run_id'] ?? null ), 'WP Codebox upload regression fixture must match the recorded run.' );
-$assert( (string) $run === ( $producer_diagnostic_regression['run_id'] ?? null ), 'WP Codebox diagnostic regression fixture must match the recorded run.' );
+$assert( (string) $diagnostic_regression_run === ( $producer_diagnostic_regression['run_id'] ?? null ), 'WP Codebox diagnostic regression fixture must match the recorded run.' );
 $diagnostic = $producer_diagnostic_regression['result']['diagnostics'][0] ?? null;
 $assert( is_array( $diagnostic ) && str_contains( (string) ( $diagnostic['message'] ?? null ), 'OpenAiProvider' ) && str_contains( (string) ( $diagnostic['stack'] ?? null ), 'WP_Agents_Registry' ), 'WP Codebox diagnostic regression fixture must preserve runtime class names.' );
 $assert( 'failed-on-runtime-source' === ( $producer_upload_regression['observed']['upload_preparation'] ?? null ), 'WP Codebox upload regression fixture must retain the runtime-source failure.' );
 $assert( in_array( '.codebox/agent-task-request.json', $producer_upload_regression['observed']['uploaded'] ?? array(), true ), 'WP Codebox upload regression fixture must retain the controlled request upload.' );
 $assert( ! array_intersect( array( 'MODEL_PROVIDER_SECRET_1', 'MODEL_PROVIDER_SECRET_2', 'MODEL_PROVIDER_SECRET_3', 'MODEL_PROVIDER_SECRET_4', 'MODEL_PROVIDER_SECRET_5' ), array_keys( $caller_secrets ) ), 'Docs Agent must forward only the OPENAI_API_KEY provider secret name.' );
 
-preg_match( "/output_projections='(?<json>[^']+)'/", $workflow, $projection_match );
-$assert( isset( $projection_match['json'] ), 'Docs Agent must define output projections for the producer.' );
-$docs_projections = json_decode( $projection_match['json'], true );
-$assert( is_array( $docs_projections ), 'Docs Agent output projections must be valid JSON.' );
-$publication_path = $docs_projections['docs_agent_publication'] ?? null;
-$assert( is_string( $publication_path ), 'Docs Agent must define the docs_agent_publication projection.' );
+$assert( str_contains( $workflow, 'output_projections="$(jq -cn --arg path \'metadata.runner_workspace_publication.url\' --argjson required "$success_requires_pr" \'{docs_agent_publication:{path:$path,required:$required}}\')"' ), 'Docs Agent must define the v0.12.13 publication projection descriptor.' );
+$docs_projections = array(
+	'docs_agent_publication' => array(
+		'path'     => 'metadata.runner_workspace_publication.url',
+		'required' => true,
+	),
+);
+$publication_descriptor = $docs_projections['docs_agent_publication'] ?? null;
+$assert( is_array( $publication_descriptor ), 'Docs Agent must define the docs_agent_publication projection descriptor.' );
+$publication_path = $publication_descriptor['path'] ?? null;
+$assert( 'metadata.runner_workspace_publication.url' === $publication_path, 'Docs Agent publication projection must use the v0.12.13 runner workspace publication URL path.' );
 
 $producer_request_fixture = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/contracts/agent-task-workflow-request.fixture.json' );
 $producer_projection_paths = array_values( $producer_request_fixture['outputs']['projections'] ?? array() );
@@ -267,6 +281,18 @@ foreach ( $lane_matrix as $lane => $requires_pr ) {
 $assert( '${{ needs.prepare.outputs.success_requires_pr == \'true\' }}' === ( $caller_inputs['success_requires_pr'] ?? null ), 'Docs Agent must pass the selected lane publication policy to WP Codebox.' );
 $assert( array( 'job' => 'prepare', 'output' => 'success_requires_pr' ) === ( $caller_outputs['success_requires_pr'] ?? null ), 'Docs Agent must expose the selected publication policy to consumers.' );
 $assert( str_contains( $workflow, 'successRequiresPr:$successRequiresPr' ), 'Docs Agent recipe must retain the selected publication policy.' );
+$assert( str_contains( $workflow, '--arg validationDependencies "$INPUT_VALIDATION_DEPENDENCIES"' ), 'Docs Agent recipe must retain caller-owned validation dependencies.' );
+
+preg_match( "/artifact_declarations='(?<json>\[.*?\])'\n/s", $workflow, $artifact_declarations_match );
+$assert( isset( $artifact_declarations_match['json'] ), 'Docs Agent must define typed artifact declarations.' );
+$artifact_declarations = json_decode( $artifact_declarations_match['json'], true );
+$assert( is_array( $artifact_declarations ) && $artifact_declarations !== array(), 'Docs Agent artifact declarations must be valid JSON.' );
+foreach ( $artifact_declarations as $artifact_declaration ) {
+	$assert( false === ( $artifact_declaration['required'] ?? null ), 'Docs Agent artifact declarations must remain optional.' );
+}
+$assert( str_contains( $producer_execute, 'function requiredArtifacts(declarations)' ) && str_contains( $producer_execute, 'artifact.required === true' ), 'WP Codebox must derive required artifacts only from typed declarations.' );
+$assert( ! str_contains( $producer_execute, 'requiredArtifacts(request.artifacts?.expected' ), 'WP Codebox must not treat every expected artifact as required.' );
+$assert( str_contains( $producer_execute, 'if (projected === undefined) continue' ), 'WP Codebox must omit unresolved optional output projections from successful no-op results.' );
 
 $recipe_start = strpos( $workflow, 'recipe_json="$(jq -cn' );
 $recipe_end   = strpos( $workflow, 'external_package_source="$(jq -cn', $recipe_start );
