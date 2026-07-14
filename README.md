@@ -111,7 +111,7 @@ Docs Agent declares the review artifacts it expects the runner to materialize as
 
 `maintain-docs.yml` writes `expected_artifacts` and `artifact_declarations` into a portable Docs Agent recipe and exposes the same declaration objects as `declared_artifacts_json`.
 
-WP Codebox v0.12.17 separately uploads one compact reviewer transcript from the normalized canonical `codebox-transcript` reference. The `wp-codebox/reviewer-agent-transcript/v1` projection preserves bounded command, status, diagnostic, and workspace-tool evidence with verified source and projection digests. It excludes raw stdout, payloads, source trees, secrets, setup stacks, package data, and private paths.
+WP Codebox v0.12.18 separately uploads one compact reviewer transcript through a pre-sanitization canonical reviewer-evidence descriptor. It resolves exactly one trusted `codebox-transcript` under the artifact root and records its artifact-relative path, schema, verified source digest, and size before runtime-result sanitization. The uploader revalidates that descriptor before producing the `wp-codebox/reviewer-agent-transcript/v1` projection, which preserves bounded command, status, diagnostic, and workspace-tool evidence with verified source and projection digests. It excludes raw stdout, payloads, source trees, secrets, setup stacks, package data, and private paths.
 
 Docs Agent owns native package selection, lane, artifact, prompt, and workspace mapping. Execution, credentials, AI provider selection, sandboxing, and publication are runner-owned concerns outside this repository.
 
