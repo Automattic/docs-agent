@@ -70,6 +70,10 @@ $assert( true === ( $release['imported_package_identity_execution'] ?? null ), '
 $assert( true === ( $release['sandbox_local_copy_on_write_workspace_tools'] ?? null ), 'WP Codebox release fixture must cover sandbox-local copy-on-write workspace tools.' );
 $assert( true === ( $release['host_patch_apply_verification_publication'] ?? null ), 'WP Codebox release fixture must cover host patch apply, verification, and publication.' );
 $assert( true === ( $release['provenance_only_uploads'] ?? null ), 'WP Codebox release fixture must cover provenance-only uploads.' );
+$assert( true === ( $release['canonical_task_input_workspace_handoff'] ?? null ), 'WP Codebox release fixture must cover canonical task_input workspace handoff.' );
+$assert( true === ( $release['external_secret_filtered_seed_snapshot'] ?? null ), 'WP Codebox release fixture must cover external secret-filtered workspace seed snapshots.' );
+$assert( true === ( $release['actionable_patch_normalization'] ?? null ), 'WP Codebox release fixture must cover actionable patch normalization.' );
+$assert( true === ( $release['failure_evidence_preserved'] ?? null ), 'WP Codebox release fixture must preserve normalized runtime evidence on failures.' );
 $native_result_path = $release['native_result_path'] ?? null;
 $workflow_result_path = $release['workflow_result_path'] ?? null;
 $assert( '.codebox/native-agent-task-result.json' === $native_result_path, 'WP Codebox release fixture must declare the controlled native result path.' );
@@ -237,14 +241,20 @@ $assert( str_contains( $producer_sanitizer, 'if (key === "runtime_sources" && Ar
 $assert( str_contains( $producer_sanitizer, 'if (descriptor.role === "provider_plugin" && Array.isArray(descriptor.metadata?.providers)) provenance.providers = descriptor.metadata.providers' ), 'WP Codebox provenance artifacts must retain the canonical provider allowlist.' );
 $assert( str_contains( $producer_execute, 'sanitizeRuntimeSourceValue(nativeRuntimeResult, privateRuntimeSourceRootForSanitization)' ), 'WP Codebox must sanitize private runtime paths from native task results before persistence.' );
 $assert( str_contains( $producer_execute, 'forbiddenRoots: [workspace, artifactsPath]' ) && str_contains( $producer_execute, 'const privatePreparationRoot = privateRuntimeSourceRoot ? join(privateRuntimeSourceRoot, "prepared-runtime-sources") : ""' ), 'WP Codebox must keep private runtime sources outside the workspace and artifact roots.' );
-$assert( str_contains( $producer_upload, 'sanitizeRuntimeSourceJson(text, runtimeSourceRoots)' ), 'WP Codebox must sanitize private runtime paths from artifact uploads.' );
+$assert( str_contains( $producer_upload, 'sanitizeRuntimeSourceJson(text, privateUploadRoots)' ), 'WP Codebox must sanitize private runtime and workspace paths from artifact uploads.' );
 $assert( str_contains( $producer_sanitizer, 'RUNTIME_SOURCE_PLACEHOLDER = "[runtime-source]"' ), 'WP Codebox must replace private runtime paths with the published placeholder.' );
 $assert( str_contains( $producer_sanitizer, 'PRIVATE_RUNTIME_SOURCE_FIELDS = new Set(["source_package_root"])' ), 'WP Codebox must remove private runtime source-root fields.' );
 $assert( str_contains( $producer_execute, 'ability: "wp-codebox/run-runtime-package"' ) && str_contains( $producer_execute, 'imported_agent: materializedPackage.identity' ), 'WP Codebox must execute and preserve the imported package identity.' );
-$assert( str_contains( $producer_execute, 'mode: "readwrite", sourceMode: "repo-backed", seed: { type: "directory", source: workspace' ), 'WP Codebox must seed a sandbox-local copy-on-write workspace from the target repository.' );
-$assert( str_contains( $producer_execute, 'applyRunnerWorkspacePatch({ artifactRoot: artifactsPath, artifactRefs: refs, workspaceRoot: workspace, writablePaths:' ), 'WP Codebox must apply the sandbox patch to the host workspace through its bounded patch contract.' );
+$assert( str_contains( $producer_execute, 'mode: "readwrite", sourceMode: "repo-backed", seed: { type: "directory", source: runnerWorkspaceSeedSnapshot.source' ), 'WP Codebox must seed a sandbox-local copy-on-write workspace from the external target-repository snapshot.' );
+$assert( str_contains( $producer_execute, 'task_input: {' ) && str_contains( $producer_execute, 'workspaces: runnerWorkspaceSeedSnapshot ?' ), 'WP Codebox must hand runner workspaces through canonical task_input.workspaces.' );
+$assert( str_contains( $producer_execute, 'createRunnerWorkspaceSeedSnapshot(workspace)' ) && str_contains( $producer_execute, 'seed: { type: "directory", source: runnerWorkspaceSeedSnapshot.source' ), 'WP Codebox must seed runner workspaces from an external snapshot.' );
+$assert( str_contains( $producer_execute, 'runner_workspace_seed: runnerWorkspaceSeedSnapshot.provenance' ) && str_contains( $producer_execute, 'RUNNER_WORKSPACE_SEED_EXCLUDES' ), 'WP Codebox must retain seed provenance while applying the published exclusions.' );
+$assert( str_contains( $producer_execute, 'applyRunnerWorkspacePatch({ artifactRoot: artifactsPath, artifactRefs: refs, workspaceRoot: workspace, writablePaths })' ), 'WP Codebox must apply the sandbox patch to the host workspace through its bounded patch contract.' );
+$assert( str_contains( $producer_execute, '.filter((ref) => ref.kind === "codebox-patch" || ref.kind === "codebox-changed-files")' ), 'WP Codebox must treat canonical patch and changed-file references as actionable workspace evidence.' );
 $assert( str_contains( $producer_execute, 'verifyRunnerWorkspaceIntegrity(workspaceApply.integrity)' ) && str_contains( $producer_execute, 'publishRunnerWorkspace' ), 'WP Codebox must verify host-applied changes before publication.' );
+$assert( str_contains( $producer_execute, 'runtime_result: redact(runtimeRecord)' ) && str_contains( $producer_execute, '...(downstreamFailure ? { failure:' ), 'WP Codebox must retain normalized runtime evidence when downstream execution fails.' );
 $assert( str_contains( $producer_upload, 'function runtimeProvenance(request)' ) && str_contains( $producer_upload, 'runtime-provenance.json' ), 'WP Codebox uploads must retain runtime provenance without prepared source content.' );
+$assert( str_contains( $producer_upload, 'function compactNativeInput(text)' ) && str_contains( $producer_upload, 'Temporary runner workspace seed paths must never be persisted in artifact uploads.' ), 'WP Codebox uploads must preserve seed provenance without exposing secret-filtered snapshot paths.' );
 $assert( (string) $upload_regression_run === ( $producer_upload_regression['run_id'] ?? null ), 'WP Codebox upload regression fixture must match the recorded run.' );
 $assert( (string) $diagnostic_regression_run === ( $producer_diagnostic_regression['run_id'] ?? null ), 'WP Codebox diagnostic regression fixture must match the recorded run.' );
 $diagnostic = $producer_diagnostic_regression['result']['diagnostics'][0] ?? null;
@@ -253,7 +263,7 @@ $assert( 'failed-on-runtime-source' === ( $producer_upload_regression['observed'
 $assert( in_array( '.codebox/agent-task-request.json', $producer_upload_regression['observed']['uploaded'] ?? array(), true ), 'WP Codebox upload regression fixture must retain the controlled request upload.' );
 $assert( ! array_intersect( array( 'MODEL_PROVIDER_SECRET_1', 'MODEL_PROVIDER_SECRET_2', 'MODEL_PROVIDER_SECRET_3', 'MODEL_PROVIDER_SECRET_4', 'MODEL_PROVIDER_SECRET_5' ), array_keys( $caller_secrets ) ), 'Docs Agent must forward only the OPENAI_API_KEY provider secret name.' );
 
-$assert( str_contains( $workflow, 'output_projections="$(jq -cn --arg path \'metadata.runner_workspace_publication.url\' --argjson required "$success_requires_pr" \'{docs_agent_publication:{path:$path,required:$required}}\')"' ), 'Docs Agent must define the v0.12.14 publication projection descriptor.' );
+$assert( str_contains( $workflow, 'output_projections="$(jq -cn --arg path \'metadata.runner_workspace_publication.url\' --argjson required "$success_requires_pr" \'{docs_agent_publication:{path:$path,required:$required}}\')"' ), 'Docs Agent must define the v0.12.16 publication projection descriptor.' );
 $docs_projections = array(
 	'docs_agent_publication' => array(
 		'path'     => 'metadata.runner_workspace_publication.url',
@@ -263,7 +273,7 @@ $docs_projections = array(
 $publication_descriptor = $docs_projections['docs_agent_publication'] ?? null;
 $assert( is_array( $publication_descriptor ), 'Docs Agent must define the docs_agent_publication projection descriptor.' );
 $publication_path = $publication_descriptor['path'] ?? null;
-$assert( 'metadata.runner_workspace_publication.url' === $publication_path, 'Docs Agent publication projection must use the v0.12.14 runner workspace publication URL path.' );
+$assert( 'metadata.runner_workspace_publication.url' === $publication_path, 'Docs Agent publication projection must use the v0.12.16 runner workspace publication URL path.' );
 
 $producer_request_fixture = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/contracts/agent-task-workflow-request.fixture.json' );
 $producer_projection_paths = array_values( $producer_request_fixture['outputs']['projections'] ?? array() );
