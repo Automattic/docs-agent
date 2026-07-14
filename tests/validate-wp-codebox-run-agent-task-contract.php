@@ -47,9 +47,15 @@ $result_value = static function ( array $value, string $path ) {
 $contract = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/contracts/run-agent-task-reusable-workflow-interface.v1.json' );
 $assert( 'wp-codebox/reusable-workflow-interface/v1' === ( $contract['schema'] ?? null ), 'WP Codebox producer schema version mismatch.' );
 $assert( '.github/workflows/run-agent-task.yml' === ( $contract['workflow'] ?? null ), 'WP Codebox producer contract targets an unexpected workflow.' );
+$release = $read_json( $root . '/tests/wp-codebox-release.fixture.json' );
+$release_tag = $release['tag'] ?? null;
+$assert( is_string( $release_tag ) && preg_match( '/^v\d+\.\d+\.\d+$/', $release_tag ) === 1, 'WP Codebox release fixture must declare an exact release tag.' );
+$assert( substr( $release_tag, 1 ) === ( $release['package_version'] ?? null ), 'WP Codebox release fixture package version must match its tag.' );
+$producer_package = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/package.json' );
+$assert( ( $release['package_version'] ?? null ) === ( $producer_package['version'] ?? null ), 'Checked-out WP Codebox package version must match the release fixture.' );
 
 $workflow = (string) file_get_contents( $root . '/.github/workflows/maintain-docs.yml' );
-$assert( preg_match( '/^\s*uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@ca1cc53ea76d09dc53dd02df89e41ad7fe143a27$/m', $workflow ) === 1, 'Docs Agent must call the #1756 producer workflow revision.' );
+$assert( preg_match( '/^\s*uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@' . preg_quote( $release_tag, '/' ) . '$/m', $workflow ) === 1, 'Docs Agent must call the released WP Codebox workflow tag.' );
 
 preg_match( '/uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@[^\n]+\n    with:\n(?<inputs>.*?)\n    secrets:\n(?<secrets>(?:      [^\n]*\n?)*)/s', $workflow, $caller );
 $assert( isset( $caller['inputs'], $caller['secrets'] ), 'Docs Agent must declare producer inputs and secrets.' );
@@ -74,6 +80,18 @@ foreach ( $contract['inputs'] ?? array() as $name => $input ) {
 	}
 }
 
+$assert( $release_tag === ( $caller_inputs['wp_codebox_release_ref'] ?? null ), 'Docs Agent must pass the WP Codebox release tag required by the producer contract.' );
+$is_coherent_release_pair = static function ( string $consumer_workflow ): bool {
+	preg_match( '/uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@(?<workflow_tag>[^\s]+)/', $consumer_workflow, $workflow_match );
+	preg_match( '/^\s+wp_codebox_release_ref: (?<helper_tag>[^\s]+)$/m', $consumer_workflow, $helper_match );
+
+	return isset( $workflow_match['workflow_tag'], $helper_match['helper_tag'] )
+		&& preg_match( '/^v\d+\.\d+\.\d+$/', $workflow_match['workflow_tag'] ) === 1
+		&& $workflow_match['workflow_tag'] === $helper_match['helper_tag'];
+};
+$assert( $is_coherent_release_pair( $workflow ), 'Docs Agent must use matching exact WP Codebox release tags.' );
+$assert( ! $is_coherent_release_pair( str_replace( 'wp_codebox_release_ref: ' . $release_tag, 'wp_codebox_release_ref: v0.12.3', $workflow ) ), 'A mismatched WP Codebox workflow and helper release tag must fail.' );
+
 $caller_secrets = array();
 preg_match_all( '/^      (?<name>[A-Z0-9_]+): (?<value>[^\n]+)$/m', $caller['secrets'], $matches, PREG_SET_ORDER );
 foreach ( $matches as $match ) {
@@ -87,7 +105,6 @@ foreach ( $contract['secrets'] ?? array() as $name => $secret ) {
 	}
 }
 
-$assert( 'true' === ( $caller_inputs['require_access_token'] ?? null ), 'Docs Agent must require the caller-scoped publication token.' );
 $assert( '${{ github.token }}' === ( $caller_secrets['ACCESS_TOKEN'] ?? null ), 'Docs Agent must explicitly forward the caller-scoped GitHub token as ACCESS_TOKEN.' );
 $assert( '${{ secrets.OPENAI_API_KEY }}' === ( $caller_secrets['OPENAI_API_KEY'] ?? null ), 'Docs Agent must explicitly forward OPENAI_API_KEY.' );
 $assert( '${{ secrets.EXTERNAL_PACKAGE_SOURCE_POLICY }}' === ( $caller_secrets['EXTERNAL_PACKAGE_SOURCE_POLICY'] ?? null ), 'Docs Agent must explicitly forward the external package policy secret.' );
