@@ -42,15 +42,15 @@ jobs:
       EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.DOCS_AGENT_EXTERNAL_PACKAGE_SOURCE_POLICY }}
 ```
 
-Docs Agent targets the calling repository and forwards its scoped `${{ github.token }}` to WP Codebox for checkout and publication. The consumer must grant `contents: write`, `pull-requests: write`, and `issues: write`; no `ACCESS_TOKEN` secret is required for this same-repository contract. `OPENAI_API_KEY` is optional in the reusable workflow schema but required for a live `run_agent: true` OpenAI run. `EXTERNAL_PACKAGE_SOURCE_POLICY` is a separate required secret: WP Codebox uses it only to authorize fetching the standalone Docs Agent package selected by the lane. Map both secrets explicitly, including for cross-organization calls.
+Docs Agent targets the calling repository and forwards its scoped `${{ github.token }}` to WP Codebox for checkout and publication. The consumer must grant `contents: write`, `pull-requests: write`, and `issues: write`; no `ACCESS_TOKEN` secret is required for this same-repository contract. `OPENAI_API_KEY` is optional in the reusable workflow schema but required for a live `run_agent: true` OpenAI run. `EXTERNAL_PACKAGE_SOURCE_POLICY` is a separate required secret: WP Codebox uses it to authorize the selected Docs Agent package and the complete WordPress-native runtime closure. Replace the prior v1 secret value with the exact value below; its secret name and workflow mapping are unchanged.
 
 Configure `DOCS_AGENT_EXTERNAL_PACKAGE_SOURCE_POLICY` with this exact v1 JSON value:
 
 ```json
-{"version":1,"repositories":{"automattic/docs-agent":["bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json","bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json","bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json","bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json","bundles/skills-agent/native/skills-maintenance-agent.agent.json"]}}
+{"version":1,"repositories":{"automattic/docs-agent":["bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json","bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json","bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json","bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json","bundles/skills-agent/native/skills-maintenance-agent.agent.json"]},"runtime_sources":{"automattic/agents-api":["."],"wordpress/php-ai-client":["."]},"runtime_artifacts":[{"url":"https://downloads.wordpress.org/plugin/ai-provider-for-openai.1.0.3.zip","sha256":"48f3c0c714b3164cda79d320829830d5a0ea1116e0b19653da8af898a22d3bb6"}]}
 ```
 
-The policy authorizes only public `Automattic/docs-agent` package bytes. It does not grant target-repository publication access.
+The policy authorizes five exact public Docs Agent packages, two exact runtime git repository/root pairs, and the checksum-pinned OpenAI provider ZIP. It does not grant target-repository publication access.
 
 For repositories that run their own preflight detection, pass `run_agent: false` when no docs work is needed. The workflow records a deterministic skipped run instead of booting the agent runtime.
 
@@ -230,4 +230,4 @@ AGENTS_API_DIR=/path/to/agents-api php tests/native-agent-import.php
 
 It imports every native package through `wp_agent_import_runtime_bundles()`, verifies registration and preserved write-gate defaults, and invokes the default native chat handler far enough to resolve each registered agent. It intentionally fails when `AGENTS_API_DIR` is unavailable rather than treating an unexecuted importer as a passing test. It does not execute a model turn because the packages intentionally leave provider/model selection to the caller.
 
-The `Docs Agent Tests` GitHub Actions workflow runs on pull requests and pushes. It fetches Docs Agent history so it can run the immutable native package source validator, then runs the structural bundle validator, docs-link repair smoke test, and native importer integration test against `Automattic/agents-api` at `5addf598167ec17821954b0f9aa3a9b160b7e36e`.
+The `Docs Agent Tests` GitHub Actions workflow runs on pull requests and pushes. It fetches Docs Agent history so it can run the immutable native package source validator, then runs the structural bundle validator, docs-link repair smoke test, and native importer integration test against `Automattic/agents-api` at `59d1e6b473f22498e40e279130bbb4f9bcde3b73`.

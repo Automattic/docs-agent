@@ -196,11 +196,11 @@ $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 
 
 $transitional_homeboy_extensions_workflow = 'uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main';
 $forbidden_docs_agent_codebox_workflow = 'uses: Automattic/wp-codebox/.github/workflows/docs-agent-runner.yml@main';
-$generic_codebox_agent_task_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@v0.12.7';
+$generic_codebox_agent_task_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@v0.12.8';
 $assert( ! str_contains( $maintain_docs_workflow, $transitional_homeboy_extensions_workflow ), 'maintain-docs.yml must not call Homeboy Extensions directly.' );
 $assert( ! str_contains( $maintain_docs_workflow, $forbidden_docs_agent_codebox_workflow ), 'maintain-docs.yml must not call a Codebox-owned Docs Agent wrapper.' );
 $assert( str_contains( $maintain_docs_workflow, $generic_codebox_agent_task_workflow ), 'maintain-docs.yml must call the generic Codebox agent-task workflow.' );
-$assert( str_contains( $maintain_docs_workflow, 'wp_codebox_release_ref: v0.12.7' ), 'maintain-docs.yml must pass the matching WP Codebox release tag.' );
+$assert( str_contains( $maintain_docs_workflow, 'wp_codebox_release_ref: v0.12.8' ), 'maintain-docs.yml must pass the matching WP Codebox release tag.' );
 
 $workflow_blocked_runtime_fragments = array_values( array_diff( $blocked_runtime_fragments, array( 'wp-codebox', 'Automattic/wp-codebox', 'OPENAI_API_KEY' ) ) );
 $workflow_internal_fragments = array_merge( $workflow_blocked_runtime_fragments, array( 'homeboy_extensions_ref:', 'runtime_ref:', 'runtime_ref }}', 'runtime_provider:', 'runtime_provider }}', 'runtime_profile:', 'runtime_profile }}', 'runtime_profiles:', 'runtime_profiles }}', 'runtime_execution:', 'runtime_execution }}', 'runtime_config:', 'runtime_config }}', 'component_contracts:', 'component_contracts }}', 'ability_requirements:', 'ability_requirements }}', 'runtime_components:', 'runtime_components }}', 'runtime_mounts:', 'runtime_mounts }}', 'required_abilities:', 'required_abilities }}', 'extra_wp_config_defines:' ) );
@@ -231,15 +231,16 @@ $assert( str_contains( $maintain_docs_workflow, 'output_projections:' ), 'mainta
 $assert( str_contains( $maintain_docs_workflow, 'OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}' ), 'maintain-docs.yml must explicitly forward OPENAI_API_KEY to the native runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'ACCESS_TOKEN: ${{ github.token }}' ), 'maintain-docs.yml must forward the caller-scoped GitHub token to the native runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.EXTERNAL_PACKAGE_SOURCE_POLICY }}' ), 'maintain-docs.yml must explicitly forward the external package source policy.' );
+$assert( str_contains( $maintain_docs_workflow, 'runtime_sources: ${{ needs.prepare.outputs.runtime_sources }}' ), 'maintain-docs.yml must pass its complete native runtime closure to WP Codebox.' );
 
 $workflow_readme = (string) file_get_contents( $root . '/.github/workflows/README.md' );
 foreach ( array( 'Docs Agent Runner Recipe', 'portable recipe', 'Docs Agent owns the native package' ) as $migration_note_text ) {
 	$assert( str_contains( $workflow_readme, $migration_note_text ), "Workflow README missing agent runtime note: {$migration_note_text}" );
 }
-$assert( str_contains( $workflow_readme, 'v0.12.7' ), 'Workflow README must record the WP Codebox release tag.' );
-$assert( str_contains( $workflow_readme, 'https://github.com/Automattic/wp-codebox/issues/1759' ), 'Workflow README must link the WP Codebox release contract issue.' );
-$assert( str_contains( $workflow_readme, 'blocks concrete runner workflow calls' ), 'Workflow README must document blocked concrete runner calls.' );
-$assert( str_contains( $workflow_readme, 'runtime ability names, component paths, mount directives, provider defaults, and define directives' ), 'Workflow README must document blocked runtime substrate surfaces.' );
+$assert( str_contains( $workflow_readme, 'v0.12.8' ), 'Workflow README must record the WP Codebox release tag.' );
+$assert( str_contains( $workflow_readme, 'https://github.com/Automattic/wp-codebox/issues/1767' ), 'Workflow README must link the WP Codebox runtime closure issue.' );
+$assert( str_contains( $workflow_readme, 'Docs Agent declares the runtime sources' ), 'Workflow README must document Docs Agent ownership of the runtime closure.' );
+$assert( str_contains( $workflow_readme, 'WP Codebox materializes and lowers them under its generic runtime contract' ), 'Workflow README must document the generic producer lowering boundary.' );
 
 $public_docs = strtolower(
 	(string) file_get_contents( $root . '/README.md' ) . "\n" .
