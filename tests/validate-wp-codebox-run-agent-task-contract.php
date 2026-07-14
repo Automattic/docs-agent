@@ -66,6 +66,10 @@ $assert( true === ( $release['allowlisted_uploads'] ?? null ), 'WP Codebox relea
 $assert( true === ( $release['normalized_failures'] ?? null ), 'WP Codebox release fixture must require normalized failures.' );
 $assert( true === ( $release['diagnostic_class_names_allowed'] ?? null ), 'WP Codebox release fixture must permit diagnostic class names.' );
 $assert( true === ( $release['php_shaped_source_blocked'] ?? null ), 'WP Codebox release fixture must block PHP-shaped runtime source.' );
+$assert( true === ( $release['imported_package_identity_execution'] ?? null ), 'WP Codebox release fixture must execute the imported package identity.' );
+$assert( true === ( $release['sandbox_local_copy_on_write_workspace_tools'] ?? null ), 'WP Codebox release fixture must cover sandbox-local copy-on-write workspace tools.' );
+$assert( true === ( $release['host_patch_apply_verification_publication'] ?? null ), 'WP Codebox release fixture must cover host patch apply, verification, and publication.' );
+$assert( true === ( $release['provenance_only_uploads'] ?? null ), 'WP Codebox release fixture must cover provenance-only uploads.' );
 $native_result_path = $release['native_result_path'] ?? null;
 $workflow_result_path = $release['workflow_result_path'] ?? null;
 $assert( '.codebox/native-agent-task-result.json' === $native_result_path, 'WP Codebox release fixture must declare the controlled native result path.' );
@@ -103,7 +107,7 @@ $assert( str_contains( $producer_workflow, 'workspace/.codebox/agent-task-upload
 $assert( str_contains( $producer_execute, 'sandbox_tool_policy: {' ), 'WP Codebox producer must include an explicit sandbox tool-policy in the native task request.' );
 $assert( str_contains( $producer_execute, 'schema: "wp-codebox/sandbox-tool-policy/v1"' ), 'WP Codebox producer sandbox tool-policy must use the published schema.' );
 $assert( str_contains( $producer_execute, 'version: 1' ), 'WP Codebox producer sandbox tool-policy must declare its contract version.' );
-$assert( str_contains( $producer_execute, 'tools: runnerWorkspaceTools.map((id) => ({ id, runtime_tool_id: id, execution_location: "parent", transport_visibility: "visible", allowed: true' ), 'WP Codebox producer sandbox tool-policy must preserve the allowlisted parent tool mapping.' );
+$assert( str_contains( $producer_execute, 'tools: runnerWorkspaceTools.map((id) => ({ id, runtime_tool_id: id, execution_location: "sandbox", transport_visibility: "sandbox", allowed: true' ), 'WP Codebox producer sandbox tool-policy must preserve the allowlisted sandbox-local tool mapping.' );
 $assert( 'wp-codebox/agent-task-workflow-result/v1' === ( $producer_result['schema'] ?? null ), 'WP Codebox workflow-result fixture schema mismatch.' );
 $assert( 'skipped' === ( $producer_result['status'] ?? null ), 'WP Codebox workflow-result fixture must model the skipped contract.' );
 $assert( '.codebox/agent-task-request.json' === ( $producer_result['request_path'] ?? null ), 'WP Codebox workflow-result fixture request path mismatch.' );
@@ -205,7 +209,7 @@ $assert( array(
 	'version' => 1,
 	'role' => 'component',
 	'repository' => 'Automattic/agents-api',
-	'revision' => '59d1e6b473f22498e40e279130bbb4f9bcde3b73',
+	'revision' => 'fbd5641d412af76a1b8288426a577e750838b4be',
 	'path' => '.',
 	'metadata' => array( 'slug' => 'agents-api', 'loadAs' => 'mu-plugin', 'pluginFile' => 'agents-api.php' ),
 ) === ( $runtime_sources[0] ?? null ), 'Docs Agent must declare the pinned Agents API MU-plugin component.' );
@@ -236,6 +240,11 @@ $assert( str_contains( $producer_execute, 'forbiddenRoots: [workspace, artifacts
 $assert( str_contains( $producer_upload, 'sanitizeRuntimeSourceJson(text, runtimeSourceRoots)' ), 'WP Codebox must sanitize private runtime paths from artifact uploads.' );
 $assert( str_contains( $producer_sanitizer, 'RUNTIME_SOURCE_PLACEHOLDER = "[runtime-source]"' ), 'WP Codebox must replace private runtime paths with the published placeholder.' );
 $assert( str_contains( $producer_sanitizer, 'PRIVATE_RUNTIME_SOURCE_FIELDS = new Set(["source_package_root"])' ), 'WP Codebox must remove private runtime source-root fields.' );
+$assert( str_contains( $producer_execute, 'ability: "wp-codebox/run-runtime-package"' ) && str_contains( $producer_execute, 'imported_agent: materializedPackage.identity' ), 'WP Codebox must execute and preserve the imported package identity.' );
+$assert( str_contains( $producer_execute, 'mode: "readwrite", sourceMode: "repo-backed", seed: { type: "directory", source: workspace' ), 'WP Codebox must seed a sandbox-local copy-on-write workspace from the target repository.' );
+$assert( str_contains( $producer_execute, 'applyRunnerWorkspacePatch({ artifactRoot: artifactsPath, artifactRefs: refs, workspaceRoot: workspace, writablePaths:' ), 'WP Codebox must apply the sandbox patch to the host workspace through its bounded patch contract.' );
+$assert( str_contains( $producer_execute, 'verifyRunnerWorkspaceIntegrity(workspaceApply.integrity)' ) && str_contains( $producer_execute, 'publishRunnerWorkspace' ), 'WP Codebox must verify host-applied changes before publication.' );
+$assert( str_contains( $producer_upload, 'function runtimeProvenance(request)' ) && str_contains( $producer_upload, 'runtime-provenance.json' ), 'WP Codebox uploads must retain runtime provenance without prepared source content.' );
 $assert( (string) $upload_regression_run === ( $producer_upload_regression['run_id'] ?? null ), 'WP Codebox upload regression fixture must match the recorded run.' );
 $assert( (string) $diagnostic_regression_run === ( $producer_diagnostic_regression['run_id'] ?? null ), 'WP Codebox diagnostic regression fixture must match the recorded run.' );
 $diagnostic = $producer_diagnostic_regression['result']['diagnostics'][0] ?? null;
@@ -244,7 +253,7 @@ $assert( 'failed-on-runtime-source' === ( $producer_upload_regression['observed'
 $assert( in_array( '.codebox/agent-task-request.json', $producer_upload_regression['observed']['uploaded'] ?? array(), true ), 'WP Codebox upload regression fixture must retain the controlled request upload.' );
 $assert( ! array_intersect( array( 'MODEL_PROVIDER_SECRET_1', 'MODEL_PROVIDER_SECRET_2', 'MODEL_PROVIDER_SECRET_3', 'MODEL_PROVIDER_SECRET_4', 'MODEL_PROVIDER_SECRET_5' ), array_keys( $caller_secrets ) ), 'Docs Agent must forward only the OPENAI_API_KEY provider secret name.' );
 
-$assert( str_contains( $workflow, 'output_projections="$(jq -cn --arg path \'metadata.runner_workspace_publication.url\' --argjson required "$success_requires_pr" \'{docs_agent_publication:{path:$path,required:$required}}\')"' ), 'Docs Agent must define the v0.12.13 publication projection descriptor.' );
+$assert( str_contains( $workflow, 'output_projections="$(jq -cn --arg path \'metadata.runner_workspace_publication.url\' --argjson required "$success_requires_pr" \'{docs_agent_publication:{path:$path,required:$required}}\')"' ), 'Docs Agent must define the v0.12.14 publication projection descriptor.' );
 $docs_projections = array(
 	'docs_agent_publication' => array(
 		'path'     => 'metadata.runner_workspace_publication.url',
@@ -254,7 +263,7 @@ $docs_projections = array(
 $publication_descriptor = $docs_projections['docs_agent_publication'] ?? null;
 $assert( is_array( $publication_descriptor ), 'Docs Agent must define the docs_agent_publication projection descriptor.' );
 $publication_path = $publication_descriptor['path'] ?? null;
-$assert( 'metadata.runner_workspace_publication.url' === $publication_path, 'Docs Agent publication projection must use the v0.12.13 runner workspace publication URL path.' );
+$assert( 'metadata.runner_workspace_publication.url' === $publication_path, 'Docs Agent publication projection must use the v0.12.14 runner workspace publication URL path.' );
 
 $producer_request_fixture = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/contracts/agent-task-workflow-request.fixture.json' );
 $producer_projection_paths = array_values( $producer_request_fixture['outputs']['projections'] ?? array() );
