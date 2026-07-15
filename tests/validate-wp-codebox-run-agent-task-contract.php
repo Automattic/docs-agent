@@ -216,7 +216,7 @@ $assert( array(
 	'version' => 1,
 	'role' => 'component',
 	'repository' => 'Automattic/agents-api',
-	'revision' => 'fbd5641d412af76a1b8288426a577e750838b4be',
+	'revision' => '78e2dd409010f98fa4d26cdd72572117384ab18d',
 	'path' => '.',
 	'metadata' => array( 'slug' => 'agents-api', 'loadAs' => 'mu-plugin', 'pluginFile' => 'agents-api.php' ),
 ) === ( $runtime_sources[0] ?? null ), 'Docs Agent must declare the pinned Agents API MU-plugin component.' );
@@ -274,7 +274,7 @@ $assert( 'failed-on-runtime-source' === ( $producer_upload_regression['observed'
 $assert( in_array( '.codebox/agent-task-request.json', $producer_upload_regression['observed']['uploaded'] ?? array(), true ), 'WP Codebox upload regression fixture must retain the controlled request upload.' );
 $assert( ! array_intersect( array( 'MODEL_PROVIDER_SECRET_1', 'MODEL_PROVIDER_SECRET_2', 'MODEL_PROVIDER_SECRET_3', 'MODEL_PROVIDER_SECRET_4', 'MODEL_PROVIDER_SECRET_5' ), array_keys( $caller_secrets ) ), 'Docs Agent must forward only the OPENAI_API_KEY provider secret name.' );
 
-$assert( str_contains( $workflow, 'output_projections="$(jq -cn --arg path \'metadata.runner_workspace_publication.url\' --argjson required "$success_requires_pr" \'{docs_agent_publication:{path:$path,required:$required}}\')"' ), 'Docs Agent must define the v0.12.18 publication projection descriptor.' );
+$assert( str_contains( $workflow, 'output_projections="$(jq -cn --arg path \'metadata.runner_workspace_publication.url\' --argjson required "$success_requires_pr" \'{docs_agent_publication:{path:$path,required:$required}}\')"' ), 'Docs Agent must define the v0.12.20 publication projection descriptor.' );
 $docs_projections = array(
 	'docs_agent_publication' => array(
 		'path'     => 'metadata.runner_workspace_publication.url',
@@ -284,7 +284,7 @@ $docs_projections = array(
 $publication_descriptor = $docs_projections['docs_agent_publication'] ?? null;
 $assert( is_array( $publication_descriptor ), 'Docs Agent must define the docs_agent_publication projection descriptor.' );
 $publication_path = $publication_descriptor['path'] ?? null;
-$assert( 'metadata.runner_workspace_publication.url' === $publication_path, 'Docs Agent publication projection must use the v0.12.18 runner workspace publication URL path.' );
+$assert( 'metadata.runner_workspace_publication.url' === $publication_path, 'Docs Agent publication projection must use the v0.12.20 runner workspace publication URL path.' );
 
 $producer_request_fixture = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/contracts/agent-task-workflow-request.fixture.json' );
 $producer_projection_paths = array_values( $producer_request_fixture['outputs']['projections'] ?? array() );
