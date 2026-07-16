@@ -1,6 +1,12 @@
 {
-  "tag": "v0.12.21",
-  "package_version": "0.12.21",
+  "tag": "v0.12.23",
+  "revision": "a2b02cd99ba645ba2250bf58c943bdd1eb13e690",
+  "package_version": "0.12.23",
+  "published_assets": {
+    "manifest.json": "sha256:41784656d82ae07ec84254b004c6e771d52f36ee6e553aae59b93a1be7ced85d",
+    "wp-codebox-workspace-0.12.23.tgz": "sha256:685d3b437d7cc813572aa6a5fa02ebcd285009a19989c99f7de8d8edf8611417",
+    "wp-codebox.zip": "sha256:87320aa1241dd3e45dc7cb1ab09e0f2ddfe37900017f39519a720ccbf7058171"
+  },
   "run": "29350690551",
   "diagnostic_regression_run": "29307978522",
   "upload_regression_run": "29306539573",
@@ -25,6 +31,8 @@
   "canonical_transcript_privacy_boundary": true,
   "pre_sanitization_canonical_reviewer_evidence_descriptor": true,
   "reviewer_safe_workflow_result_projection": true,
+  "runner_workspace_seed_host_identity_validation": true,
+  "rejected_apply_evidence_retained": true,
   "native_result_path": ".codebox/native-agent-task-result.json",
   "workflow_result_path": ".codebox/agent-task-workflow-result.json"
 }
