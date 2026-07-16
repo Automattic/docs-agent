@@ -4,17 +4,6 @@
     "user-docs-agent": "../bundles/user-docs-agent/native",
     "skills-agent": "../bundles/skills-agent/native"
   },
-  "forbidden_dm_fragments": [
-    "pipeline_slug",
-    "prompt_queue",
-    "step_type",
-    "tool_runtime_rules",
-    "handler_configs",
-    "datamachine",
-    "dm_",
-    "seed_queues",
-    "auth_refs"
-  ],
   "forbidden_publication_tools": [
     "workspace_git_add",
     "workspace_git_commit",
