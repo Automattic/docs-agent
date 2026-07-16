@@ -1,6 +1,6 @@
 {
-  "tag": "v0.12.20",
-  "package_version": "0.12.20",
+  "tag": "v0.12.21",
+  "package_version": "0.12.21",
   "run": "29350690551",
   "diagnostic_regression_run": "29307978522",
   "upload_regression_run": "29306539573",
@@ -24,6 +24,7 @@
   "canonical_compact_reviewer_transcript_upload": true,
   "canonical_transcript_privacy_boundary": true,
   "pre_sanitization_canonical_reviewer_evidence_descriptor": true,
+  "reviewer_safe_workflow_result_projection": true,
   "native_result_path": ".codebox/native-agent-task-result.json",
   "workflow_result_path": ".codebox/agent-task-workflow-result.json"
 }
