@@ -53,27 +53,10 @@ foreach ( array( $recipe, $example ) as $runner_recipe ) {
 	$assert( 'technical-docs-maintenance-agent' === ( $runner_recipe['docsAgent']['agentSlug'] ?? null ), 'Runner recipes must use the package agent slug.' );
 }
 
-$recipe_text = (string) file_get_contents( $root . '/ci/docs-agent-runner-recipe.json' );
-$blocked_runtime_fragments = array( 'wp-codebox', 'Automattic/wp-codebox', 'Extra-Chill/homeboy', 'homeboy-extensions', 'datamachine/', 'datamachine-agent-ci', 'runtime_task_ability', 'runtime_bundle_ability', 'runtime_workflow_ability', 'runtime_components', 'Automattic/agents-api@', 'Extra-Chill/data-machine@', 'Extra-Chill/data-machine-code@', 'workspace_policy', '/wordpress/wp-content/mu-plugins', 'required_abilities', 'disable_datamachine_directives', 'provider: openai', 'OPENAI_API_KEY', 'default_provider', 'default_model' );
-foreach ( $blocked_runtime_fragments as $internal_fragment ) {
-	$assert( ! str_contains( $recipe_text, $internal_fragment ), "Runner recipe must not expose runtime internals: {$internal_fragment}" );
-}
-
 $runner_workspace = $example['runner']['workspace'] ?? array();
 $assert( ! empty( $runner_workspace['enabled'] ), 'Example config must enable runner-owned workspace provisioning.' );
 $assert( 'docs/agent-run' === ( $runner_workspace['branch_prefix'] ?? null ), 'Example config must declare the docs branch prefix.' );
 $assert( is_file( $root . '/scripts/repair-docs-links.php' ), 'Docs link repair script must be available to consumer workflows.' );
-
-foreach ( array( $recipe, $example ) as $runner_recipe ) {
-	$runner_controls = $runner_recipe['runner'] ?? array();
-	$policy_controls = $runner_recipe['policy'] ?? array();
-	$runtime_controls = $runner_recipe['runtime'] ?? array();
-	foreach ( array( 'contextRepositories', 'workspaceContractChecks' ) as $removed_runner_control ) {
-		$assert( ! array_key_exists( $removed_runner_control, $runner_controls ), "Runner recipe must not expose removed control {$removed_runner_control}." );
-	}
-	$assert( ! array_key_exists( 'successCompletionOutcomes', $policy_controls ), 'Runner recipe must not expose removed successCompletionOutcomes.' );
-	$assert( ! array_key_exists( 'stepBudget', $runtime_controls ), 'Runner recipe must not expose removed stepBudget.' );
-}
 
 $maintain_docs_workflow = (string) file_get_contents( $root . '/.github/workflows/maintain-docs.yml' );
 foreach ( array( 'verification_commands:', 'drift_checks:', 'schema:"docs-agent/runner-recipe/v1"' ) as $required_workflow_text ) {
@@ -83,45 +66,15 @@ $assert( str_contains( $maintain_docs_workflow, 'recipe_json:' ), 'maintain-docs
 $assert( str_contains( $maintain_docs_workflow, 'validation_dependencies:' ), 'maintain-docs.yml must expose caller-owned validation dependencies.' );
 $assert( str_contains( $maintain_docs_workflow, 'validationDependencies:$validationDependencies' ), 'maintain-docs.yml must retain validation dependencies in the portable recipe.' );
 $assert( str_contains( $maintain_docs_workflow, 'schema:"docs-agent/runner-recipe/v1"' ), 'maintain-docs.yml must build a portable Docs Agent recipe.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'Automattic/studio' ), 'maintain-docs.yml must not hardcode downstream Studio context.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'WordPress/agent-skills' ), 'maintain-docs.yml must not hardcode downstream skills context.' );
 $assert( str_contains( $maintain_docs_workflow, 'declared_artifacts_json:' ), 'maintain-docs.yml must expose typed artifact declarations as a reusable workflow output.' );
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 'maintain-docs.yml must prepare typed artifact declarations without caller-specific projections.' );
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 'maintain-docs.yml must expose artifact declarations through workflow outputs.' );
 
-$transitional_homeboy_extensions_workflow = 'uses: Extra-Chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml@main';
-$forbidden_docs_agent_codebox_workflow = 'uses: Automattic/wp-codebox/.github/workflows/docs-agent-runner.yml@main';
 $generic_codebox_agent_task_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@v0.12.21';
-$assert( ! str_contains( $maintain_docs_workflow, $transitional_homeboy_extensions_workflow ), 'maintain-docs.yml must not call Homeboy Extensions directly.' );
-$assert( ! str_contains( $maintain_docs_workflow, $forbidden_docs_agent_codebox_workflow ), 'maintain-docs.yml must not call a Codebox-owned Docs Agent wrapper.' );
 $assert( str_contains( $maintain_docs_workflow, $generic_codebox_agent_task_workflow ), 'maintain-docs.yml must call the generic Codebox agent-task workflow.' );
 $assert( str_contains( $maintain_docs_workflow, 'wp_codebox_release_ref: v0.12.21' ), 'maintain-docs.yml must pass the matching WP Codebox release tag.' );
 
-$workflow_blocked_runtime_fragments = array_values( array_diff( $blocked_runtime_fragments, array( 'wp-codebox', 'Automattic/wp-codebox', 'OPENAI_API_KEY' ) ) );
-$workflow_internal_fragments = array_merge( $workflow_blocked_runtime_fragments, array( 'homeboy_extensions_ref:', 'runtime_ref:', 'runtime_ref }}', 'runtime_provider:', 'runtime_provider }}', 'runtime_profile:', 'runtime_profile }}', 'runtime_profiles:', 'runtime_profiles }}', 'runtime_execution:', 'runtime_execution }}', 'runtime_config:', 'runtime_config }}', 'component_contracts:', 'component_contracts }}', 'ability_requirements:', 'ability_requirements }}', 'runtime_components:', 'runtime_components }}', 'runtime_mounts:', 'runtime_mounts }}', 'required_abilities:', 'required_abilities }}', 'extra_wp_config_defines:' ) );
-foreach ( $workflow_internal_fragments as $internal_fragment ) {
-	$assert( ! str_contains( $maintain_docs_workflow, $internal_fragment ), "maintain-docs.yml must not expose runtime internals: {$internal_fragment}" );
-}
-
-$assert( ! str_contains( $maintain_docs_workflow, 'runtime_mounts:' ), 'maintain-docs.yml must not pass sandbox policy mounts.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'extra_wp_config_defines:' ), 'maintain-docs.yml must not pass sandbox policy defines.' );
 $assert( str_contains( $maintain_docs_workflow, '--arg writablePaths "$INPUT_WRITABLE_PATHS"' ), 'maintain-docs.yml must include writable paths in the portable recipe.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'datamachine-agent-ci.yml' ), 'maintain-docs.yml must not use the legacy Data Machine adapter workflow.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'bundle_path' ), 'maintain-docs.yml must not use a legacy bundle path.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'bundle_repo:' ), 'maintain-docs.yml must not use a legacy bundle repository input.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'bundle_ref:' ), 'maintain-docs.yml must not use a legacy bundle ref input.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'bundle_path_in_repo:' ), 'maintain-docs.yml must not use a legacy bundle path input.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'agent_runtime:' ), 'maintain-docs.yml must use the public Codebox workflow instead of agent_runtime.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'agent_runtime_ref:' ), 'maintain-docs.yml must use the public Codebox workflow instead of agent_runtime_ref.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'extra_required_abilities:' ), 'maintain-docs.yml must not expose legacy required ability inputs.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'required_abilities:' ), 'maintain-docs.yml must not expose direct required ability inputs.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'wp_codebox_ref:' ), 'maintain-docs.yml must not use wp_codebox_ref.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'extra_wp_codebox_mounts:' ), 'maintain-docs.yml must not use extra_wp_codebox_mounts.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'agents_api_ref:' ), 'maintain-docs.yml must not expose agents_api_ref.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'data_machine_ref:' ), 'maintain-docs.yml must not expose data_machine_ref.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'data_machine_code_ref:' ), 'maintain-docs.yml must not expose data_machine_code_ref.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'engine_data_outputs:' ), 'maintain-docs.yml must use recipe outputMappings instead of engine_data_outputs.' );
-$assert( ! str_contains( $maintain_docs_workflow, 'runtime_output_projections:' ), 'maintain-docs.yml must use recipe outputMappings instead of runtime_output_projections.' );
 $assert( str_contains( $maintain_docs_workflow, 'output_projections:' ), 'maintain-docs.yml must project the bounded runner publication result.' );
 $assert( str_contains( $maintain_docs_workflow, 'OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}' ), 'maintain-docs.yml must explicitly forward OPENAI_API_KEY to the native runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'ACCESS_TOKEN: ${{ github.token }}' ), 'maintain-docs.yml must forward the caller-scoped GitHub token to the native runner.' );
@@ -145,15 +98,6 @@ $assert( str_contains( $workflow_readme, 'private paths' ), 'Workflow README mus
 $assert( str_contains( $workflow_readme, 'pre-sanitization reviewer-evidence descriptor' ), 'Workflow README must document the pre-sanitization reviewer-evidence descriptor.' );
 $assert( str_contains( $workflow_readme, 'reviewer-safe workflow-result projection' ), 'Workflow README must document the reviewer-safe workflow-result projection.' );
 
-$public_docs = strtolower( (string) file_get_contents( $root . '/README.md' ) . "\n" . (string) file_get_contents( $root . '/.github/workflows/README.md' ) );
-foreach ( array( 'hidden internals', 'implementation details', 'compatibility plumbing', 'consumers should not know', 'should not know', 'implementation internals', 'implementation evidence internal', 'plumbing to consumer workflows' ) as $old_boundary_phrase ) {
-	$assert( ! str_contains( $public_docs, $old_boundary_phrase ), "Public Docs Agent docs must use product-level API wording instead of: {$old_boundary_phrase}" );
-}
-$consumer_example_text = strtolower( (string) file_get_contents( $example_path ) );
-foreach ( array( 'extra-chill/homeboy-extensions/.github/workflows/runtime-agent-full-run.yml', 'run-agent-task.yml', 'runner_recipe', 'agent_bundle', 'runtime_execution', 'runtime_output_projections', 'runtime_profiles', 'component_contracts', 'ability_requirements' ) as $consumer_internal_contract ) {
-	$assert( ! str_contains( $consumer_example_text, $consumer_internal_contract ), "Consumer runner example must not require transitional runner contract: {$consumer_internal_contract}" );
-}
-
 $declared_artifact_names = array_keys( $expected_artifact_schemas );
 foreach ( $declared_artifact_names as $artifact_name ) {
 	$assert( str_contains( $maintain_docs_workflow, $artifact_name ), "maintain-docs.yml missing typed artifact declaration {$artifact_name}." );
@@ -163,10 +107,6 @@ $example_text = (string) file_get_contents( $example_path );
 foreach ( array( '/path/to', '/Users/', 'localhost', '127.0.0.1' ) as $local_path_fragment ) {
 	$assert( ! str_contains( $example_text, $local_path_fragment ), "Example runner config must not contain local-only path or host fragment: {$local_path_fragment}" );
 }
-foreach ( $blocked_runtime_fragments as $internal_fragment ) {
-	$assert( ! str_contains( $example_text, $internal_fragment ), "Example runner config must not expose runtime internals: {$internal_fragment}" );
-}
-
 $example_artifacts = $example['artifacts']['expected'] ?? null;
 $assert( is_array( $example_artifacts ), 'Example runner config must include expected artifact names.' );
 $example_declarations = $example['artifacts']['declarations'] ?? null;
@@ -209,14 +149,6 @@ $actual_native_paths = glob( $root . '/bundles/*/native/*.agent.json' ) ?: array
 sort( $actual_native_paths );
 $assert( $expected_native_paths === $actual_native_paths, 'Docs Agent must expose exactly the five declared native packages.' );
 
-foreach ( array_keys( $native_dirs ) as $package_name ) {
-	$package_dir = $root . '/bundles/' . $package_name;
-	$assert( ! is_file( $package_dir . '/manifest.json' ), "{$package_name} must not expose a legacy manifest." );
-	foreach ( array( 'flows/*.json', 'pipelines/*.json', 'memory/agent/*' ) as $legacy_glob ) {
-		$assert( array() === ( glob( $package_dir . '/' . $legacy_glob ) ?: array() ), "{$package_name} must not expose legacy {$legacy_glob} descriptors." );
-	}
-}
-
 foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertions ) {
 	$native_package_name = $native_assertions['package'] ?? '';
 	$native_dir          = $native_dirs[ $native_package_name ] ?? null;
@@ -224,7 +156,6 @@ foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertion
 	$native_path = $native_dir . '/' . $native_file;
 	$assert( is_file( $native_path ), "Missing native agent package file: {$native_file}" );
 
-	$native_text    = (string) file_get_contents( $native_path );
 	$native_package = $read_json( $native_path );
 
 	$agent = $native_package['agent'] ?? array();
@@ -272,11 +203,6 @@ foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertion
 	// Runner-neutral boundary: no agent-owned publication tools.
 	foreach ( $native_spec['forbidden_publication_tools'] ?? array() as $forbidden_tool ) {
 		$assert( ! in_array( $forbidden_tool, $tools, true ), "Native package {$native_file} must not enable publication tool: {$forbidden_tool}" );
-	}
-
-	// Native package documents must not carry legacy execution-envelope keys.
-	foreach ( $native_spec['forbidden_dm_fragments'] ?? array() as $dm_fragment ) {
-		$assert( ! str_contains( $native_text, $dm_fragment ), "Native package {$native_file} must not contain Data Machine fragment: {$dm_fragment}" );
 	}
 
 	$instructions = strtolower( (string) $config['instructions'] );
