@@ -77,6 +77,7 @@ $assert( true === ( $release['failure_evidence_preserved'] ?? null ), 'WP Codebo
 $assert( true === ( $release['canonical_compact_reviewer_transcript_upload'] ?? null ), 'WP Codebox release fixture must upload the canonical compact reviewer transcript.' );
 $assert( true === ( $release['canonical_transcript_privacy_boundary'] ?? null ), 'WP Codebox release fixture must preserve the canonical transcript privacy boundary.' );
 $assert( true === ( $release['pre_sanitization_canonical_reviewer_evidence_descriptor'] ?? null ), 'WP Codebox release fixture must preserve the pre-sanitization canonical reviewer-evidence descriptor.' );
+$assert( true === ( $release['reviewer_safe_workflow_result_projection'] ?? null ), 'WP Codebox release fixture must require the reviewer-safe workflow-result projection.' );
 $native_result_path = $release['native_result_path'] ?? null;
 $workflow_result_path = $release['workflow_result_path'] ?? null;
 $assert( '.codebox/native-agent-task-result.json' === $native_result_path, 'WP Codebox release fixture must declare the controlled native result path.' );
@@ -266,6 +267,16 @@ $assert( str_contains( $producer_upload, 'Canonical transcript digest does not m
 $assert( str_contains( $producer_upload, 'schema: "wp-codebox/reviewer-agent-transcript/v1"' ) && str_contains( $producer_upload, '".codebox", "agent-task-artifacts", "transcript.json"' ), 'WP Codebox must upload the compact reviewer transcript at its controlled path.' );
 $assert( str_contains( $producer_upload, 'source_sha256: actualDigest, projection_sha256: projectionDigest' ) && str_contains( $producer_upload, 'canonical_transcripts: [transcript]' ), 'WP Codebox must retain verified canonical transcript provenance.' );
 $assert( str_contains( $producer_upload, 'omitted_payloads' ) && str_contains( $producer_upload, '[host-path]' ) && str_contains( $producer_upload, '[redacted-source-content]' ), 'WP Codebox reviewer transcripts must omit payloads and redact private paths or source content.' );
+$projection_start = strpos( $producer_upload, 'function projectWorkflowResult(value)' );
+$projection_end = strpos( $producer_upload, 'function safeTargetPath(value)', $projection_start );
+$assert( false !== $projection_start && false !== $projection_end, 'WP Codebox must define the reviewer-safe workflow-result projection.' );
+$workflow_result_projection = substr( $producer_upload, $projection_start, $projection_end - $projection_start );
+foreach ( array( 'schema: result.schema', 'run_id: result.run_id', 'status: result.status', 'success: result.success', 'request_path: result.request_path', 'reviewer_evidence:', 'verification,', 'publication: result.publication', 'transcript: result.transcript', 'artifacts: result.artifacts', 'outputs: outputs.projections', 'access: result.access', 'publication_verification: result.publication_verification', 'publication_error: result.publication_error', 'failure: result.failure', 'projection_error: result.projection_error' ) as $public_projection_field ) {
+	$assert( str_contains( $workflow_result_projection, $public_projection_field ), "WP Codebox reviewer-safe workflow-result projection must retain {$public_projection_field}." );
+}
+foreach ( array( 'runtime_result', 'engine_data', 'model', 'provider', 'tool_calls', 'tool_results', 'source_package_root' ) as $private_projection_field ) {
+	$assert( ! str_contains( $workflow_result_projection, $private_projection_field ), "WP Codebox reviewer-safe workflow-result projection must exclude {$private_projection_field}." );
+}
 $assert( (string) $upload_regression_run === ( $producer_upload_regression['run_id'] ?? null ), 'WP Codebox upload regression fixture must match the recorded run.' );
 $assert( (string) $diagnostic_regression_run === ( $producer_diagnostic_regression['run_id'] ?? null ), 'WP Codebox diagnostic regression fixture must match the recorded run.' );
 $diagnostic = $producer_diagnostic_regression['result']['diagnostics'][0] ?? null;
@@ -274,7 +285,7 @@ $assert( 'failed-on-runtime-source' === ( $producer_upload_regression['observed'
 $assert( in_array( '.codebox/agent-task-request.json', $producer_upload_regression['observed']['uploaded'] ?? array(), true ), 'WP Codebox upload regression fixture must retain the controlled request upload.' );
 $assert( ! array_intersect( array( 'MODEL_PROVIDER_SECRET_1', 'MODEL_PROVIDER_SECRET_2', 'MODEL_PROVIDER_SECRET_3', 'MODEL_PROVIDER_SECRET_4', 'MODEL_PROVIDER_SECRET_5' ), array_keys( $caller_secrets ) ), 'Docs Agent must forward only the OPENAI_API_KEY provider secret name.' );
 
-$assert( str_contains( $workflow, 'output_projections="$(jq -cn --arg path \'metadata.runner_workspace_publication.url\' --argjson required "$success_requires_pr" \'{docs_agent_publication:{path:$path,required:$required}}\')"' ), 'Docs Agent must define the v0.12.20 publication projection descriptor.' );
+$assert( str_contains( $workflow, 'output_projections="$(jq -cn --arg path \'metadata.runner_workspace_publication.url\' --argjson required "$success_requires_pr" \'{docs_agent_publication:{path:$path,required:$required}}\')"' ), 'Docs Agent must define the v0.12.21 publication projection descriptor.' );
 $docs_projections = array(
 	'docs_agent_publication' => array(
 		'path'     => 'metadata.runner_workspace_publication.url',
@@ -284,7 +295,7 @@ $docs_projections = array(
 $publication_descriptor = $docs_projections['docs_agent_publication'] ?? null;
 $assert( is_array( $publication_descriptor ), 'Docs Agent must define the docs_agent_publication projection descriptor.' );
 $publication_path = $publication_descriptor['path'] ?? null;
-$assert( 'metadata.runner_workspace_publication.url' === $publication_path, 'Docs Agent publication projection must use the v0.12.20 runner workspace publication URL path.' );
+$assert( 'metadata.runner_workspace_publication.url' === $publication_path, 'Docs Agent publication projection must use the v0.12.21 runner workspace publication URL path.' );
 
 $producer_request_fixture = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/contracts/agent-task-workflow-request.fixture.json' );
 $producer_projection_paths = array_values( $producer_request_fixture['outputs']['projections'] ?? array() );
