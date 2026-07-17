@@ -86,6 +86,7 @@ The consumer API is product-level. Consumer repositories configure the documenta
 | --- | --- | --- |
 | `audience` | `technical` | `technical` for developer/operator docs, `user` for non-technical product docs, or `skills` for live skill upkeep. |
 | `run_kind` | `maintenance` | `bootstrap` establishes initial documentation and requires publication; `maintenance` permits a no-change result. |
+| `require_pr` | `false` | Require a published target-repository PR for success. Bootstrap always requires publication; set this for maintenance acceptance or remediation runs that must prove a real PR was opened. |
 | `base_ref` | `main` | Base branch or ref for the maintenance PR. |
 | `docs_branch` | `docs-agent/docs-upkeep` | Stable branch reused for the canonical Docs Agent PR. |
 | `writable_paths` | `README.md,docs/**` | Comma-separated allowlist of paths Docs Agent may edit. |
@@ -125,7 +126,7 @@ Docs Agent opens or updates one canonical PR for the configured branch.
 - If maintenance is needed, changes are written only under `writable_paths`.
 - If the canonical PR is already open, later runs reuse the same `docs_branch` and PR instead of creating duplicates.
 - `validation_dependencies` is an optional caller-owned reusable-workflow input. It is passed through the portable recipe and runs before verification commands when a live runner execution needs setup.
-- `job_status`, `transcript_summary`, `credential_mode`, `success_requires_pr`, `validation_dependencies`, and bounded `projected_outputs_json` are exposed as reusable workflow outputs. A `run_agent: false` call returns `job_status: skipped`; a `dry_run: true` call validates without starting a model run. `OPENAI_API_KEY` is only required for a live OpenAI run and is never included in recipes, workflow outputs, or artifacts. Bootstrap lanes require a published pull request and its projected URL for success; maintenance lanes allow a no-change result with no publication projection. Typed artifact declarations remain optional and are exposed as `declared_artifacts_json` for review/debugging. Raw engine data is not exposed as a workflow output or uploaded reviewer artifact.
+- `job_status`, `transcript_summary`, `credential_mode`, `success_requires_pr`, `validation_dependencies`, and bounded `projected_outputs_json` are exposed as reusable workflow outputs. A `run_agent: false` call returns `job_status: skipped`; a `dry_run: true` call validates without starting a model run. `OPENAI_API_KEY` is only required for a live OpenAI run and is never included in recipes, workflow outputs, or artifacts. Bootstrap lanes require a published pull request and its projected URL for success. Maintenance lanes allow a no-change result by default; set `require_pr: true` when an acceptance or remediation run must fail without a valid target-repository PR. Typed artifact declarations remain optional and are exposed as `declared_artifacts_json` for review/debugging. Raw engine data is not exposed as a workflow output or uploaded reviewer artifact.
 
 ## Quality Bar
 

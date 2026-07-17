@@ -15,6 +15,10 @@ env:
         description: 'Docs Agent flow kind to prepare: bootstrap or maintenance.'
         type: string
         default: maintenance
+      require_pr:
+        description: Require a published target-repository pull request for successful maintenance.
+        type: boolean
+        default: false
       base_ref:
         description: Base branch or ref for the documentation pull request.
         type: string
@@ -108,6 +112,7 @@ jobs:
         env:
           AUDIENCE: ${{ inputs.audience }}
           RUN_KIND: ${{ inputs.run_kind }}
+          REQUIRE_PR: ${{ inputs.require_pr }}
           INPUT_VERIFICATION_COMMANDS: ${{ inputs.verification_commands }}
           INPUT_DRIFT_CHECKS: ${{ inputs.drift_checks }}
           INPUT_VALIDATION_DEPENDENCIES: ${{ inputs.validation_dependencies }}
@@ -129,35 +134,35 @@ jobs:
               package_path="bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json"
               agent_slug="technical-docs-bootstrap-agent"
               package_digest="sha256-bytes-v1:9050c9b4364a5a91b057fd51ff5f667efc320f9d6776160ab3e7cf4fd5e4f0e6"
-              success_requires_pr=true
+              lane_requires_pr=true
               default_prompt="Bootstrap source-grounded developer documentation that helps developers understand, use, and extend the code in the repository."
               ;;
             technical:maintenance)
               package_path="bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json"
               agent_slug="technical-docs-maintenance-agent"
               package_digest="sha256-bytes-v1:6057aad4eb7c5f0320ccfbce9da93a5fa1d3fc521478b5571ed81c28129325aa"
-              success_requires_pr=false
+              lane_requires_pr=false
               default_prompt="Maintain source-grounded developer documentation that helps developers understand, use, and extend the code in the repository."
               ;;
             user:bootstrap)
               package_path="bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json"
               agent_slug="user-docs-bootstrap-agent"
               package_digest="sha256-bytes-v1:ee558a73f2a393c1912d62f7f40dbdd4bc31ac0168c3c248316b3430258c55cd"
-              success_requires_pr=true
+              lane_requires_pr=true
               default_prompt="Bootstrap source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs."
               ;;
             user:maintenance)
               package_path="bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json"
               agent_slug="user-docs-maintenance-agent"
               package_digest="sha256-bytes-v1:e2248f014c1409a8d4c5cb303ea37c0b24ae05babd02d40c6032160daf60d4c4"
-              success_requires_pr=false
+              lane_requires_pr=false
               default_prompt="Maintain source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs."
               ;;
             skills:maintenance)
               package_path="bundles/skills-agent/native/skills-maintenance-agent.agent.json"
               agent_slug="skills-maintenance-agent"
               package_digest="sha256-bytes-v1:c643f8bd31864cdd607f9025a000694a65a3fdf91532e4311fbac541e708a2b2"
-              success_requires_pr=false
+              lane_requires_pr=false
               default_prompt="Maintain live agent skill instructions and generated packaged skill outputs."
               ;;
             *)
@@ -165,6 +170,11 @@ jobs:
               exit 1
               ;;
           esac
+
+          success_requires_pr="$lane_requires_pr"
+          if [ "$REQUIRE_PR" = true ]; then
+            success_requires_pr=true
+          fi
 
           if [ "$RUN_AGENT" = true ] && [ "$DRY_RUN" != true ] && [ -z "$OPENAI_API_KEY" ]; then
             printf 'OPENAI_API_KEY is required when run_agent=true for the openai provider. Set run_agent=false or dry_run=true for an explicit non-live path.\n' >&2

@@ -195,6 +195,7 @@ $assert( preg_match( '/secrets:\n(?:      [A-Z_]+:\n(?:        .*\n)*        req
 $assert( '${{ inputs.run_agent }}' === ( $caller_inputs['run_agent'] ?? null ), 'Docs Agent must delegate run_agent so WP Codebox reports deterministic skipped status.' );
 $assert( '${{ inputs.dry_run }}' === ( $caller_inputs['dry_run'] ?? null ), 'Docs Agent must delegate dry_run so WP Codebox validates without starting a live run.' );
 $assert( preg_match( '/validation_dependencies:\n        description: Optional caller-owned command that installs dependencies needed before validation\.\n        type: string\n        default: ""/', $workflow ) === 1, 'Docs Agent must expose validation_dependencies as an optional empty-string reusable-workflow input.' );
+$assert( preg_match( '/require_pr:\n        description: Require a published target-repository pull request for successful maintenance\.\n        type: boolean\n        default: false/', $workflow ) === 1, 'Docs Agent must expose require_pr as an optional boolean reusable-workflow input.' );
 $assert( preg_match( '/\n    if: inputs\.run_agent\n/', $workflow ) !== 1, 'Docs Agent must not skip the producer job outside the producer contract.' );
 $assert( preg_match( '/permissions:\n      contents: write\n      pull-requests: write\n      issues: write/', $workflow ) === 1, 'Docs Agent must declare caller-token publication permissions.' );
 $assert( str_contains( $workflow, 'if [ "$RUN_AGENT" = true ] && [ "$DRY_RUN" != true ] && [ -z "$OPENAI_API_KEY" ]; then' ), 'Docs Agent must fail closed for a live OpenAI run without OPENAI_API_KEY.' );
@@ -332,7 +333,19 @@ foreach ( $lane_matrix as $lane => $requires_pr ) {
 	$case = preg_quote( $lane . ')', '/' );
 	$assert( 1 === preg_match( '/case "\$AUDIENCE:\$RUN_KIND" in.*?' . $case . '(?<body>.*?);;(?=\n            )/s', $workflow, $match ), "Docs Agent must define the {$lane} lane." );
 	$expected = $requires_pr ? 'true' : 'false';
-	$assert( str_contains( $match['body'], "success_requires_pr={$expected}" ), "Docs Agent {$lane} lane success_requires_pr must be {$expected}." );
+	$assert( str_contains( $match['body'], "lane_requires_pr={$expected}" ), "Docs Agent {$lane} lane publication default must be {$expected}." );
+}
+$assert( str_contains( $workflow, 'REQUIRE_PR: ${{ inputs.require_pr }}' ), 'Docs Agent must make the caller publication policy available while resolving the recipe.' );
+$assert( str_contains( $workflow, 'success_requires_pr="$lane_requires_pr"' ) && str_contains( $workflow, 'if [ "$REQUIRE_PR" = true ]; then' ) && str_contains( $workflow, 'success_requires_pr=true' ), 'Docs Agent must resolve caller PR policy after lane defaults so bootstrap remains required and opted-in maintenance fails closed.' );
+$publication_policy_cases = array(
+	'maintenance default' => array( false, false, false ),
+	'maintenance required' => array( false, true, true ),
+	'bootstrap default' => array( true, false, true ),
+	'bootstrap required' => array( true, true, true ),
+);
+foreach ( $publication_policy_cases as $case => list( $lane_requires_pr, $require_pr, $expected ) ) {
+	$resolved = $lane_requires_pr || $require_pr;
+	$assert( $expected === $resolved, "Docs Agent {$case} publication policy must resolve deterministically." );
 }
 $assert( '${{ needs.prepare.outputs.success_requires_pr == \'true\' }}' === ( $caller_inputs['success_requires_pr'] ?? null ), 'Docs Agent must pass the selected lane publication policy to WP Codebox.' );
 $assert( array( 'job' => 'prepare', 'output' => 'success_requires_pr' ) === ( $caller_outputs['success_requires_pr'] ?? null ), 'Docs Agent must expose the selected publication policy to consumers.' );
