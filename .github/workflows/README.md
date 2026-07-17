@@ -1,6 +1,6 @@
 # Docs Agent Workflows
 
-`maintain-docs.yml` is the consumer-facing reusable workflow for scheduled upkeep. Consumer repositories pass product-level inputs such as `audience`, `base_ref`, `docs_branch`, `writable_paths`, `validation_dependencies`, `verification_commands`, `drift_checks`, `prompt`, `run_agent`, and `dry_run`.
+`maintain-docs.yml` is the consumer-facing reusable workflow for scheduled upkeep. Consumer repositories pass product-level inputs such as `audience`, `require_pr`, `base_ref`, `docs_branch`, `writable_paths`, `validation_dependencies`, `verification_commands`, `drift_checks`, `prompt`, `run_agent`, and `dry_run`.
 
 The consumer workflow supports separate lanes for technical docs, user docs, and live skills maintenance. Use `audience: skills` with skills/package writable paths instead of broad docs paths.
 
@@ -9,6 +9,8 @@ The canonical execution architecture consists of exactly five native Agents API 
 Schedule skills upkeep separately from docs upkeep. The skills lane should use a dedicated branch such as `docs-agent/skills-upkeep`, skill/package writable paths, verification commands, and drift checks through the portable recipe.
 
 When validation setup, verification commands, or drift checks are needed, pass them through the reusable workflow inputs above. `validation_dependencies` is an optional caller-owned command that runs before verification during a live execution. The reusable workflow includes those executable inputs in the portable recipe and keeps the target repository as the writable Docs Agent workspace.
+
+Maintenance permits a no-op by default. Set `require_pr: true` for an acceptance or remediation run that must produce a valid target-repository PR; bootstrap always requires publication.
 
 The reusable workflow declares the expected typed review artifacts for Docs Agent runs: transcript, change summary, verification report, drift report, and workspace publication links. `maintain-docs.yml` writes those declarations into the portable recipe and exposes the declaration objects through `declared_artifacts_json`.
 
