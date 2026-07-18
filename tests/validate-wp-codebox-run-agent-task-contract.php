@@ -357,6 +357,18 @@ $assert( '${{ needs.prepare.outputs.success_requires_pr == \'true\' }}' === ( $c
 $assert( array( 'job' => 'prepare', 'output' => 'success_requires_pr' ) === ( $caller_outputs['success_requires_pr'] ?? null ), 'Docs Agent must expose the selected publication policy to consumers.' );
 $assert( str_contains( $workflow, 'successRequiresPr:$successRequiresPr' ), 'Docs Agent recipe must retain the selected publication policy.' );
 $assert( str_contains( $workflow, '--arg validationDependencies "$INPUT_VALIDATION_DEPENDENCIES"' ), 'Docs Agent recipe must retain caller-owned validation dependencies.' );
+$assert( str_contains( $workflow, '{enabled:true,repo:$repo,clone_url:("https://github.com/" + $repo + ".git"),branch:$branch,branch_prefix:$branch,base:$baseRef,from:("origin/" + $baseRef)}' ), 'Docs Agent runner workspace publication must forward base_ref as base and preserve origin-qualified from.' );
+$runner_workspace_json = shell_exec( "jq -cn --arg repo 'Automattic/example' --arg branch 'docs-agent/docs-upkeep' --arg baseRef 'trunk' '{enabled:true,repo:\$repo,clone_url:(\"https://github.com/\" + \$repo + \".git\"),branch:\$branch,branch_prefix:\$branch,base:\$baseRef,from:(\"origin/\" + \$baseRef)}'" );
+$runner_workspace      = json_decode( (string) $runner_workspace_json, true );
+$assert( array(
+	'enabled'       => true,
+	'repo'          => 'Automattic/example',
+	'clone_url'     => 'https://github.com/Automattic/example.git',
+	'branch'        => 'docs-agent/docs-upkeep',
+	'branch_prefix' => 'docs-agent/docs-upkeep',
+	'base'          => 'trunk',
+	'from'          => 'origin/trunk',
+) === $runner_workspace, 'Docs Agent must emit trunk as publication base and origin/trunk as runner workspace from.' );
 
 preg_match( "/artifact_declarations='(?<json>\[.*?\])'\n/s", $workflow, $artifact_declarations_match );
 $assert( isset( $artifact_declarations_match['json'] ), 'Docs Agent must define typed artifact declarations.' );
