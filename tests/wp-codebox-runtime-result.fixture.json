@@ -2,7 +2,9 @@
   "success": true,
   "metadata": {
     "runner_workspace_publication": {
-      "url": "https://github.com/Automattic/example-target/pull/42"
+      "pull_request": {
+        "url": "https://github.com/Automattic/example-target/pull/42"
+      }
     }
   }
 }

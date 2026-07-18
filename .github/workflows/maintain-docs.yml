@@ -235,7 +235,7 @@ jobs:
             --arg baseRef "$INPUT_BASE_REF" \
             '{enabled:true,repo:$repo,clone_url:("https://github.com/" + $repo + ".git"),branch:$branch,branch_prefix:$branch,base:$baseRef,from:("origin/" + $baseRef)}')"
           expected_artifacts="$(printf '%s' "$artifact_declarations" | jq -c 'map(.name)')"
-          output_projections="$(jq -cn --arg path 'metadata.runner_workspace_publication.url' --argjson required "$success_requires_pr" '{docs_agent_publication:{path:$path,required:$required}}')"
+          output_projections="$(jq -cn --arg path 'metadata.runner_workspace_publication.pull_request.url' --argjson required "$success_requires_pr" '{docs_agent_publication:{path:$path,required:$required}}')"
 
           {
             printf 'recipe_json<<EOF\n%s\nEOF\n' "$recipe_json"
