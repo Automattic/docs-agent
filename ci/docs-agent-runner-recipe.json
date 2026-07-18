@@ -49,7 +49,7 @@
   "outputs": {
     "suggestedMappings": {
       "docs_agent_pr_url": "metadata.docs_agent.pr.url",
-      "runner_workspace_pr_url": "metadata.runner_workspace_publication.url",
+      "runner_workspace_pr_url": "metadata.runner_workspace_publication.pull_request.url",
       "success_status": "metadata.success_status"
     }
   }

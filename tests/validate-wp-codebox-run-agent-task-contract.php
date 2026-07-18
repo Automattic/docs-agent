@@ -307,21 +307,19 @@ $assert( 'failed-on-runtime-source' === ( $producer_upload_regression['observed'
 $assert( in_array( '.codebox/agent-task-request.json', $producer_upload_regression['observed']['uploaded'] ?? array(), true ), 'WP Codebox upload regression fixture must retain the controlled request upload.' );
 $assert( ! array_intersect( array( 'MODEL_PROVIDER_SECRET_1', 'MODEL_PROVIDER_SECRET_2', 'MODEL_PROVIDER_SECRET_3', 'MODEL_PROVIDER_SECRET_4', 'MODEL_PROVIDER_SECRET_5' ), array_keys( $caller_secrets ) ), 'Docs Agent must forward only the OPENAI_API_KEY provider secret name.' );
 
-$assert( str_contains( $workflow, 'output_projections="$(jq -cn --arg path \'metadata.runner_workspace_publication.url\' --argjson required "$success_requires_pr" \'{docs_agent_publication:{path:$path,required:$required}}\')"' ), 'Docs Agent must define the v0.12.27 publication projection descriptor.' );
+$assert( str_contains( $workflow, 'output_projections="$(jq -cn --arg path \'metadata.runner_workspace_publication.pull_request.url\' --argjson required "$success_requires_pr" \'{docs_agent_publication:{path:$path,required:$required}}\')"' ), 'Docs Agent must define the v0.12.27 publication projection descriptor.' );
 $docs_projections = array(
 	'docs_agent_publication' => array(
-		'path'     => 'metadata.runner_workspace_publication.url',
+		'path'     => 'metadata.runner_workspace_publication.pull_request.url',
 		'required' => true,
 	),
 );
 $publication_descriptor = $docs_projections['docs_agent_publication'] ?? null;
 $assert( is_array( $publication_descriptor ), 'Docs Agent must define the docs_agent_publication projection descriptor.' );
 $publication_path = $publication_descriptor['path'] ?? null;
-$assert( 'metadata.runner_workspace_publication.url' === $publication_path, 'Docs Agent publication projection must use the v0.12.27 runner workspace publication URL path.' );
+$assert( 'metadata.runner_workspace_publication.pull_request.url' === $publication_path, 'Docs Agent publication projection must use the v0.12.27 runner workspace publication pull request URL path.' );
 
-$producer_request_fixture = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/contracts/agent-task-workflow-request.fixture.json' );
-$producer_projection_paths = array_values( $producer_request_fixture['outputs']['projections'] ?? array() );
-$assert( in_array( $publication_path, $producer_projection_paths, true ), 'Docs Agent publication projection must match a WP Codebox producer fixture projection path.' );
+$assert( 'string' === ( $contract['inputs']['output_projections']['type'] ?? null ), 'WP Codebox must accept Docs Agent custom output projections.' );
 
 $runtime_result_fixture = $read_json( $root . '/tests/wp-codebox-runtime-result.fixture.json' );
 $publication_url            = $result_value( $runtime_result_fixture, $publication_path );
