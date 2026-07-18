@@ -2,7 +2,7 @@ name: Maintain Docs
 
 env:
   # Advance this revision and all package digests together when package bytes change.
-  DOCS_AGENT_PACKAGE_REVISION: 7b2df969c34de112ec7ad13189ba94226a7f76f3
+  DOCS_AGENT_PACKAGE_REVISION: 85443eb91c12b2759d8e207f1ae4421407b4cc5e
 
 'on':
   workflow_call:
@@ -140,7 +140,7 @@ jobs:
             technical:maintenance)
               package_path="bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json"
               agent_slug="technical-docs-maintenance-agent"
-              package_digest="sha256-bytes-v1:6057aad4eb7c5f0320ccfbce9da93a5fa1d3fc521478b5571ed81c28129325aa"
+              package_digest="sha256-bytes-v1:78fef9f8d787866c7b48b8f044769d38c0528778c8e2a82af816f9f8ea65014f"
               lane_requires_pr=false
               default_prompt="Maintain source-grounded developer documentation that helps developers understand, use, and extend the code in the repository."
               ;;
