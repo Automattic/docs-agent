@@ -38,6 +38,12 @@
     },
     "changed_paths": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
   },
+  "allOf": [
+    {
+      "if": { "properties": { "run_kind": { "const": "maintenance" } }, "required": ["run_kind"] },
+      "then": { "properties": { "scope": { "properties": { "source_basis": { "const": "bounded_delta" } } } } }
+    }
+  ],
   "$defs": {
     "nonEmptyStrings": {
       "type": "array",

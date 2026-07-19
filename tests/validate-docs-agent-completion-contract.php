@@ -64,7 +64,13 @@ $options = static function ( string $workspace, array $overrides = array() ): ar
 			'run_kind'           => 'maintenance',
 			'writable_paths'      => 'README.md,docs/**',
 			'bootstrap_contract' => array(),
-			'source_delta'       => array(),
+			'source_delta'       => array(
+				array(
+					'id'                            => 'service-contract',
+					'source_refs'                   => array( 'src/service.php:10-40' ),
+					'requires_documentation_change' => false,
+				),
+			),
 		),
 		$overrides
 	);
@@ -94,12 +100,28 @@ try {
 	$workspaces[] = $no_change;
 	$result = docs_agent_validate_report( $base_report( 'no_changes' ), $options( $no_change ) );
 	$assert( 'no_changes' === $result['outcome'], 'Evidence-backed maintenance no_changes must pass on a clean diff.' );
+	$expect_failure( 'SOURCE_DELTA_EMPTY', static fn() => docs_agent_validate_report( $base_report( 'no_changes' ), $options( $no_change, array( 'source_delta' => array() ) ) ) );
 	$transcript_root = $no_change . '/.codebox/agent-task-artifacts/runtime/files';
 	mkdir( $transcript_root, 0700, true );
 	$report_json = json_encode( $base_report( 'no_changes' ), JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR );
 	file_put_contents( $transcript_root . '/transcript.json', json_encode( array( 'messages' => array( array( 'role' => 'assistant', 'content' => "<DOCS_AGENT_COMPLETION_REPORT>{$report_json}</DOCS_AGENT_COMPLETION_REPORT>" ) ) ), JSON_THROW_ON_ERROR ) );
 	$extracted = docs_agent_report_from_transcripts( $no_change . '/.codebox/agent-task-artifacts' );
 	$assert( 'no_changes' === $extracted['outcome'], 'The live transcript transport must materialize one parseable completion report.' );
+	$validator    = dirname( __DIR__ ) . '/scripts/validate-docs-agent-completion.php';
+	$source_delta = base64_encode( (string) json_encode( $options( $no_change )['source_delta'], JSON_THROW_ON_ERROR ) );
+	$run(
+		'php ' . escapeshellarg( $validator ) .
+		' --workspace ' . escapeshellarg( $no_change ) .
+		' --lane technical --run-kind maintenance --writable-paths ' . escapeshellarg( 'README.md,docs/**' ) .
+		' --source-delta-b64 ' . escapeshellarg( $source_delta ) .
+		' --transcript-root ' . escapeshellarg( $no_change . '/.codebox/agent-task-artifacts' ) .
+		' --artifact-path docs-agent-completion-report.json',
+		$no_change
+	);
+	$artifact_path = $no_change . '/.codebox/agent-task-artifacts/docs-agent-completion-report.json';
+	$expected_bytes = '{"schema":"docs-agent/completion-report/v1","lane":"technical","run_kind":"maintenance","outcome":"no_changes","scope":{"source_basis":"bounded_delta","source_refs":["src/service.php:10-40"],"documentation_surfaces":["README.md","docs/guide.md"]},"items":[{"id":"service-contract","source_refs":["src/service.php:10-40"],"documentation_paths":["docs/guide.md"],"disposition":"verified_current","evidence":"Compared the public method and failure behavior with the guide."}],"changed_paths":[]}' . "\n";
+	$assert( $expected_bytes === file_get_contents( $artifact_path ), 'The validator must write deterministic canonical report bytes at the declared artifact path.' );
+	$expect_failure( 'ARTIFACT_PATH_INVALID', static fn() => docs_agent_write_report_artifact( $extracted, $no_change, '../completion.json' ) );
 
 	// A no-op write cannot support a changes outcome.
 	$noop = $workspace();
@@ -114,9 +136,18 @@ try {
 		'KNOWN_DRIFT_NO_CHANGE',
 		static fn() => docs_agent_validate_report(
 			$base_report( 'no_changes' ),
-			$options( $known_drift, array( 'source_delta' => array( array( 'id' => 'service-contract', 'requires_documentation_change' => true ) ) ) )
+			$options( $known_drift, array( 'source_delta' => array( array( 'id' => 'service-contract', 'source_refs' => array( 'src/service.php:10-40' ), 'requires_documentation_change' => true ) ) ) )
 		)
 	);
+
+	// Every caller-bounded item and source ref must be represented in the report.
+	$incomplete_delta = array(
+		array( 'id' => 'service-contract', 'source_refs' => array( 'src/service.php:10-40', 'src/service.php:50-60' ), 'requires_documentation_change' => false ),
+		array( 'id' => 'missing-contract', 'source_refs' => array( 'src/missing.php:1-20' ), 'requires_documentation_change' => false ),
+	);
+	$expect_failure( 'SOURCE_DELTA_INCOMPLETE', static fn() => docs_agent_validate_report( $base_report( 'no_changes' ), $options( $no_change, array( 'source_delta' => $incomplete_delta ) ) ) );
+	$missing_ref_delta = array( array( 'id' => 'service-contract', 'source_refs' => array( 'src/service.php:10-40', 'src/service.php:50-60' ), 'requires_documentation_change' => false ) );
+	$expect_failure( 'SOURCE_DELTA_INCOMPLETE', static fn() => docs_agent_validate_report( $base_report( 'no_changes' ), $options( $no_change, array( 'source_delta' => $missing_ref_delta ) ) ) );
 
 	// Dirty no_changes, report/diff mismatch, and scope violations are distinct.
 	$dirty = $workspace();
@@ -154,7 +185,7 @@ try {
 		'entry_points'      => array( array( 'path' => 'README.md', 'must_link_to' => array( 'docs/architecture.md', 'docs/setup.md' ) ) ),
 		'forbidden_phrases' => array( 'TODO: document this' ),
 	);
-	$result = docs_agent_validate_report( $bootstrap_report, $options( $bootstrap, array( 'run_kind' => 'bootstrap', 'bootstrap_contract' => $bootstrap_contract ) ) );
+	$result = docs_agent_validate_report( $bootstrap_report, $options( $bootstrap, array( 'run_kind' => 'bootstrap', 'bootstrap_contract' => $bootstrap_contract, 'source_delta' => array() ) ) );
 	$assert( 3 === count( $result['changed_paths'] ), 'Bootstrap must validate its complete actual documentation diff.' );
 
 	$thin_bootstrap = $workspace();
@@ -167,7 +198,7 @@ try {
 		'BOOTSTRAP_REQUIRED_PATH',
 		static fn() => docs_agent_validate_report(
 			$thin_report,
-			$options( $thin_bootstrap, array( 'run_kind' => 'bootstrap', 'bootstrap_contract' => array( 'required_paths' => array( 'docs/guide.md' ), 'required_globs' => array(), 'entry_points' => array(), 'forbidden_phrases' => array() ) ) )
+			$options( $thin_bootstrap, array( 'run_kind' => 'bootstrap', 'bootstrap_contract' => array( 'required_paths' => array( 'docs/guide.md' ), 'required_globs' => array(), 'entry_points' => array(), 'forbidden_phrases' => array() ), 'source_delta' => array() ) )
 		)
 	);
 

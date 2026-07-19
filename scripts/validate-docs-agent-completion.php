@@ -2,8 +2,9 @@
 /**
  * Validate a Docs Agent completion report against the target workspace.
  *
- * The live workflow reads the report from the canonical raw transcript. Tests
- * may pass --report directly to exercise the same semantic validator.
+ * The live workflow reads the report from the canonical raw transcript and
+ * writes validated canonical bytes for declared-artifact staging. Tests may
+ * pass --report directly to exercise the same semantic validator.
  */
 
 declare( strict_types=1 );
@@ -192,6 +193,9 @@ function docs_agent_validate_report( array $report, array $options ): array {
 	}
 	docs_agent_strings( $scope['source_refs'] ?? null, 'scope.source_refs' );
 	docs_agent_strings( $scope['documentation_surfaces'] ?? null, 'scope.documentation_surfaces' );
+	if ( 'maintenance' === $report['run_kind'] && 'bounded_delta' !== $scope['source_basis'] ) {
+		docs_agent_fail( 'REPORT_CONTEXT_MISMATCH', 'Maintenance completion reports must use the caller-bounded source delta.' );
+	}
 	$items = $report['items'];
 	if ( ! is_array( $items ) || ! array_is_list( $items ) || array() === $items ) {
 		docs_agent_fail( 'REPORT_INCOMPLETE', 'Completion report requires at least one evidence-backed disposition.' );
@@ -244,13 +248,27 @@ function docs_agent_validate_report( array $report, array $options ): array {
 	if ( ! is_array( $source_delta ) || ! array_is_list( $source_delta ) ) {
 		docs_agent_fail( 'SOURCE_DELTA_MALFORMED', 'source_delta must be a JSON list.' );
 	}
+	if ( 'maintenance' === $report['run_kind'] && array() === $source_delta ) {
+		docs_agent_fail( 'SOURCE_DELTA_EMPTY', 'Maintenance requires a non-empty caller-bounded source_delta.' );
+	}
+	$delta_ids = array();
 	foreach ( $source_delta as $delta ) {
 		if ( ! is_array( $delta ) || ! is_string( $delta['id'] ?? null ) || '' === trim( $delta['id'] ) || ! is_bool( $delta['requires_documentation_change'] ?? null ) ) {
-			docs_agent_fail( 'SOURCE_DELTA_MALFORMED', 'Each source_delta item requires id and requires_documentation_change.' );
+			docs_agent_fail( 'SOURCE_DELTA_MALFORMED', 'Each source_delta item requires id, source_refs, and requires_documentation_change.' );
 		}
-		$id = trim( $delta['id'] );
+		$id          = trim( $delta['id'] );
+		$source_refs = docs_agent_strings( $delta['source_refs'] ?? null, "source_delta.{$id}.source_refs" );
+		if ( isset( $delta_ids[ $id ] ) ) {
+			docs_agent_fail( 'SOURCE_DELTA_MALFORMED', "source_delta repeats id {$id}." );
+		}
+		$delta_ids[ $id ] = true;
 		if ( ! isset( $item_map[ $id ] ) ) {
 			docs_agent_fail( 'SOURCE_DELTA_INCOMPLETE', "Completion report omits caller source delta {$id}." );
+		}
+		$reported_refs = docs_agent_strings( $item_map[ $id ]['source_refs'], "items.{$id}.source_refs" );
+		$missing_refs  = array_values( array_diff( $source_refs, $reported_refs ) );
+		if ( array() !== $missing_refs ) {
+			docs_agent_fail( 'SOURCE_DELTA_INCOMPLETE', "Completion report item {$id} omits caller source refs: " . implode( ', ', $missing_refs ) );
 		}
 		if ( true === $delta['requires_documentation_change'] && ! in_array( $item_map[ $id ]['disposition'], array( 'created', 'updated' ), true ) ) {
 			docs_agent_fail( 'KNOWN_DRIFT_NO_CHANGE', "Known source drift {$id} requires a documentation change." );
@@ -260,6 +278,83 @@ function docs_agent_validate_report( array $report, array $options ): array {
 		docs_agent_validate_bootstrap_contract( $options['bootstrap_contract'] ?? array(), $workspace, $actual_changes, $outcome );
 	}
 	return array( 'outcome' => $outcome, 'changed_paths' => $actual_changes, 'items' => count( $items ) );
+}
+
+/** @param array<string,mixed> $report */
+function docs_agent_canonical_report_json( array $report ): string {
+	$canonical_strings = static function ( array $values ): array {
+		$values = array_map( static fn( string $value ): string => str_replace( '\\', '/', trim( $value ) ), $values );
+		sort( $values );
+		return array_values( $values );
+	};
+	$items = array_map(
+		static fn( array $item ): array => array(
+			'id'                  => trim( $item['id'] ),
+			'source_refs'         => $canonical_strings( $item['source_refs'] ),
+			'documentation_paths' => $canonical_strings( $item['documentation_paths'] ),
+			'disposition'         => $item['disposition'],
+			'evidence'            => trim( $item['evidence'] ),
+		),
+		$report['items']
+	);
+	usort( $items, static fn( array $left, array $right ): int => $left['id'] <=> $right['id'] );
+	$canonical = array(
+		'schema'        => $report['schema'],
+		'lane'          => $report['lane'],
+		'run_kind'      => $report['run_kind'],
+		'outcome'       => $report['outcome'],
+		'scope'         => array(
+			'source_basis'          => $report['scope']['source_basis'],
+			'source_refs'           => $canonical_strings( $report['scope']['source_refs'] ),
+			'documentation_surfaces' => $canonical_strings( $report['scope']['documentation_surfaces'] ),
+		),
+		'items'         => $items,
+		'changed_paths' => $canonical_strings( $report['changed_paths'] ),
+	);
+	return json_encode( $canonical, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR ) . "\n";
+}
+
+/** @param array<string,mixed> $report */
+function docs_agent_write_report_artifact( array $report, string $workspace, string $artifact_path ): string {
+	$artifact_path = str_replace( '\\', '/', trim( $artifact_path ) );
+	if ( '' === $artifact_path || str_starts_with( $artifact_path, '/' ) || preg_match( '~(?:^|/)\.\.(?:/|$)~', $artifact_path ) || '.json' !== strtolower( substr( $artifact_path, -5 ) ) ) {
+		docs_agent_fail( 'ARTIFACT_PATH_INVALID', 'Completion artifact path must be a relative JSON path under .codebox/agent-task-artifacts.' );
+	}
+	$root = rtrim( $workspace, DIRECTORY_SEPARATOR ) . '/.codebox/agent-task-artifacts';
+	if ( ( ! is_dir( $root ) && ! mkdir( $root, 0700, true ) ) || is_link( $root ) ) {
+		docs_agent_fail( 'ARTIFACT_WRITE_FAILED', 'Completion artifact root must be a writable real directory.' );
+	}
+	$target = $root . '/' . $artifact_path;
+	$parent = $root;
+	foreach ( array_slice( explode( '/', $artifact_path ), 0, -1 ) as $segment ) {
+		if ( '' === $segment || '.' === $segment ) {
+			continue;
+		}
+		$parent .= '/' . $segment;
+		if ( ( ! is_dir( $parent ) && ! mkdir( $parent, 0700 ) ) || is_link( $parent ) ) {
+			docs_agent_fail( 'ARTIFACT_PATH_INVALID', 'Completion artifact path must not traverse symlinks.' );
+		}
+	}
+	if ( is_link( $target ) ) {
+		docs_agent_fail( 'ARTIFACT_PATH_INVALID', 'Completion artifact path must not traverse symlinks.' );
+	}
+	$root_real   = realpath( $root );
+	$parent_real = realpath( $parent );
+	if ( false === $root_real || false === $parent_real || ( $parent_real !== $root_real && ! str_starts_with( $parent_real, $root_real . DIRECTORY_SEPARATOR ) ) ) {
+		docs_agent_fail( 'ARTIFACT_PATH_INVALID', 'Completion artifact path escapes .codebox/agent-task-artifacts.' );
+	}
+	$bytes = docs_agent_canonical_report_json( $report );
+	if ( strlen( $bytes ) > 2 * 1024 * 1024 ) {
+		docs_agent_fail( 'ARTIFACT_TOO_LARGE', 'Completion artifact exceeds the 2 MiB bound.' );
+	}
+	$temp = tempnam( $parent_real, '.docs-agent-completion-' );
+	if ( false === $temp || strlen( $bytes ) !== file_put_contents( $temp, $bytes ) || ! rename( $temp, $target ) ) {
+		if ( is_string( $temp ) ) {
+			@unlink( $temp );
+		}
+		docs_agent_fail( 'ARTIFACT_WRITE_FAILED', 'Could not atomically write the validated completion artifact.' );
+	}
+	return $target;
 }
 
 /** @return array{publish:bool,pr_required:bool} */
@@ -312,9 +407,9 @@ function docs_agent_report_from_transcripts( string $root ): array {
 }
 
 if ( realpath( $_SERVER['SCRIPT_FILENAME'] ?? '' ) === __FILE__ ) {
-	$options = getopt( '', array( 'workspace:', 'lane:', 'run-kind:', 'writable-paths:', 'bootstrap-contract-b64:', 'source-delta-b64:', 'transcript-root:', 'report:' ) );
+	$options = getopt( '', array( 'workspace:', 'lane:', 'run-kind:', 'writable-paths:', 'bootstrap-contract-b64:', 'source-delta-b64:', 'transcript-root:', 'report:', 'artifact-path:' ) );
 	try {
-		foreach ( array( 'workspace', 'lane', 'run-kind', 'writable-paths' ) as $required ) {
+		foreach ( array( 'workspace', 'lane', 'run-kind', 'writable-paths', 'artifact-path' ) as $required ) {
 			if ( ! isset( $options[ $required ] ) || ! is_string( $options[ $required ] ) ) {
 				docs_agent_fail( 'INVOCATION', "Missing required --{$required} option." );
 			}
@@ -336,10 +431,11 @@ if ( realpath( $_SERVER['SCRIPT_FILENAME'] ?? '' ) === __FILE__ ) {
 		$report = isset( $options['report'] ) && is_string( $options['report'] )
 			? docs_agent_decode_object( (string) file_get_contents( $options['report'] ), 'REPORT_MALFORMED', 'Completion report' )
 			: docs_agent_report_from_transcripts( (string) ( $options['transcript-root'] ?? '.codebox/agent-task-artifacts' ) );
-		$result = docs_agent_validate_report(
+		$workspace = realpath( $options['workspace'] ) ?: $options['workspace'];
+		$result    = docs_agent_validate_report(
 			$report,
 			array(
-				'workspace'          => realpath( $options['workspace'] ) ?: $options['workspace'],
+				'workspace'          => $workspace,
 				'lane'               => $options['lane'],
 				'run_kind'           => $options['run-kind'],
 				'writable_paths'      => $options['writable-paths'],
@@ -347,6 +443,7 @@ if ( realpath( $_SERVER['SCRIPT_FILENAME'] ?? '' ) === __FILE__ ) {
 				'source_delta'       => $decode_b64_json( $options['source-delta-b64'] ?? '', 'source_delta', array() ),
 			)
 		);
+		docs_agent_write_report_artifact( $report, $workspace, $options['artifact-path'] );
 		fwrite( STDOUT, 'Docs Agent completion contract passed: ' . json_encode( $result, JSON_UNESCAPED_SLASHES ) . PHP_EOL );
 	} catch ( Docs_Agent_Contract_Failure $error ) {
 		fwrite( STDERR, "docs-agent.completion-contract.{$error->diagnostic_code}: {$error->getMessage()}" . PHP_EOL );
