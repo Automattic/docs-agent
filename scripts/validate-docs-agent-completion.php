@@ -320,7 +320,15 @@ function docs_agent_write_report_artifact( array $report, string $workspace, str
 	if ( '' === $artifact_path || str_starts_with( $artifact_path, '/' ) || preg_match( '~(?:^|/)\.\.(?:/|$)~', $artifact_path ) || '.json' !== strtolower( substr( $artifact_path, -5 ) ) ) {
 		docs_agent_fail( 'ARTIFACT_PATH_INVALID', 'Completion artifact path must be a relative JSON path under .codebox/agent-task-artifacts.' );
 	}
-	$root = rtrim( $workspace, DIRECTORY_SEPARATOR ) . '/.codebox/agent-task-artifacts';
+	$workspace_real = realpath( $workspace );
+	if ( false === $workspace_real ) {
+		docs_agent_fail( 'ARTIFACT_PATH_INVALID', 'Completion artifact workspace must be a real directory.' );
+	}
+	$codebox = $workspace_real . '/.codebox';
+	if ( ( ! is_dir( $codebox ) && ! mkdir( $codebox, 0700 ) ) || is_link( $codebox ) ) {
+		docs_agent_fail( 'ARTIFACT_PATH_INVALID', 'Completion artifact path must not traverse a .codebox symlink.' );
+	}
+	$root = $codebox . '/agent-task-artifacts';
 	if ( ( ! is_dir( $root ) && ! mkdir( $root, 0700, true ) ) || is_link( $root ) ) {
 		docs_agent_fail( 'ARTIFACT_WRITE_FAILED', 'Completion artifact root must be a writable real directory.' );
 	}

@@ -16,9 +16,17 @@
       { "alias": "agents-api", "repository": "Automattic/agents-api", "revision": "main" }
     ],
     "bootstrapContract": {},
-    "sourceDelta": [],
+    "sourceDelta": [
+      { "id": "agents-api-runtime-contract", "source_refs": ["src/runtime/**", "tests/runtime/**"], "requires_documentation_change": false }
+    ],
     "verificationCommands": [],
-    "driftChecks": [],
+    "driftChecks": [
+      {
+        "command": "php .codebox/validate-docs-agent-completion.php --artifact-path docs-agent-completion-report.json ...",
+        "description": "Validate Docs Agent completion report against the actual workspace diff",
+        "artifact": { "name": "docs_agent_completion_report", "type": "DocsAgentCompletionReport", "path": "docs-agent-completion-report.json" }
+      }
+    ],
     "writablePaths": "README.md,docs/**",
     "workspace": {
     "enabled": true,

@@ -79,8 +79,16 @@ $assert( str_contains( $maintain_docs_workflow, '--arg writablePaths "$INPUT_WRI
 $assert( str_contains( $maintain_docs_workflow, 'contextRepositories:$contextRepositories' ), 'maintain-docs.yml must retain read-only context repositories in the portable recipe.' );
 $assert( str_contains( $maintain_docs_workflow, 'bootstrapContract:$bootstrapContract' ), 'maintain-docs.yml must retain caller bootstrap criteria in the portable recipe.' );
 $assert( str_contains( $maintain_docs_workflow, 'sourceDelta:$sourceDelta' ), 'maintain-docs.yml must retain caller-known bounded source deltas in the portable recipe.' );
+$assert( str_contains( $maintain_docs_workflow, 'source_delta must contain at least one caller-bounded item for maintenance.' ), 'maintain-docs.yml must reject empty maintenance source deltas before execution.' );
 $assert( str_contains( $maintain_docs_workflow, 'validate-docs-agent-completion.php' ), 'maintain-docs.yml must execute the Docs Agent-owned completion validator.' );
+$completion_contract_revision = '5c03051f223bfe386927b7af0229eb7213f360d0';
+$assert( str_contains( $maintain_docs_workflow, 'DOCS_AGENT_COMPLETION_CONTRACT_REVISION: ' . $completion_contract_revision ), 'maintain-docs.yml must pin the completion validator to its immutable implementation commit.' );
+$assert( str_contains( $maintain_docs_workflow, 'Automattic/docs-agent/$DOCS_AGENT_COMPLETION_CONTRACT_REVISION/scripts/validate-docs-agent-completion.php' ), 'maintain-docs.yml must fetch the validator independently of native package provenance.' );
+$historical_validator = shell_exec( 'git -C ' . escapeshellarg( $root ) . ' show ' . escapeshellarg( $completion_contract_revision . ':scripts/validate-docs-agent-completion.php' ) );
+$assert( is_string( $historical_validator ) && $historical_validator === file_get_contents( $root . '/scripts/validate-docs-agent-completion.php' ), 'The pinned completion validator revision must contain the current validator bytes.' );
 $assert( str_contains( $maintain_docs_workflow, '$caller + [$completion]' ), 'maintain-docs.yml must keep caller drift checks separate from the completion check.' );
+$assert( str_contains( $maintain_docs_workflow, '--artifact-path \'$completion_artifact_path\'' ), 'maintain-docs.yml must make the validator write the declared completion artifact.' );
+$assert( str_contains( $maintain_docs_workflow, 'artifact:{name:"docs_agent_completion_report",type:"DocsAgentCompletionReport",path:$path}' ), 'The mandatory completion drift check must declare the generic WP Codebox command artifact shape.' );
 $assert( str_contains( $maintain_docs_workflow, 'output_projections:' ), 'maintain-docs.yml must project the bounded runner publication result.' );
 $assert( str_contains( $maintain_docs_workflow, 'OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}' ), 'maintain-docs.yml must explicitly forward OPENAI_API_KEY to the native runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'ACCESS_TOKEN: ${{ github.token }}' ), 'maintain-docs.yml must forward the caller-scoped GitHub token to the native runner.' );
@@ -131,6 +139,13 @@ foreach ( $expected_artifact_schemas as $name => $schema ) {
 	$assert( 'docs-agent/artifact-declaration/v1' === ( $example_artifacts_by_name[ $name ]['schema'] ?? '' ), "Example runner config typed artifact {$name} declaration schema mismatch." );
 	$assert( $schema === ( $example_artifacts_by_name[ $name ]['artifact_schema'] ?? '' ), "Example runner config typed artifact {$name} schema mismatch." );
 }
+$completion_declaration = $example_artifacts_by_name['docs_agent_completion_report'];
+$assert( false === ( $completion_declaration['required'] ?? null ), 'The runtime completion artifact declaration must remain optional until post-command validation runs.' );
+$example_source_delta = $example['runner']['sourceDelta'] ?? array();
+$assert( is_array( $example_source_delta ) && array() !== $example_source_delta && array() !== ( $example_source_delta[0]['source_refs'] ?? array() ), 'The maintenance recipe example must use a non-empty caller-bounded source delta.' );
+$example_completion_checks = array_values( array_filter( $example['runner']['driftChecks'] ?? array(), static fn( $check ): bool => isset( $check['artifact']['name'] ) && 'docs_agent_completion_report' === $check['artifact']['name'] ) );
+$assert( 1 === count( $example_completion_checks ), 'The recipe example must declare exactly one completion command artifact.' );
+$assert( array( 'name' => 'docs_agent_completion_report', 'type' => 'DocsAgentCompletionReport', 'path' => 'docs-agent-completion-report.json' ) === $example_completion_checks[0]['artifact'], 'The example completion command artifact must use the generic name/type/path shape.' );
 
 /*
  * Native Agents API package validation.

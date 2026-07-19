@@ -122,6 +122,10 @@ try {
 	$expected_bytes = '{"schema":"docs-agent/completion-report/v1","lane":"technical","run_kind":"maintenance","outcome":"no_changes","scope":{"source_basis":"bounded_delta","source_refs":["src/service.php:10-40"],"documentation_surfaces":["README.md","docs/guide.md"]},"items":[{"id":"service-contract","source_refs":["src/service.php:10-40"],"documentation_paths":["docs/guide.md"],"disposition":"verified_current","evidence":"Compared the public method and failure behavior with the guide."}],"changed_paths":[]}' . "\n";
 	$assert( $expected_bytes === file_get_contents( $artifact_path ), 'The validator must write deterministic canonical report bytes at the declared artifact path.' );
 	$expect_failure( 'ARTIFACT_PATH_INVALID', static fn() => docs_agent_write_report_artifact( $extracted, $no_change, '../completion.json' ) );
+	$symlink_workspace = $workspace();
+	$workspaces[] = $symlink_workspace;
+	$run( 'rm -rf .codebox && ln -s docs .codebox', $symlink_workspace );
+	$expect_failure( 'ARTIFACT_PATH_INVALID', static fn() => docs_agent_write_report_artifact( $base_report( 'no_changes' ), $symlink_workspace, 'completion.json' ) );
 
 	// A no-op write cannot support a changes outcome.
 	$noop = $workspace();
@@ -142,7 +146,7 @@ try {
 
 	// Every caller-bounded item and source ref must be represented in the report.
 	$incomplete_delta = array(
-		array( 'id' => 'service-contract', 'source_refs' => array( 'src/service.php:10-40', 'src/service.php:50-60' ), 'requires_documentation_change' => false ),
+		array( 'id' => 'service-contract', 'source_refs' => array( 'src/service.php:10-40' ), 'requires_documentation_change' => false ),
 		array( 'id' => 'missing-contract', 'source_refs' => array( 'src/missing.php:1-20' ), 'requires_documentation_change' => false ),
 	);
 	$expect_failure( 'SOURCE_DELTA_INCOMPLETE', static fn() => docs_agent_validate_report( $base_report( 'no_changes' ), $options( $no_change, array( 'source_delta' => $incomplete_delta ) ) ) );

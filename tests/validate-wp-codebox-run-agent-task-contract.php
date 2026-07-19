@@ -111,6 +111,7 @@ $workflow_readme = (string) file_get_contents( $root . '/.github/workflows/READM
 $assert( str_contains( $workflow_readme, 'run `' . $run . '`' ), 'Workflow documentation must retain the regression run reference.' );
 
 $producer_workflow = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/workflows/run-agent-task.yml' );
+$producer_request_builder = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/scripts/run-agent-task/build-codebox-task-request.mjs' );
 $producer_execute = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/scripts/run-agent-task/execute-native-agent-task.mjs' );
 $producer_runtime_sources = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/scripts/run-agent-task/materialize-external-native-package.mjs' );
 $producer_upload = (string) file_get_contents( rtrim( $wp_codebox_dir, '/' ) . '/.github/scripts/run-agent-task/prepare-agent-task-upload.mjs' );
@@ -279,6 +280,14 @@ $assert( str_contains( $producer_execute, '...(error?.evidence ? { evidence: err
 $assert( str_contains( $producer_upload, 'async function stageApplyFailureEvidence(result)' ) && str_contains( $producer_upload, 'apply-failure' ) && str_contains( $producer_upload, 'rejected.patch' ), 'WP Codebox must stage rejected patch and changed-file evidence for upload.' );
 $assert( str_contains( $producer_execute, '.filter((ref) => ref.kind === "codebox-patch" || ref.kind === "codebox-changed-files")' ), 'WP Codebox must treat canonical patch and changed-file references as actionable workspace evidence.' );
 $assert( str_contains( $producer_execute, 'verifyRunnerWorkspaceIntegrity(workspaceApply.integrity)' ) && str_contains( $producer_execute, 'publishRunnerWorkspace' ), 'WP Codebox must verify host-applied changes before publication.' );
+$assert( str_contains( $producer_execute, '["name", "type", "path"]' ), 'WP Codebox command entries must accept the generic name/type/path artifact descriptor.' );
+$assert( str_contains( $producer_request_builder, '...(artifact ? { artifact } : {})' ) && str_contains( $producer_request_builder, '["name", "type", "path"]' ), 'WP Codebox must preserve the generic command artifact descriptor while building the native request.' );
+$assert( str_contains( $producer_execute, 'commandArtifactReference(check.artifact, artifactDeclarations, artifactsPath, kind)' ), 'WP Codebox must validate and reference a successful command artifact.' );
+$assert( str_contains( $producer_execute, 'schema: "wp-codebox/typed-artifact/v1"' ) && str_contains( $producer_execute, 'source: `runner-${kind}-command`' ), 'WP Codebox must add a canonical typed reference for command-produced artifacts.' );
+$drift_artifact_capture = strpos( $producer_execute, 'verification.push(await verificationRecord("drift", check, artifactsPath, request.artifacts?.declarations))' );
+$publication_start = strpos( $producer_execute, 'const publisher = testPublisher' );
+$assert( false !== $drift_artifact_capture && false !== $publication_start && $drift_artifact_capture < $publication_start, 'WP Codebox must capture drift-command artifacts before publication.' );
+$assert( str_contains( $producer_upload, 'const declaredPaths = new Set(declaredArtifactPaths(result, declarations(request)))' ) && str_contains( $producer_upload, 'await stageTextFile(source, join(uploadPath, ".codebox", "agent-task-artifacts", path))' ), 'WP Codebox upload preparation must stage command references only through the declared-artifact allowlist.' );
 $assert( str_contains( $producer_execute, 'runtime_result: redact(runtimeRecord)' ) && str_contains( $producer_execute, '...(downstreamFailure ? { failure:' ), 'WP Codebox must retain normalized runtime evidence when downstream execution fails.' );
 $assert( str_contains( $producer_upload, 'function runtimeProvenance(request)' ) && str_contains( $producer_upload, 'runtime-provenance.json' ), 'WP Codebox uploads must retain runtime provenance without prepared source content.' );
 $assert( str_contains( $producer_upload, 'function compactNativeInput(text)' ) && str_contains( $producer_upload, 'Temporary runner workspace seed paths must never be persisted in artifact uploads.' ), 'WP Codebox uploads must preserve seed provenance without exposing secret-filtered snapshot paths.' );

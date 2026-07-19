@@ -14,7 +14,9 @@
   "runner": {
     "contextRepositories": [],
     "bootstrapContract": {},
-    "sourceDelta": [],
+    "sourceDelta": [
+      { "id": "runtime-contract", "source_refs": ["src/runtime/**"], "requires_documentation_change": false }
+    ],
     "verificationCommands": [],
     "driftChecks": [],
     "writablePaths": "README.md,docs/**",

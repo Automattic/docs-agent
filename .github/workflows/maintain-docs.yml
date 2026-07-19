@@ -3,6 +3,8 @@ name: Maintain Docs
 env:
   # Advance this revision and all package digests together when package bytes change.
   DOCS_AGENT_PACKAGE_REVISION: 85f0d162a7d499fdc1286891371342727d084c88
+  # Advance independently when the post-command completion validator changes.
+  DOCS_AGENT_COMPLETION_CONTRACT_REVISION: 5c03051f223bfe386927b7af0229eb7213f360d0
 
 'on':
   workflow_call:
@@ -40,7 +42,7 @@ env:
         type: string
         default: "{}"
       source_delta:
-        description: Optional JSON array of caller-known source deltas that the completion report must disposition.
+        description: JSON array of caller-bounded source deltas with id, source_refs, and requires_documentation_change; required and non-empty for maintenance.
         type: string
         default: "[]"
       validation_dependencies:
@@ -223,9 +225,13 @@ jobs:
             exit 1
           fi
           source_delta="$(printf '%s' "$INPUT_SOURCE_DELTA" | jq -c '
-            if type != "array" or any(.[]; type != "object" or (.id | type != "string" or length == 0) or (.requires_documentation_change | type != "boolean"))
-            then error("source_delta must be a list of id/requires_documentation_change objects") else . end
+            if type != "array" or any(.[]; type != "object" or (.id | type != "string" or test("\\S") | not) or (.source_refs | type != "array" or length == 0 or any(.[]; type != "string" or test("\\S") | not) or (length != (unique | length))) or (.requires_documentation_change | type != "boolean")) or ([.[].id] | length != (unique | length))
+            then error("source_delta must be a list of unique id/non-empty source_refs/requires_documentation_change objects") else . end
           ')"
+          if [ "$RUN_KIND" = maintenance ] && [ "$(printf '%s' "$source_delta" | jq 'length')" -eq 0 ]; then
+            printf 'source_delta must contain at least one caller-bounded item for maintenance.\n' >&2
+            exit 1
+          fi
           if ! printf '%s' "$DOCS_AGENT_PACKAGE_REVISION" | grep -Eq '^[0-9a-fA-F]{40}$'; then
             printf 'DOCS_AGENT_PACKAGE_REVISION must be a full immutable Docs Agent commit SHA.\n' >&2
             exit 1
@@ -236,7 +242,7 @@ jobs:
             {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_change_summary","type":"DocsAgentChangeSummary","artifact_schema":"docs-agent/change-summary/v1","description":"Reviewable summary of documentation or skill changes made by the run.","required":false},
             {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_verification_report","type":"DocsAgentVerificationReport","artifact_schema":"docs-agent/verification-report/v1","description":"Runner verification command results for the target workspace.","required":false},
             {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_drift_report","type":"DocsAgentDriftReport","artifact_schema":"docs-agent/drift-report/v1","description":"Drift-check results for generated documentation, skills, or packaged outputs.","required":false},
-            {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_completion_report","type":"DocsAgentCompletionReport","artifact_schema":"docs-agent/completion-report/v1","description":"Versioned completion and drift report validated from the canonical native transcript.","required":false},
+            {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_completion_report","type":"DocsAgentCompletionReport","artifact_schema":"docs-agent/completion-report/v1","description":"Versioned completion and drift report validated from the canonical native transcript and staged by WP Codebox.","required":false},
             {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_workspace_publication","type":"DocsAgentWorkspacePublication","artifact_schema":"docs-agent/workspace-publication/v1","description":"Canonical branch and pull request links published by the runner workspace.","required":false}
           ]'
 
@@ -246,6 +252,7 @@ jobs:
             "- End with exactly one <DOCS_AGENT_COMPLETION_REPORT>{JSON}</DOCS_AGENT_COMPLETION_REPORT> block and no other report block.\n" +
             "- JSON schema: docs-agent/completion-report/v1; lane=" + $lane + "; run_kind=" + $run_kind + ".\n" +
             "- Include outcome (changes or no_changes), scope.source_basis, non-empty scope.source_refs and scope.documentation_surfaces, non-empty evidence-backed per-item dispositions, and changed_paths.\n" +
+            "- Maintenance must use bounded_delta and cover every caller source_delta ID and source ref in its matching evidence-backed report item. Bootstrap may use inventory with its positive bootstrap contract.\n" +
             "- changed_paths must exactly match workspace_git_status/workspace_git_diff. A write call without a byte diff is not a change.\n" +
             "- For no_changes, use only verified_current or not_documentation_relevant dispositions, cover every bounded source delta, and leave the documentation diff clean.\n" +
             "- For changes, use created/updated dispositions and report every actual changed path. Never write outside writable paths.\n" +
@@ -298,11 +305,16 @@ jobs:
             '{enabled:true,repo:$repo,clone_url:("https://github.com/" + $repo + ".git"),branch:$branch,branch_prefix:$branch,base:$baseRef,from:("origin/" + $baseRef)}')"
           expected_artifacts="$(printf '%s' "$artifact_declarations" | jq -c 'map(.name)')"
           output_projections="$(jq -cn --arg path 'metadata.runner_workspace_publication.pull_request.url' --argjson required "$success_requires_pr" '{docs_agent_publication:{path:$path,required:$required}}')"
-          contract_url="https://raw.githubusercontent.com/Automattic/docs-agent/$DOCS_AGENT_PACKAGE_REVISION/scripts/validate-docs-agent-completion.php"
+          if ! printf '%s' "$DOCS_AGENT_COMPLETION_CONTRACT_REVISION" | grep -Eq '^[0-9a-fA-F]{40}$'; then
+            printf 'DOCS_AGENT_COMPLETION_CONTRACT_REVISION must be a full immutable Docs Agent commit SHA.\n' >&2
+            exit 1
+          fi
+          contract_url="https://raw.githubusercontent.com/Automattic/docs-agent/$DOCS_AGENT_COMPLETION_CONTRACT_REVISION/scripts/validate-docs-agent-completion.php"
           bootstrap_contract_b64="$(printf '%s' "$bootstrap_contract" | base64 -w0)"
           source_delta_b64="$(printf '%s' "$source_delta" | base64 -w0)"
-          completion_command="curl --fail --silent --show-error '$contract_url' --output .codebox/validate-docs-agent-completion.php && php .codebox/validate-docs-agent-completion.php --workspace . --lane '$AUDIENCE' --run-kind '$RUN_KIND' --writable-paths '$INPUT_WRITABLE_PATHS' --bootstrap-contract-b64 '$bootstrap_contract_b64' --source-delta-b64 '$source_delta_b64' --transcript-root .codebox/agent-task-artifacts"
-          completion_check="$(jq -cn --arg command "$completion_command" '{command:$command,description:"Validate Docs Agent completion report against the actual workspace diff"}')"
+          completion_artifact_path="docs-agent-completion-report.json"
+          completion_command="curl --fail --silent --show-error '$contract_url' --output .codebox/validate-docs-agent-completion.php && php .codebox/validate-docs-agent-completion.php --workspace . --lane '$AUDIENCE' --run-kind '$RUN_KIND' --writable-paths '$INPUT_WRITABLE_PATHS' --bootstrap-contract-b64 '$bootstrap_contract_b64' --source-delta-b64 '$source_delta_b64' --transcript-root .codebox/agent-task-artifacts --artifact-path '$completion_artifact_path'"
+          completion_check="$(jq -cn --arg command "$completion_command" --arg path "$completion_artifact_path" '{command:$command,description:"Validate Docs Agent completion report against the actual workspace diff",artifact:{name:"docs_agent_completion_report",type:"DocsAgentCompletionReport",path:$path}}')"
           effective_drift_checks="$(jq -cn --argjson caller "$drift_checks" --argjson completion "$completion_check" '$caller + [$completion]')"
           allowed_repos="$(printf '%s' "$context_repositories" | jq -c --arg target "$GITHUB_REPOSITORY_NAME" '([$target] + map(.repository)) | unique')"
           access_token_repos="$(printf '%s' "$allowed_repos" | jq -r 'join(",")')"
