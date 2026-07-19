@@ -1,6 +1,6 @@
 # Docs Agent Workflows
 
-`maintain-docs.yml` is the consumer-facing reusable workflow for scheduled upkeep. Consumer repositories pass product-level inputs such as `audience`, `require_pr`, `base_ref`, `docs_branch`, `writable_paths`, `validation_dependencies`, `verification_commands`, `drift_checks`, `prompt`, `run_agent`, and `dry_run`.
+`maintain-docs.yml` is the consumer-facing reusable workflow for scheduled upkeep. Consumer repositories pass product-level inputs such as `audience`, `require_pr`, `base_ref`, `docs_branch`, `writable_paths`, `context_repositories`, `bootstrap_contract`, `source_delta`, `validation_dependencies`, `verification_commands`, `drift_checks`, `prompt`, `run_agent`, and `dry_run`.
 
 The consumer workflow supports separate lanes for technical docs, user docs, and live skills maintenance. Use `audience: skills` with skills/package writable paths instead of broad docs paths.
 
@@ -10,9 +10,9 @@ Schedule skills upkeep separately from docs upkeep. The skills lane should use a
 
 When validation setup, verification commands, or drift checks are needed, pass them through the reusable workflow inputs above. `validation_dependencies` is an optional caller-owned command that runs before verification during a live execution. The reusable workflow includes those executable inputs in the portable recipe and keeps the target repository as the writable Docs Agent workspace.
 
-Maintenance permits a no-op by default. Set `require_pr: true` for an acceptance or remediation run that must produce a valid target-repository PR; bootstrap always requires publication.
+Maintenance permits an evidence-backed no-op by default. Exactly one versioned report from the canonical native transcript must cover the bounded source audit and agree with a clean host diff. Set `require_pr: true` for changed maintenance that must produce a valid target-repository PR; bootstrap changes always require publication.
 
-The reusable workflow declares the expected typed review artifacts for Docs Agent runs: transcript, change summary, verification report, drift report, and workspace publication links. `maintain-docs.yml` writes those declarations into the portable recipe and exposes the declaration objects through `declared_artifacts_json`.
+The reusable workflow declares the expected typed review artifacts for Docs Agent runs: transcript, change summary, verification report, drift report, completion report, and workspace publication links. `maintain-docs.yml` writes those declarations into the portable recipe and exposes the declaration objects through `declared_artifacts_json`. Declarations remain review metadata; the Docs Agent-owned semantic validator reads the actual report from the canonical transcript and compares it with the applied host diff.
 
 The target repository grants `contents: write`, `pull-requests: write`, and `issues: write`. Docs Agent forwards the caller-scoped `${{ github.token }}` to WP Codebox for same-repository publication, so consumers do not configure `ACCESS_TOKEN`. `OPENAI_API_KEY` is an optional workflow secret and is required only for a live OpenAI run; skipped and dry-run calls do not require it. `EXTERNAL_PACKAGE_SOURCE_POLICY` remains a separate required v1 JSON secret. Migrate its value to the exact one-line JSON in the root README: it authorizes the selected Docs Agent package, the pinned Agents API component, the pinned PHP AI Client overlay, and the checksum-pinned OpenAI provider artifact. Both secrets are forwarded to WP Codebox without serialization into the task descriptor.
 
@@ -34,10 +34,12 @@ WP Codebox v0.12.29 returns `{ valid: true }` without a failure-only `error` whe
 
 Docs Agent workflow call sites prepare a portable recipe instead of calling a concrete runner. Docs Agent owns the native package, lane, artifact, prompt, and workspace mapping. Consumers depend on Docs Agent inputs and review artifacts, not runner internals.
 
-The recipe boundary covers standalone native package selection, complete native runtime closure selection, workspace publication expectations, artifact declarations, verification, drift checks, and output mapping suggestions. Package provenance is the fixed `DOCS_AGENT_PACKAGE_REVISION`, independent of the reusable-workflow revision, and each descriptor includes a byte digest. Package changes advance that revision and every declared digest atomically. Docs Agent declares the runtime sources; WP Codebox materializes and lowers them under its generic runtime contract.
+The recipe boundary covers standalone native package selection, complete native runtime closure selection, read-only context repositories, bootstrap criteria, bounded source deltas, workspace publication expectations, artifact declarations, verification, drift checks, and output mapping suggestions. Package provenance is the fixed `DOCS_AGENT_PACKAGE_REVISION`, independent of the reusable-workflow revision, and each descriptor includes a byte digest. Package changes advance that revision and every declared digest atomically. Docs Agent declares the runtime sources and product completion check. WP Codebox materializes and lowers them under its generic runtime contract, including its generic command interface; WP Codebox materializes and lowers them under its generic runtime contract without learning Docs Agent semantics.
+
+The execution order is native package runtime, host patch apply, caller dependency command, caller verification commands, caller drift checks, Docs Agent completion validation, then WP Codebox publication. This keeps consumer commands and publication separate from product semantics. Neither WP Codebox nor Agents API implements Docs Agent report fields or outcome rules, and Data Machine is not part of the path.
 
 Native package selection is expressed through recipe `docsAgent.externalPackageSource`. Workspace boundaries are expressed through recipe `runner` fields so agents remain workspace editors while caller-owned execution handles sandboxing and publication handoff.
 
-Direct consumers of the removed legacy manifests, flows, pipelines, or memory envelopes must migrate to the corresponding native `.agent.json` package. Existing `maintain-docs.yml` consumers already select native packages and are unaffected.
+Direct consumers of the removed legacy manifests, flows, pipelines, or memory envelopes must migrate to the corresponding native `.agent.json` package. Existing `maintain-docs.yml` consumers retain native execution, but unverified no-change completions now fail and bootstrap calls must provide positive `bootstrap_contract` criteria.
 
 Run `php tests/validate-docs-agent-packages.php` after workflow changes so package structure, workflow routing, and runner config stay aligned.

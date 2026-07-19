@@ -12,6 +12,11 @@
     "agentSlug": "technical-docs-maintenance-agent"
   },
   "runner": {
+    "contextRepositories": [
+      { "alias": "agents-api", "repository": "Automattic/agents-api", "revision": "main" }
+    ],
+    "bootstrapContract": {},
+    "sourceDelta": [],
     "verificationCommands": [],
     "driftChecks": [],
     "writablePaths": "README.md,docs/**",
@@ -39,6 +44,7 @@
     "docs_agent_change_summary",
     "docs_agent_verification_report",
     "docs_agent_drift_report",
+    "docs_agent_completion_report",
     "docs_agent_workspace_publication"
     ],
     "declarations": [
@@ -77,6 +83,15 @@
       "description": "Drift-check results for generated documentation, skills, or packaged outputs.",
       "required": false,
       "egress": ["pr-body", "workflow-output", "review-link"]
+    },
+    {
+      "schema": "docs-agent/artifact-declaration/v1",
+      "name": "docs_agent_completion_report",
+      "type": "DocsAgentCompletionReport",
+      "artifact_schema": "docs-agent/completion-report/v1",
+      "description": "Versioned completion and drift report validated against the actual workspace diff.",
+      "required": false,
+      "egress": ["review-link"]
     },
     {
       "schema": "docs-agent/artifact-declaration/v1",

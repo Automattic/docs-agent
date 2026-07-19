@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Automattic/docs-agent/main/contracts/docs-agent-completion-report.v1.json",
+  "title": "Docs Agent completion and drift report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "lane", "run_kind", "outcome", "scope", "items", "changed_paths"],
+  "properties": {
+    "schema": { "const": "docs-agent/completion-report/v1" },
+    "lane": { "enum": ["technical", "user", "skills"] },
+    "run_kind": { "enum": ["bootstrap", "maintenance"] },
+    "outcome": { "enum": ["changes", "no_changes"] },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_basis", "source_refs", "documentation_surfaces"],
+      "properties": {
+        "source_basis": { "enum": ["inventory", "bounded_delta"] },
+        "source_refs": { "$ref": "#/$defs/nonEmptyStrings" },
+        "documentation_surfaces": { "$ref": "#/$defs/nonEmptyStrings" }
+      }
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "source_refs", "documentation_paths", "disposition", "evidence"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "source_refs": { "$ref": "#/$defs/nonEmptyStrings" },
+          "documentation_paths": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+          "disposition": { "enum": ["created", "updated", "verified_current", "not_documentation_relevant"] },
+          "evidence": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "changed_paths": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+  },
+  "$defs": {
+    "nonEmptyStrings": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    }
+  }
+}

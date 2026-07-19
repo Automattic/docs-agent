@@ -12,6 +12,9 @@
     "agentSlug": "technical-docs-maintenance-agent"
   },
   "runner": {
+    "contextRepositories": [],
+    "bootstrapContract": {},
+    "sourceDelta": [],
     "verificationCommands": [],
     "driftChecks": [],
     "writablePaths": "README.md,docs/**",
@@ -40,6 +43,7 @@
       "docs_agent_change_summary",
       "docs_agent_verification_report",
       "docs_agent_drift_report",
+      "docs_agent_completion_report",
       "docs_agent_workspace_publication"
     ],
     "declarations": [],

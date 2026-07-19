@@ -90,13 +90,24 @@ The consumer API is product-level. Consumer repositories configure the documenta
 | `base_ref` | `main` | Base branch or ref for the maintenance PR. |
 | `docs_branch` | `docs-agent/docs-upkeep` | Stable branch reused for the canonical Docs Agent PR. |
 | `writable_paths` | `README.md,docs/**` | Comma-separated allowlist of paths Docs Agent may edit. |
+| `context_repositories` | `[]` | JSON array of read-only evidence repositories with `alias`, `repository`, and optional `revision`. They are authorized for native GitHub reads and remain outside the writable workspace. |
+| `bootstrap_contract` | `{}` | Positive bootstrap criteria: `required_paths`, `required_globs`, `entry_points`, and `forbidden_phrases`. Bootstrap calls must provide at least one path, glob, or entry point criterion. |
+| `source_delta` | `[]` | Optional caller-known bounded deltas with `id` and `requires_documentation_change`; every item must receive a matching report disposition. |
 | `verification_commands` | `[]` | JSON array of canonical runner verification commands executed in the target workspace. |
 | `drift_checks` | `[]` | JSON array of canonical runner drift checks executed after verification. |
 | `prompt` | empty | Optional additional maintenance instruction. |
 | `run_agent` | `true` | Set `false` to skip after deterministic preflight says docs are current. |
 | `dry_run` | `false` | Set `true` to validate the prepared task without starting a live agent run. |
 
-`verification_commands` and `drift_checks` are executable runner inputs. Docs Agent keeps the target repository as the only writable PR boundary; the reusable runner executes the selected native agent task.
+`verification_commands` and `drift_checks` are executable caller inputs. Docs Agent appends its own completion-contract check as a separate drift entry after them. The target repository remains the only writable PR boundary.
+
+Bootstrap example criteria:
+
+```yaml
+run_kind: bootstrap
+bootstrap_contract: >-
+  {"required_paths":["README.md","docs/architecture.md","docs/setup.md"],"required_globs":[{"pattern":"docs/**/*.md","min":2}],"entry_points":[{"path":"README.md","must_link_to":["docs/architecture.md","docs/setup.md"]}],"forbidden_phrases":["TODO: document this"]}
+```
 
 ## Review Artifacts
 
@@ -108,6 +119,7 @@ Docs Agent declares the review artifacts it expects the runner to materialize as
 | `docs_agent_change_summary` | `docs-agent/change-summary/v1` | Reviewable summary of documentation or skill changes. |
 | `docs_agent_verification_report` | `docs-agent/verification-report/v1` | Verification command results for the target workspace. |
 | `docs_agent_drift_report` | `docs-agent/drift-report/v1` | Drift-check results for generated docs, skills, or packaged outputs. |
+| `docs_agent_completion_report` | `docs-agent/completion-report/v1` | Native completion and source-to-document disposition report validated against the host diff. |
 | `docs_agent_workspace_publication` | `docs-agent/workspace-publication/v1` | Canonical branch and pull request links published by the runner workspace. |
 
 `maintain-docs.yml` writes `expected_artifacts` and `artifact_declarations` into a portable Docs Agent recipe and exposes the same declaration objects as `declared_artifacts_json`.
@@ -116,13 +128,28 @@ WP Codebox v0.12.29 at `bc982947ec33c78160125026e16d357b7ece3ea1` uploads a revi
 
 Docs Agent owns native package selection, lane, artifact, prompt, and workspace mapping. Execution, credentials, AI provider selection, sandboxing, and publication are runner-owned concerns outside this repository.
 
-Portable recipe fields include `docsAgent`, `runner.writablePaths`, caller-owned `runner.validationDependencies`, artifacts, verification commands, drift checks, and review output mapping suggestions.
+Portable recipe fields include `docsAgent`, `runner.contextRepositories`, `runner.bootstrapContract`, `runner.sourceDelta`, `runner.writablePaths`, caller-owned `runner.validationDependencies`, artifacts, verification commands, drift checks, and review output mapping suggestions.
+
+## Strengthened Success Semantics
+
+A live run succeeds only when four independent layers pass:
+
+1. Agents API completes the selected native package through WP Codebox.
+2. Docs Agent validates exactly one `docs-agent/completion-report/v1` from the canonical transcript against the actual host workspace diff and writable paths.
+3. Caller dependency, verification, and drift commands pass.
+4. WP Codebox publishes and verifies a pull request when the outcome and caller policy require one.
+
+For `changes`, `changed_paths` must exactly equal the Git diff, every path must be writable, and at least one evidence-backed item must be `created` or `updated`. A write-tool call that leaves no byte diff fails as `CHANGES_DIFF_EMPTY`.
+
+For maintenance `no_changes`, the documentation diff must be clean, every audited item must have source refs and evidence, dispositions may only be `verified_current` or `not_documentation_relevant`, and every caller `source_delta` item must be covered. Caller-known drift marked `requires_documentation_change: true` cannot be reported as no-change. Missing, malformed, incomplete, contradictory, diff-mismatched, and out-of-scope reports fail with distinct `docs-agent.completion-contract.*` diagnostics.
+
+The report travels in the native canonical transcript, not as a target-repository file, so honest no-change runs remain clean and do not trigger publication. Artifact declarations remain reviewer metadata; declarations alone never satisfy semantic completion.
 
 ## Pull Request Behavior
 
 Docs Agent opens or updates one canonical PR for the configured branch.
 
-- If the selected surface is current, the run succeeds with no changes.
+- If the selected surface is current, the run succeeds only with a complete evidence-backed report and no workspace diff.
 - If maintenance is needed, changes are written only under `writable_paths`.
 - If the canonical PR is already open, later runs reuse the same `docs_branch` and PR instead of creating duplicates.
 - `validation_dependencies` is an optional caller-owned reusable-workflow input. It is passed through the portable recipe and runs before verification commands when a live runner execution needs setup.
@@ -195,11 +222,11 @@ These five `.agent.json` files are the complete executable package surface. Each
 
 Package updates advance the package-source revision and all five declared digests atomically. The immutable-source validator reads each package blob from that Git revision, recomputes its digest and canonical slug, and rejects a descriptor that does not match those historical bytes.
 
-All five packages support direct import through `wp_agent_import_runtime_bundles()` and retain the source-grounded workspace-only editing boundary and required workspace-write gate.
+All five packages support direct import through `wp_agent_import_runtime_bundles()` and retain the source-grounded workspace-only editing boundary. They intentionally have no required write-tool gate: deterministic report/diff postconditions reject no-op writes while allowing honest no-change maintenance.
 
 ### Compatibility Impact
 
-Direct consumers of the removed legacy `manifest.json`, `flows/`, `pipelines/`, or memory envelopes must migrate to the corresponding native `.agent.json` package listed above. Consumers of `maintain-docs.yml` already use these native packages and require no workflow migration.
+Direct consumers of the removed legacy `manifest.json`, `flows/`, `pipelines/`, or memory envelopes must migrate to the corresponding native `.agent.json` package listed above. Data Machine is not restored. Existing `maintain-docs.yml` consumers keep the same native architecture, but consumers that relied on unverified `no_changes` now need evidence-complete reports; bootstrap callers must provide positive `bootstrap_contract` criteria. `context_repositories` and `source_delta` are additive inputs.
 
 ## Workflow Operation
 
@@ -223,6 +250,7 @@ For skills PRs, also confirm the live instructions match current upstream tool b
 
 ```bash
 php tests/validate-docs-agent-packages.php
+php tests/validate-docs-agent-completion-contract.php
 php tests/validate-external-native-package-sources.php
 php tests/repair-docs-links-smoke.php
 WP_CODEBOX_DIR=/path/to/wp-codebox php tests/validate-wp-codebox-run-agent-task-contract.php
@@ -236,6 +264,6 @@ The native import test uses the maintained Agents API pure-PHP smoke harness; cl
 AGENTS_API_DIR=/path/to/agents-api php tests/native-agent-import.php
 ```
 
-It imports every native package through `wp_agent_import_runtime_bundles()`, verifies registration and preserved write-gate defaults, and invokes the default native chat handler far enough to resolve each registered agent. It intentionally fails when `AGENTS_API_DIR` is unavailable rather than treating an unexecuted importer as a passing test. It does not execute a model turn because the packages intentionally leave provider/model selection to the caller.
+It imports every native package through `wp_agent_import_runtime_bundles()`, verifies registration and no-change-capable tool rules, and invokes the default native chat handler far enough to resolve each registered agent. It intentionally fails when `AGENTS_API_DIR` is unavailable rather than treating an unexecuted importer as a passing test. It does not execute a model turn because the packages intentionally leave provider/model selection to the caller.
 
 The `Docs Agent Tests` GitHub Actions workflow runs on pull requests and pushes. It fetches Docs Agent history so it can run the immutable native package source validator, then runs the structural package validator, docs-link repair smoke test, and native importer integration test against `Automattic/agents-api` at `78e2dd409010f98fa4d26cdd72572117384ab18d`, the merged commit from [Agents API #428](https://github.com/Automattic/agents-api/pull/428).

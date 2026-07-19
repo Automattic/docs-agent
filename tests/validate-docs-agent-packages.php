@@ -33,6 +33,7 @@ $expected_artifact_schemas = array(
 	'docs_agent_change_summary'        => 'docs-agent/change-summary/v1',
 	'docs_agent_verification_report'   => 'docs-agent/verification-report/v1',
 	'docs_agent_drift_report'          => 'docs-agent/drift-report/v1',
+	'docs_agent_completion_report'     => 'docs-agent/completion-report/v1',
 	'docs_agent_workspace_publication' => 'docs-agent/workspace-publication/v1',
 );
 
@@ -75,6 +76,11 @@ $assert( str_contains( $maintain_docs_workflow, $generic_codebox_agent_task_work
 $assert( str_contains( $maintain_docs_workflow, 'wp_codebox_release_ref: v0.12.29' ), 'maintain-docs.yml must pass the matching WP Codebox release tag.' );
 
 $assert( str_contains( $maintain_docs_workflow, '--arg writablePaths "$INPUT_WRITABLE_PATHS"' ), 'maintain-docs.yml must include writable paths in the portable recipe.' );
+$assert( str_contains( $maintain_docs_workflow, 'contextRepositories:$contextRepositories' ), 'maintain-docs.yml must retain read-only context repositories in the portable recipe.' );
+$assert( str_contains( $maintain_docs_workflow, 'bootstrapContract:$bootstrapContract' ), 'maintain-docs.yml must retain caller bootstrap criteria in the portable recipe.' );
+$assert( str_contains( $maintain_docs_workflow, 'sourceDelta:$sourceDelta' ), 'maintain-docs.yml must retain caller-known bounded source deltas in the portable recipe.' );
+$assert( str_contains( $maintain_docs_workflow, 'validate-docs-agent-completion.php' ), 'maintain-docs.yml must execute the Docs Agent-owned completion validator.' );
+$assert( str_contains( $maintain_docs_workflow, '$caller + [$completion]' ), 'maintain-docs.yml must keep caller drift checks separate from the completion check.' );
 $assert( str_contains( $maintain_docs_workflow, 'output_projections:' ), 'maintain-docs.yml must project the bounded runner publication result.' );
 $assert( str_contains( $maintain_docs_workflow, 'OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}' ), 'maintain-docs.yml must explicitly forward OPENAI_API_KEY to the native runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'ACCESS_TOKEN: ${{ github.token }}' ), 'maintain-docs.yml must forward the caller-scoped GitHub token to the native runner.' );
@@ -192,16 +198,7 @@ foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertion
 	);
 	$assert( ( $native_assertions['permitted_workspace_tools'] ?? array() ) === $workspace_tools, "Native package {$native_file} workspace tools do not match its permitted workspace tool policy." );
 
-	$write_gate_id = $native_assertions['required_write_gate'] ?? '';
-	$write_gates   = array_filter(
-		$config['tool_call_rules'] ?? array(),
-		static fn( $rule ): bool => is_array( $rule ) && $write_gate_id === ( $rule['id'] ?? '' )
-	);
-	$write_gate = reset( $write_gates );
-	$assert( is_array( $write_gate ), "Native package {$native_file} must declare its required write gate." );
-	$assert( true === ( $write_gate['require_tool_use'] ?? false ), "Native package {$native_file} write gate must require tool use." );
-	$assert( 1 === ( $write_gate['min_tool_calls'] ?? 0 ), "Native package {$native_file} write gate must require at least one write." );
-	$assert( array( 'workspace_write', 'workspace_edit', 'workspace_apply_patch' ) === ( $write_gate['require_one_of'] ?? array() ), "Native package {$native_file} write gate must require an allowed workspace write tool." );
+	$assert( array() === ( $config['tool_call_rules'] ?? null ), "Native package {$native_file} must allow evidence-backed no-change completion without a no-op write." );
 
 	// Runner-neutral boundary: no agent-owned publication tools.
 	foreach ( $native_spec['forbidden_publication_tools'] ?? array() as $forbidden_tool ) {
