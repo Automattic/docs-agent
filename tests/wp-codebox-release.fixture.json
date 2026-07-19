@@ -1,10 +1,10 @@
 {
-  "tag": "v0.12.27",
-  "revision": "65cc5fb4699cb7c2df13d04b4715c97097ac7565",
-  "package_version": "0.12.27",
+  "tag": "v0.12.28",
+  "revision": "6457dcae4cb8cf8e76cd174377de8cbee3ee12cb",
+  "package_version": "0.12.28",
   "published_assets": {
-    "01-wp-codebox.zip": "sha256:1c03a35cf0f31e8b2fbbacaae5867f205ea8ae7b8c2017d0e3e297ed6298ff72",
-    "02-wp-codebox-workspace-0.12.27.tgz": "sha256:be6ec64bd0dc667629ee019d6a79d505927ef2854c8db21fd23d656d0e7d3e6d"
+    "01-wp-codebox.zip": "sha256:9a77c7f0117c29cf1c0a98859608013a70afada8a1314c278e0d5e25eb7a00e8",
+    "02-wp-codebox-workspace-0.12.28.tgz": "sha256:98117c40bb42b3d6790af38a2104259b12a6ca820f21df881024c7711bf9569e"
   },
   "run": "29350690551",
   "diagnostic_regression_run": "29307978522",
@@ -37,6 +37,7 @@
   "runtime_control_files_excluded": true,
   "workspace_integrity_change_evidence": true,
   "non_git_workspace_snapshot_fallback": true,
+  "canonical_repository_casing": true,
   "native_result_path": ".codebox/native-agent-task-result.json",
   "workflow_result_path": ".codebox/agent-task-workflow-result.json"
 }

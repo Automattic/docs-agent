@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: Automattic/wp-codebox
-          ref: v0.12.27
+          ref: v0.12.28
           path: .wp-codebox
       - name: Validate Docs Agent
         env:
