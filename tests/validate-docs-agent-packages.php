@@ -45,9 +45,9 @@ $assert( 'OWNER/REPO' === ( $example['targetRepository'] ?? null ), 'Example con
 $assert( 'docs-agent/runner-recipe/v1' === ( $recipe['schema'] ?? null ), 'Runner recipe must use the portable Docs Agent runner recipe schema.' );
 $expected_package_source = array(
 	'repository' => 'Automattic/docs-agent',
-	'revision'   => '85443eb91c12b2759d8e207f1ae4421407b4cc5e',
+	'revision'   => '85f0d162a7d499fdc1286891371342727d084c88',
 	'path'       => 'bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json',
-	'digest'     => 'sha256-bytes-v1:78fef9f8d787866c7b48b8f044769d38c0528778c8e2a82af816f9f8ea65014f',
+	'digest'     => 'sha256-bytes-v1:975c7b0a0a7aff52897c52be5ac903a7fb110ea3c33e16227f8694c74c932519',
 );
 foreach ( array( $recipe, $example ) as $runner_recipe ) {
 	$assert( $expected_package_source === ( $runner_recipe['docsAgent']['externalPackageSource'] ?? null ), 'Runner recipes must use the immutable Docs Agent package source.' );

@@ -30,13 +30,13 @@ $read_revision_package = static function ( string $revision, string $path ) use 
 	return $contents;
 };
 
-$package_revision = '85443eb91c12b2759d8e207f1ae4421407b4cc5e';
+$package_revision = '85f0d162a7d499fdc1286891371342727d084c88';
 $packages = array(
-	'technical:bootstrap' => array( 'path' => 'bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json', 'slug' => 'technical-docs-bootstrap-agent', 'digest' => '9050c9b4364a5a91b057fd51ff5f667efc320f9d6776160ab3e7cf4fd5e4f0e6' ),
-	'technical:maintenance' => array( 'path' => 'bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json', 'slug' => 'technical-docs-maintenance-agent', 'digest' => '78fef9f8d787866c7b48b8f044769d38c0528778c8e2a82af816f9f8ea65014f' ),
-	'user:bootstrap'      => array( 'path' => 'bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json', 'slug' => 'user-docs-bootstrap-agent', 'digest' => 'ee558a73f2a393c1912d62f7f40dbdd4bc31ac0168c3c248316b3430258c55cd' ),
-	'user:maintenance'    => array( 'path' => 'bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json', 'slug' => 'user-docs-maintenance-agent', 'digest' => 'e2248f014c1409a8d4c5cb303ea37c0b24ae05babd02d40c6032160daf60d4c4' ),
-	'skills:maintenance'  => array( 'path' => 'bundles/skills-agent/native/skills-maintenance-agent.agent.json', 'slug' => 'skills-maintenance-agent', 'digest' => 'c643f8bd31864cdd607f9025a000694a65a3fdf91532e4311fbac541e708a2b2' ),
+	'technical:bootstrap' => array( 'path' => 'bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json', 'slug' => 'technical-docs-bootstrap-agent', 'digest' => '0230e0e3fd8a4f045a545407d3d01c22df537b05f031260e29d6b531285b7839' ),
+	'technical:maintenance' => array( 'path' => 'bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json', 'slug' => 'technical-docs-maintenance-agent', 'digest' => '975c7b0a0a7aff52897c52be5ac903a7fb110ea3c33e16227f8694c74c932519' ),
+	'user:bootstrap'      => array( 'path' => 'bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json', 'slug' => 'user-docs-bootstrap-agent', 'digest' => 'a3ada797a125f638364caac43004bbb47fcc8c7bdc89021f25fcfcdc4c2d502f' ),
+	'user:maintenance'    => array( 'path' => 'bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json', 'slug' => 'user-docs-maintenance-agent', 'digest' => '747de10fdb52d7c1543b404030e0e0a2604b6496e95d50143149f72c975a98fb' ),
+	'skills:maintenance'  => array( 'path' => 'bundles/skills-agent/native/skills-maintenance-agent.agent.json', 'slug' => 'skills-maintenance-agent', 'digest' => '0f8d35fe0026aa62b9ddf2e86c4f9432b4d8aae90757dfbaf334d4a0671fb8a3' ),
 );
 
 foreach ( $packages as $lane => $package ) {
