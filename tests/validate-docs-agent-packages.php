@@ -71,8 +71,9 @@ $assert( str_contains( $maintain_docs_workflow, 'declared_artifacts_json:' ), 'm
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 'maintain-docs.yml must prepare typed artifact declarations without caller-specific projections.' );
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 'maintain-docs.yml must expose artifact declarations through workflow outputs.' );
 
-$generic_codebox_agent_task_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@v0.12.29';
-$assert( str_contains( $maintain_docs_workflow, $generic_codebox_agent_task_workflow ), 'maintain-docs.yml must call the generic Codebox agent-task workflow.' );
+$wp_codebox_producer_revision        = '9ef73731018be8ef46dc1b13272099984e218f3c';
+$generic_codebox_agent_task_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@' . $wp_codebox_producer_revision;
+$assert( str_contains( $maintain_docs_workflow, $generic_codebox_agent_task_workflow ), 'maintain-docs.yml must call the immutable generic Codebox agent-task workflow candidate.' );
 $assert( str_contains( $maintain_docs_workflow, 'wp_codebox_release_ref: v0.12.29' ), 'maintain-docs.yml must pass the matching WP Codebox release tag.' );
 
 $assert( str_contains( $maintain_docs_workflow, '--arg writablePaths "$INPUT_WRITABLE_PATHS"' ), 'maintain-docs.yml must include writable paths in the portable recipe.' );
@@ -81,7 +82,7 @@ $assert( str_contains( $maintain_docs_workflow, 'bootstrapContract:$bootstrapCon
 $assert( str_contains( $maintain_docs_workflow, 'sourceDelta:$sourceDelta' ), 'maintain-docs.yml must retain caller-known bounded source deltas in the portable recipe.' );
 $assert( str_contains( $maintain_docs_workflow, 'source_delta must contain at least one caller-bounded item for maintenance.' ), 'maintain-docs.yml must reject empty maintenance source deltas before execution.' );
 $assert( str_contains( $maintain_docs_workflow, 'validate-docs-agent-completion.php' ), 'maintain-docs.yml must execute the Docs Agent-owned completion validator.' );
-$completion_contract_revision = '5c03051f223bfe386927b7af0229eb7213f360d0';
+$completion_contract_revision = 'cc6ec369d1e47ffdf541e3ec2c72bce5eed5f685';
 $assert( str_contains( $maintain_docs_workflow, 'DOCS_AGENT_COMPLETION_CONTRACT_REVISION: ' . $completion_contract_revision ), 'maintain-docs.yml must pin the completion validator to its immutable implementation commit.' );
 $assert( str_contains( $maintain_docs_workflow, 'Automattic/docs-agent/$DOCS_AGENT_COMPLETION_CONTRACT_REVISION/scripts/validate-docs-agent-completion.php' ), 'maintain-docs.yml must fetch the validator independently of native package provenance.' );
 $historical_validator = shell_exec( 'git -C ' . escapeshellarg( $root ) . ' show ' . escapeshellarg( $completion_contract_revision . ':scripts/validate-docs-agent-completion.php' ) );
