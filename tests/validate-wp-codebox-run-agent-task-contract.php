@@ -56,9 +56,9 @@ $assert( substr( $release_tag, 1 ) === ( $release['package_version'] ?? null ), 
 $published_assets = $release['published_assets'] ?? null;
 $assert( is_array( $published_assets ), 'WP Codebox release fixture must record published release assets.' );
 $assert( array(
-	'01-wp-codebox.zip' => 'sha256:9a77c7f0117c29cf1c0a98859608013a70afada8a1314c278e0d5e25eb7a00e8',
-	'02-wp-codebox-workspace-0.12.28.tgz' => 'sha256:98117c40bb42b3d6790af38a2104259b12a6ca820f21df881024c7711bf9569e',
-) === $published_assets, 'WP Codebox release fixture must retain the published v0.12.28 asset digests.' );
+	'01-wp-codebox.zip' => 'sha256:a239c72ae79c5b24fe7bed9ccfd375c0b70892ca66406d98140a51d219cfaaee',
+	'02-wp-codebox-workspace-0.12.29.tgz' => 'sha256:d332924b3b91ef8e47b5ebca7063b2964734d3ac081dd62fa18ec9417fefdcd5',
+) === $published_assets, 'WP Codebox release fixture must retain the published v0.12.29 asset digests.' );
 $run = $release['run'] ?? null;
 $assert( is_string( $run ) && preg_match( '/^\d+$/', $run ) === 1, 'WP Codebox release fixture must retain the regression run reference.' );
 $diagnostic_regression_run = $release['diagnostic_regression_run'] ?? null;
@@ -308,7 +308,7 @@ $assert( 'failed-on-runtime-source' === ( $producer_upload_regression['observed'
 $assert( in_array( '.codebox/agent-task-request.json', $producer_upload_regression['observed']['uploaded'] ?? array(), true ), 'WP Codebox upload regression fixture must retain the controlled request upload.' );
 $assert( ! array_intersect( array( 'MODEL_PROVIDER_SECRET_1', 'MODEL_PROVIDER_SECRET_2', 'MODEL_PROVIDER_SECRET_3', 'MODEL_PROVIDER_SECRET_4', 'MODEL_PROVIDER_SECRET_5' ), array_keys( $caller_secrets ) ), 'Docs Agent must forward only the OPENAI_API_KEY provider secret name.' );
 
-$assert( str_contains( $workflow, 'output_projections="$(jq -cn --arg path \'metadata.runner_workspace_publication.pull_request.url\' --argjson required "$success_requires_pr" \'{docs_agent_publication:{path:$path,required:$required}}\')"' ), 'Docs Agent must define the v0.12.28 publication projection descriptor.' );
+$assert( str_contains( $workflow, 'output_projections="$(jq -cn --arg path \'metadata.runner_workspace_publication.pull_request.url\' --argjson required "$success_requires_pr" \'{docs_agent_publication:{path:$path,required:$required}}\')"' ), 'Docs Agent must define the v0.12.29 publication projection descriptor.' );
 $docs_projections = array(
 	'docs_agent_publication' => array(
 		'path'     => 'metadata.runner_workspace_publication.pull_request.url',
@@ -318,7 +318,7 @@ $docs_projections = array(
 $publication_descriptor = $docs_projections['docs_agent_publication'] ?? null;
 $assert( is_array( $publication_descriptor ), 'Docs Agent must define the docs_agent_publication projection descriptor.' );
 $publication_path = $publication_descriptor['path'] ?? null;
-$assert( 'metadata.runner_workspace_publication.pull_request.url' === $publication_path, 'Docs Agent publication projection must use the v0.12.28 runner workspace publication pull request URL path.' );
+$assert( 'metadata.runner_workspace_publication.pull_request.url' === $publication_path, 'Docs Agent publication projection must use the v0.12.29 runner workspace publication pull request URL path.' );
 
 $assert( 'string' === ( $contract['inputs']['output_projections']['type'] ?? null ), 'WP Codebox must accept Docs Agent custom output projections.' );
 

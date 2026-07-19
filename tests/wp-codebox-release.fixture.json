@@ -1,10 +1,10 @@
 {
-  "tag": "v0.12.28",
-  "revision": "6457dcae4cb8cf8e76cd174377de8cbee3ee12cb",
-  "package_version": "0.12.28",
+  "tag": "v0.12.29",
+  "revision": "bc982947ec33c78160125026e16d357b7ece3ea1",
+  "package_version": "0.12.29",
   "published_assets": {
-    "01-wp-codebox.zip": "sha256:9a77c7f0117c29cf1c0a98859608013a70afada8a1314c278e0d5e25eb7a00e8",
-    "02-wp-codebox-workspace-0.12.28.tgz": "sha256:98117c40bb42b3d6790af38a2104259b12a6ca820f21df881024c7711bf9569e"
+    "01-wp-codebox.zip": "sha256:a239c72ae79c5b24fe7bed9ccfd375c0b70892ca66406d98140a51d219cfaaee",
+    "02-wp-codebox-workspace-0.12.29.tgz": "sha256:d332924b3b91ef8e47b5ebca7063b2964734d3ac081dd62fa18ec9417fefdcd5"
   },
   "run": "29350690551",
   "diagnostic_regression_run": "29307978522",
