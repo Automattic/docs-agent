@@ -48,6 +48,7 @@ $contract = $read_json( rtrim( $wp_codebox_dir, '/' ) . '/contracts/run-agent-ta
 $assert( 'wp-codebox/reusable-workflow-interface/v1' === ( $contract['schema'] ?? null ), 'WP Codebox producer schema version mismatch.' );
 $assert( '.github/workflows/run-agent-task.yml' === ( $contract['workflow'] ?? null ), 'WP Codebox producer contract targets an unexpected workflow.' );
 $release = $read_json( $root . '/tests/wp-codebox-release.fixture.json' );
+$agents_api_runtime = $read_json( $root . '/tests/agents-api-runtime-capability.fixture.json' );
 $release_tag = $release['tag'] ?? null;
 $assert( is_string( $release_tag ) && preg_match( '/^v\d+\.\d+\.\d+$/', $release_tag ) === 1, 'WP Codebox release fixture must declare an exact release tag.' );
 $release_revision = $release['revision'] ?? null;
@@ -243,8 +244,8 @@ $assert( is_array( $runtime_sources ) && 3 === count( $runtime_sources ), 'Docs 
 $assert( array(
 	'version' => 1,
 	'role' => 'component',
-	'repository' => 'Automattic/agents-api',
-	'revision' => '78e2dd409010f98fa4d26cdd72572117384ab18d',
+	'repository' => $agents_api_runtime['repository'],
+	'revision' => $agents_api_runtime['revision'],
 	'path' => '.',
 	'metadata' => array( 'slug' => 'agents-api', 'loadAs' => 'mu-plugin', 'pluginFile' => 'agents-api.php' ),
 ) === ( $runtime_sources[0] ?? null ), 'Docs Agent must declare the pinned Agents API MU-plugin component.' );

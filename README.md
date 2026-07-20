@@ -262,6 +262,7 @@ For skills PRs, also confirm the live instructions match current upstream tool b
 
 ```bash
 php tests/validate-docs-agent-packages.php
+php tests/validate-agents-api-runtime-contract.php
 php tests/validate-docs-agent-completion-contract.php
 php tests/validate-external-native-package-sources.php
 php tests/repair-docs-links-smoke.php
@@ -278,4 +279,4 @@ AGENTS_API_DIR=/path/to/agents-api php tests/native-agent-import.php
 
 It imports every native package through `wp_agent_import_runtime_bundles()`, verifies registration and no-change-capable tool rules, and invokes the default native chat handler far enough to resolve each registered agent. It intentionally fails when `AGENTS_API_DIR` is unavailable rather than treating an unexecuted importer as a passing test. It does not execute a model turn because the packages intentionally leave provider/model selection to the caller.
 
-The `Docs Agent Tests` GitHub Actions workflow runs on pull requests and pushes. It fetches Docs Agent history so it can run the immutable native package source validator, then runs the structural package validator, docs-link repair smoke test, and native importer integration test against `Automattic/agents-api` at `78e2dd409010f98fa4d26cdd72572117384ab18d`, the merged commit from [Agents API #428](https://github.com/Automattic/agents-api/pull/428).
+The `Docs Agent Tests` GitHub Actions workflow runs on pull requests and pushes. It fetches Docs Agent history so it can run the immutable native package source validator, then runs the structural package validator, explicit Agents API runtime-capability contract, docs-link repair smoke test, and native importer integration test against `Automattic/agents-api` at `89dd23903489882cfcf14a0d293daf939ad4e1a5`, the minimal immutable revision from [Agents API #384](https://github.com/Automattic/agents-api/pull/384) that resolves native `enabled_tools` and enforces anchor-independent `require_tool_use` completion gates.

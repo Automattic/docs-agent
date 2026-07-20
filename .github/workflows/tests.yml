@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: Automattic/agents-api
-          ref: 78e2dd409010f98fa4d26cdd72572117384ab18d
+          ref: 89dd23903489882cfcf14a0d293daf939ad4e1a5
           path: agents-api
           token: ${{ github.token }}
           persist-credentials: false
@@ -32,6 +32,7 @@ jobs:
       - name: Run package, link, and native importer tests
         run: |
           php tests/validate-docs-agent-packages.php
+          AGENTS_API_DIR="$GITHUB_WORKSPACE/agents-api" php tests/validate-agents-api-runtime-contract.php
           php tests/validate-docs-agent-completion-contract.php
           php tests/validate-external-native-package-sources.php
           php tests/repair-docs-links-smoke.php
