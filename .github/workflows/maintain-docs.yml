@@ -2,7 +2,7 @@ name: Maintain Docs
 
 env:
   # Advance this revision and all package digests together when package bytes change.
-  DOCS_AGENT_PACKAGE_REVISION: a39d9db230eb9e0b72ed84465f4d61bd8dda1bab
+  DOCS_AGENT_PACKAGE_REVISION: a51e79ac698610177852170332a1135a9c315951
   # Advance independently when the post-command completion validator changes.
   DOCS_AGENT_COMPLETION_CONTRACT_REVISION: b136f9bc84e6f0ad9d5d0d5cdbb3df9c62e382e2
 
@@ -153,7 +153,7 @@ jobs:
             technical:bootstrap)
               package_path="bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json"
               agent_slug="technical-docs-bootstrap-agent"
-              package_digest="sha256-bytes-v1:0230e0e3fd8a4f045a545407d3d01c22df537b05f031260e29d6b531285b7839"
+              package_digest="sha256-bytes-v1:124924f004474d5296294a3f2c99285d0848c46ed622926b1b283ed018b2bcf0"
               lane_requires_pr=true
               default_prompt="Bootstrap source-grounded developer documentation that helps developers understand, use, and extend the code in the repository."
               ;;

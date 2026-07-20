@@ -45,7 +45,7 @@ $assert( 'OWNER/REPO' === ( $example['targetRepository'] ?? null ), 'Example con
 $assert( 'docs-agent/runner-recipe/v1' === ( $recipe['schema'] ?? null ), 'Runner recipe must use the portable Docs Agent runner recipe schema.' );
 $expected_package_source = array(
 	'repository' => 'Automattic/docs-agent',
-	'revision'   => 'a39d9db230eb9e0b72ed84465f4d61bd8dda1bab',
+	'revision'   => 'a51e79ac698610177852170332a1135a9c315951',
 	'path'       => 'bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json',
 	'digest'     => 'sha256-bytes-v1:975c7b0a0a7aff52897c52be5ac903a7fb110ea3c33e16227f8694c74c932519',
 );
@@ -217,7 +217,12 @@ foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertion
 	);
 	$assert( ( $native_assertions['permitted_workspace_tools'] ?? array() ) === $workspace_tools, "Native package {$native_file} workspace tools do not match its permitted workspace tool policy." );
 
-	$assert( array() === ( $config['tool_call_rules'] ?? null ), "Native package {$native_file} must allow evidence-backed no-change completion without a no-op write." );
+	$required_tool_call_rule = $native_assertions['required_tool_call_rule'] ?? null;
+	if ( is_array( $required_tool_call_rule ) ) {
+		$assert( in_array( $required_tool_call_rule, $config['tool_call_rules'] ?? array(), true ), "Native package {$native_file} must enforce its required tool-call rule." );
+	} else {
+		$assert( array() === ( $config['tool_call_rules'] ?? null ), "Native package {$native_file} must allow evidence-backed no-change completion without a no-op write." );
+	}
 
 	// Runner-neutral boundary: no agent-owned publication tools.
 	foreach ( $native_spec['forbidden_publication_tools'] ?? array() as $forbidden_tool ) {
