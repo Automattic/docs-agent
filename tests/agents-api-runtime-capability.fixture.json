@@ -1,0 +1,11 @@
+{
+  "schema": "docs-agent/agents-api-runtime-capability/v1",
+  "repository": "Automattic/agents-api",
+  "revision": "21a8b9b7845e6b89f82bdf34e62f739220184ec7",
+  "capability_commit": "89dd23903489882cfcf14a0d293daf939ad4e1a5",
+  "capabilities": [
+    "native agent_config.enabled_tools are resolved into tool declarations",
+    "require_tool_use completion rules block a zero-tool first turn without an anchor",
+    "enabled tool names without an installed ability or trusted runtime overlay are omitted"
+  ]
+}
