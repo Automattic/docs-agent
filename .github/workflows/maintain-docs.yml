@@ -69,6 +69,10 @@ env:
         description: Validate the prepared Docs Agent task without starting a live agent run.
         type: boolean
         default: false
+      max_turns:
+        description: Maximum agent turns available for repository discovery, documentation writes, and final diff inspection.
+        type: number
+        default: 32
     secrets:
       OPENAI_API_KEY:
         description: Optional OpenAI credential used for live Docs Agent runs.
@@ -364,6 +368,7 @@ jobs:
       artifact_declarations: ${{ needs.prepare.outputs.artifact_declarations }}
       output_projections: ${{ needs.prepare.outputs.output_projections }}
       callback_data: ${{ needs.prepare.outputs.recipe_json }}
+      max_turns: ${{ inputs.max_turns }}
       run_agent: ${{ inputs.run_agent }}
       dry_run: ${{ inputs.dry_run }}
     secrets:

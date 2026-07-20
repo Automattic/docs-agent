@@ -156,7 +156,7 @@ foreach ( $caller_inputs as $name => $value ) {
 	$input = $contract['inputs'][ $name ] ?? null;
 	$assert( is_array( $input ), "Docs Agent passes producer input {$name}, which is absent from the producer schema." );
 	$type = $input['type'] ?? null;
-	$actual_type = preg_match( '/^(true|false)$/', $value ) === 1 || in_array( $name, array( 'success_requires_pr', 'run_agent', 'dry_run' ), true ) ? 'boolean' : ( is_numeric( $value ) ? 'number' : 'string' );
+	$actual_type = preg_match( '/^(true|false)$/', $value ) === 1 || in_array( $name, array( 'success_requires_pr', 'run_agent', 'dry_run' ), true ) ? 'boolean' : ( is_numeric( $value ) || 'max_turns' === $name ? 'number' : 'string' );
 	$assert( $type === $actual_type, "Docs Agent input {$name} has {$actual_type} shape; producer requires {$type}." );
 }
 
