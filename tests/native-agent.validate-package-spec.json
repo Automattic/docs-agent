@@ -16,7 +16,7 @@
     "technical-docs-bootstrap-agent.agent.json": {
       "package": "technical-docs-agent",
       "agent_slug": "technical-docs-bootstrap-agent",
-      "source_revision": "3da1b8076359db9bf9f4ee7dadcc3932c080ed71",
+      "source_revision": "7b67d341b531288bb2a1847d8d9b09096519a867",
       "required_tools": [
         "get_github_file",
         "workspace_read",
@@ -26,6 +26,12 @@
         "workspace_git_diff"
       ],
       "permitted_workspace_tools": ["workspace_show", "workspace_ls", "workspace_read", "workspace_grep", "workspace_write", "workspace_edit", "workspace_apply_patch", "workspace_git_status", "workspace_git_diff"],
+      "required_tool_call_rule": {
+        "id": "require-bootstrap-workspace-write",
+        "require_tool_use": true,
+        "min_tool_calls": 1,
+        "require_one_of": ["workspace_write", "workspace_edit", "workspace_apply_patch"]
+      },
       "instructions_must_contain": [
         "living documentation",
         "understand, use, and extend",
