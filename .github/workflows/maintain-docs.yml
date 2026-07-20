@@ -4,7 +4,7 @@ env:
   # Advance this revision and all package digests together when package bytes change.
   DOCS_AGENT_PACKAGE_REVISION: a39d9db230eb9e0b72ed84465f4d61bd8dda1bab
   # Advance independently when the post-command completion validator changes.
-  DOCS_AGENT_COMPLETION_CONTRACT_REVISION: a39d9db230eb9e0b72ed84465f4d61bd8dda1bab
+  DOCS_AGENT_COMPLETION_CONTRACT_REVISION: 90beb848bf85356a12b5b60b61ed3ddb0044ef78
 
 'on':
   workflow_call:
