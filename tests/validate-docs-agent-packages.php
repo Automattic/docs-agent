@@ -71,7 +71,7 @@ $assert( str_contains( $maintain_docs_workflow, 'declared_artifacts_json:' ), 'm
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 'maintain-docs.yml must prepare typed artifact declarations without caller-specific projections.' );
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 'maintain-docs.yml must expose artifact declarations through workflow outputs.' );
 
-$wp_codebox_producer_revision        = '12a5bb19a97b89d0a78b502fc71adede5b122359';
+$wp_codebox_producer_revision        = '0227ca7551d8cd98f14242b31e142b50f78dff13';
 $generic_codebox_agent_task_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@' . $wp_codebox_producer_revision;
 $assert( str_contains( $maintain_docs_workflow, $generic_codebox_agent_task_workflow ), 'maintain-docs.yml must call the immutable generic Codebox agent-task workflow candidate.' );
 $assert( str_contains( $maintain_docs_workflow, 'wp_codebox_release_ref: v0.12.29' ), 'maintain-docs.yml must pass the matching WP Codebox release tag.' );
