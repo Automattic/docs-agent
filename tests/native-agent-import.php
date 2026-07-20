@@ -36,6 +36,8 @@ $failures = array();
 $passes   = 0;
 
 require_once $agents_api_dir . '/tests/agents-api-smoke-helpers.php';
+require_once $agents_api_dir . '/src/Runtime/class-wp-agent-message.php';
+require_once $agents_api_dir . '/src/Runtime/class-wp-agent-tool-call-gate.php';
 agents_api_smoke_require_module();
 do_action( 'init' );
 
@@ -69,7 +71,21 @@ foreach ( array_keys( $packages ) as $index => $slug ) {
 	$rules  = is_array( $config['tool_call_rules'] ?? null ) ? $config['tool_call_rules'] : array();
 
 	agents_api_smoke_assert_equals( true, in_array( 'workspace_write', $config['enabled_tools'] ?? array(), true ), "{$slug} preserves the workspace write tool", $failures, $passes );
-	agents_api_smoke_assert_equals( array(), $rules, "{$slug} permits clean evidence-backed no-change completion", $failures, $passes );
+	if ( 'technical-docs-bootstrap-agent' === $slug ) {
+		$gate = AgentsAPI\AI\WP_Agent_Tool_Call_Gate::from_config( $rules );
+		agents_api_smoke_assert_equals( true, $gate instanceof AgentsAPI\AI\WP_Agent_Tool_Call_Gate, "{$slug} creates a completion gate for a fresh documentation surface", $failures, $passes );
+
+		$fresh_surface = array( AgentsAPI\AI\WP_Agent_Message::text( 'user', 'The workspace has no docs/README.md. Create the caller-required documentation paths.' ) );
+		$blocked = $gate instanceof AgentsAPI\AI\WP_Agent_Tool_Call_Gate ? $gate->evaluate_completion( $fresh_surface ) : array();
+		agents_api_smoke_assert_equals( false, $blocked['allowed'] ?? null, "{$slug} blocks prose-only completion on a fresh documentation surface", $failures, $passes );
+		agents_api_smoke_assert_equals( 'require-bootstrap-workspace-write', $blocked['context']['rule_id'] ?? '', "{$slug} identifies the required bootstrap write gate", $failures, $passes );
+
+		$after_write = array_merge( $fresh_surface, array( AgentsAPI\AI\WP_Agent_Message::toolCall( '', 'workspace_write', array( 'path' => 'docs/README.md' ), 1, array( 'tool_call_id' => 'bootstrap-docs-index' ) ) ) );
+		$allowed = $gate instanceof AgentsAPI\AI\WP_Agent_Tool_Call_Gate ? $gate->evaluate_completion( $after_write ) : array();
+		agents_api_smoke_assert_equals( true, $allowed['allowed'] ?? null, "{$slug} accepts completion after a required workspace write", $failures, $passes );
+	} else {
+		agents_api_smoke_assert_equals( array(), $rules, "{$slug} permits clean evidence-backed no-change completion", $failures, $passes );
+	}
 
 	$chat = AgentsAPI\AI\Channels\WP_Agent_Default_Chat_Handler::execute( array( 'agent' => $slug, 'message' => 'Verify native registration.' ) );
 	agents_api_smoke_assert_equals( 'agents_chat_provider_required', $chat instanceof WP_Error ? $chat->get_error_code() : '', "{$slug} resolves through the default native chat handler", $failures, $passes );
