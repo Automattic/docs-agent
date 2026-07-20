@@ -2,7 +2,9 @@ name: Maintain Docs
 
 env:
   # Advance this revision and all package digests together when package bytes change.
-  DOCS_AGENT_PACKAGE_REVISION: 85443eb91c12b2759d8e207f1ae4421407b4cc5e
+  DOCS_AGENT_PACKAGE_REVISION: 85f0d162a7d499fdc1286891371342727d084c88
+  # Advance independently when the post-command completion validator changes.
+  DOCS_AGENT_COMPLETION_CONTRACT_REVISION: cc6ec369d1e47ffdf541e3ec2c72bce5eed5f685
 
 'on':
   workflow_call:
@@ -31,6 +33,18 @@ env:
         description: Comma-separated paths Docs Agent may edit.
         type: string
         default: README.md,docs/**
+      context_repositories:
+        description: JSON array of read-only evidence repositories with alias, repository, and optional revision.
+        type: string
+        default: "[]"
+      bootstrap_contract:
+        description: JSON object declaring required bootstrap paths, glob minimums, entry-point links, and forbidden phrases.
+        type: string
+        default: "{}"
+      source_delta:
+        description: JSON array of caller-bounded source deltas with id, source_refs, and requires_documentation_change; required and non-empty for maintenance.
+        type: string
+        default: "[]"
       validation_dependencies:
         description: Optional caller-owned command that installs dependencies needed before validation.
         type: string
@@ -102,10 +116,13 @@ jobs:
       validation_dependencies: ${{ steps.config.outputs.validation_dependencies }}
       verification_commands: ${{ steps.config.outputs.verification_commands }}
       drift_checks: ${{ steps.config.outputs.drift_checks }}
+      completion_check: ${{ steps.config.outputs.completion_check }}
       runner_workspace: ${{ steps.config.outputs.runner_workspace }}
       expected_artifacts: ${{ steps.config.outputs.expected_artifacts }}
       output_projections: ${{ steps.config.outputs.output_projections }}
       success_requires_pr: ${{ steps.config.outputs.success_requires_pr }}
+      allowed_repos: ${{ steps.config.outputs.allowed_repos }}
+      access_token_repos: ${{ steps.config.outputs.access_token_repos }}
     steps:
       - name: Resolve Docs Agent settings
         id: config
@@ -115,6 +132,9 @@ jobs:
           REQUIRE_PR: ${{ inputs.require_pr }}
           INPUT_VERIFICATION_COMMANDS: ${{ inputs.verification_commands }}
           INPUT_DRIFT_CHECKS: ${{ inputs.drift_checks }}
+          INPUT_CONTEXT_REPOSITORIES: ${{ inputs.context_repositories }}
+          INPUT_BOOTSTRAP_CONTRACT: ${{ inputs.bootstrap_contract }}
+          INPUT_SOURCE_DELTA: ${{ inputs.source_delta }}
           INPUT_VALIDATION_DEPENDENCIES: ${{ inputs.validation_dependencies }}
           INPUT_PROMPT: ${{ inputs.prompt }}
           INPUT_WRITABLE_PATHS: ${{ inputs.writable_paths }}
@@ -133,35 +153,35 @@ jobs:
             technical:bootstrap)
               package_path="bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json"
               agent_slug="technical-docs-bootstrap-agent"
-              package_digest="sha256-bytes-v1:9050c9b4364a5a91b057fd51ff5f667efc320f9d6776160ab3e7cf4fd5e4f0e6"
+              package_digest="sha256-bytes-v1:0230e0e3fd8a4f045a545407d3d01c22df537b05f031260e29d6b531285b7839"
               lane_requires_pr=true
               default_prompt="Bootstrap source-grounded developer documentation that helps developers understand, use, and extend the code in the repository."
               ;;
             technical:maintenance)
               package_path="bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json"
               agent_slug="technical-docs-maintenance-agent"
-              package_digest="sha256-bytes-v1:78fef9f8d787866c7b48b8f044769d38c0528778c8e2a82af816f9f8ea65014f"
+              package_digest="sha256-bytes-v1:975c7b0a0a7aff52897c52be5ac903a7fb110ea3c33e16227f8694c74c932519"
               lane_requires_pr=false
               default_prompt="Maintain source-grounded developer documentation that helps developers understand, use, and extend the code in the repository."
               ;;
             user:bootstrap)
               package_path="bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json"
               agent_slug="user-docs-bootstrap-agent"
-              package_digest="sha256-bytes-v1:ee558a73f2a393c1912d62f7f40dbdd4bc31ac0168c3c248316b3430258c55cd"
+              package_digest="sha256-bytes-v1:a3ada797a125f638364caac43004bbb47fcc8c7bdc89021f25fcfcdc4c2d502f"
               lane_requires_pr=true
               default_prompt="Bootstrap source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs."
               ;;
             user:maintenance)
               package_path="bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json"
               agent_slug="user-docs-maintenance-agent"
-              package_digest="sha256-bytes-v1:e2248f014c1409a8d4c5cb303ea37c0b24ae05babd02d40c6032160daf60d4c4"
+              package_digest="sha256-bytes-v1:747de10fdb52d7c1543b404030e0e0a2604b6496e95d50143149f72c975a98fb"
               lane_requires_pr=false
               default_prompt="Maintain source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs."
               ;;
             skills:maintenance)
               package_path="bundles/skills-agent/native/skills-maintenance-agent.agent.json"
               agent_slug="skills-maintenance-agent"
-              package_digest="sha256-bytes-v1:c643f8bd31864cdd607f9025a000694a65a3fdf91532e4311fbac541e708a2b2"
+              package_digest="sha256-bytes-v1:0f8d35fe0026aa62b9ddf2e86c4f9432b4d8aae90757dfbaf334d4a0671fb8a3"
               lane_requires_pr=false
               default_prompt="Maintain live agent skill instructions and generated packaged skill outputs."
               ;;
@@ -183,6 +203,35 @@ jobs:
 
           verification_commands="$(printf '%s' "$INPUT_VERIFICATION_COMMANDS" | jq -c 'if type == "array" then . else error("verification_commands must be an array") end')"
           drift_checks="$(printf '%s' "$INPUT_DRIFT_CHECKS" | jq -c 'if type == "array" then . else error("drift_checks must be an array") end')"
+          context_repositories="$(printf '%s' "$INPUT_CONTEXT_REPOSITORIES" | jq -c '
+            if type != "array" or any(.[]; type != "object" or (.alias | type != "string" or length == 0) or (.repository | type != "string" or test("^[^/]+/[^/]+$") | not) or ((.revision // "main") | type != "string" or length == 0))
+            then error("context_repositories must be a list of alias/repository/revision objects")
+            else map({alias,repository,revision:(.revision // "main")}) end
+          ')"
+          bootstrap_contract="$(printf '%s' "$INPUT_BOOTSTRAP_CONTRACT" | jq -c '
+            if type != "object" then error("bootstrap_contract must be an object") else . + {
+              required_paths:(.required_paths // []), required_globs:(.required_globs // []),
+              entry_points:(.entry_points // []), forbidden_phrases:(.forbidden_phrases // [])
+            } end
+          ')"
+          printf '%s' "$bootstrap_contract" | jq -e '
+            (.required_paths | type == "array" and all(.[]; type == "string" and length > 0)) and
+            (.required_globs | type == "array" and all(.[]; type == "object" and (.pattern | type == "string" and length > 0) and ((.min // .min_count) | type == "number" and . >= 0))) and
+            (.entry_points | type == "array" and all(.[]; type == "object" and (.path | type == "string" and length > 0) and (.must_link_to | type == "array" and length > 0 and all(.[]; type == "string" and length > 0)))) and
+            (.forbidden_phrases | type == "array" and all(.[]; type == "string" and length > 0))
+          ' >/dev/null
+          if [ "$RUN_KIND" = bootstrap ] && [ "$(printf '%s' "$bootstrap_contract" | jq '[.required_paths,.required_globs,.entry_points]|map(length)|add')" -eq 0 ]; then
+            printf 'bootstrap_contract must declare positive completion criteria for bootstrap.\n' >&2
+            exit 1
+          fi
+          source_delta="$(printf '%s' "$INPUT_SOURCE_DELTA" | jq -c '
+            if type != "array" or any(.[]; type != "object" or (.id | type != "string" or test("\\S") | not) or (.source_refs | type != "array" or length == 0 or any(.[]; type != "string" or test("\\S") | not) or (length != (unique | length))) or (.requires_documentation_change | type != "boolean")) or ([.[].id] | length != (unique | length))
+            then error("source_delta must be a list of unique id/non-empty source_refs/requires_documentation_change objects") else . end
+          ')"
+          if [ "$RUN_KIND" = maintenance ] && [ "$(printf '%s' "$source_delta" | jq 'length')" -eq 0 ]; then
+            printf 'source_delta must contain at least one caller-bounded item for maintenance.\n' >&2
+            exit 1
+          fi
           if ! printf '%s' "$DOCS_AGENT_PACKAGE_REVISION" | grep -Eq '^[0-9a-fA-F]{40}$'; then
             printf 'DOCS_AGENT_PACKAGE_REVISION must be a full immutable Docs Agent commit SHA.\n' >&2
             exit 1
@@ -193,12 +242,29 @@ jobs:
             {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_change_summary","type":"DocsAgentChangeSummary","artifact_schema":"docs-agent/change-summary/v1","description":"Reviewable summary of documentation or skill changes made by the run.","required":false},
             {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_verification_report","type":"DocsAgentVerificationReport","artifact_schema":"docs-agent/verification-report/v1","description":"Runner verification command results for the target workspace.","required":false},
             {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_drift_report","type":"DocsAgentDriftReport","artifact_schema":"docs-agent/drift-report/v1","description":"Drift-check results for generated documentation, skills, or packaged outputs.","required":false},
+            {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_completion_report","type":"DocsAgentCompletionReport","artifact_schema":"docs-agent/completion-report/v1","description":"Versioned completion and drift report validated from the canonical native transcript and staged by WP Codebox.","required":false},
             {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_workspace_publication","type":"DocsAgentWorkspacePublication","artifact_schema":"docs-agent/workspace-publication/v1","description":"Canonical branch and pull request links published by the runner workspace.","required":false}
           ]'
 
-          prompt="$(printf '%s\n\n%s\n\nTarget repository: %s\nWorkflow run: %s/%s/actions/runs/%s\nDocs Agent lane: %s\nDocs Agent run kind: %s\nBase ref: %s\nCanonical branch: %s\nWritable paths: %s\n' \
+          context_prompt="$(printf '%s' "$context_repositories" | jq -r 'if length == 0 then "No additional context repositories are declared." else "Read-only context repositories (cite aliases in evidence):\n" + (map("- " + .alias + ": " + .repository + "@" + .revision) | join("\n")) end')"
+          completion_prompt="$(jq -nr --arg lane "$AUDIENCE" --arg run_kind "$RUN_KIND" --argjson bootstrap "$bootstrap_contract" --argjson delta "$source_delta" '
+            "Completion contract (mandatory):\n" +
+            "- End with exactly one <DOCS_AGENT_COMPLETION_REPORT>{JSON}</DOCS_AGENT_COMPLETION_REPORT> block and no other report block.\n" +
+            "- JSON schema: docs-agent/completion-report/v1; lane=" + $lane + "; run_kind=" + $run_kind + ".\n" +
+            "- Include outcome (changes or no_changes), scope.source_basis, non-empty scope.source_refs and scope.documentation_surfaces, non-empty evidence-backed per-item dispositions, and changed_paths.\n" +
+            "- Maintenance must use bounded_delta and cover every caller source_delta ID and source ref in its matching evidence-backed report item. Bootstrap may use inventory with its positive bootstrap contract.\n" +
+            "- changed_paths must exactly match workspace_git_status/workspace_git_diff. A write call without a byte diff is not a change.\n" +
+            "- For no_changes, use only verified_current or not_documentation_relevant dispositions, cover every bounded source delta, and leave the documentation diff clean.\n" +
+            "- For changes, use created/updated dispositions and report every actual changed path. Never write outside writable paths.\n" +
+            "- Bootstrap must satisfy every caller criterion and create a substantive navigable initial documentation system on a fresh surface.\n" +
+            "Bootstrap contract JSON: " + ($bootstrap|tojson) + "\n" +
+            "Caller-known source delta JSON: " + ($delta|tojson)
+          ')"
+          prompt="$(printf '%s\n\n%s\n\n%s\n\n%s\n\nTarget repository: %s\nWorkflow run: %s/%s/actions/runs/%s\nDocs Agent lane: %s\nDocs Agent run kind: %s\nBase ref: %s\nCanonical branch: %s\nWritable paths: %s\n' \
             "$default_prompt" \
             "$INPUT_PROMPT" \
+            "$context_prompt" \
+            "$completion_prompt" \
             "$GITHUB_REPOSITORY_NAME" \
             "$GITHUB_SERVER_URL" \
             "$GITHUB_REPOSITORY_NAME" \
@@ -221,11 +287,14 @@ jobs:
             --arg baseRef "$INPUT_BASE_REF" \
             --arg docsBranch "$INPUT_DOCS_BRANCH" \
             --arg validationDependencies "$INPUT_VALIDATION_DEPENDENCIES" \
+            --argjson contextRepositories "$context_repositories" \
+            --argjson bootstrapContract "$bootstrap_contract" \
+            --argjson sourceDelta "$source_delta" \
             --argjson successRequiresPr "$success_requires_pr" \
             --argjson verificationCommands "$verification_commands" \
             --argjson driftChecks "$drift_checks" \
             --argjson artifactDeclarations "$artifact_declarations" \
-            '{schema:"docs-agent/runner-recipe/v1",targetRepository:$targetRepository,prompt:$prompt,docsAgent:{externalPackageSource:{repository:$repository,revision:$revision,path:$packagePath,digest:$packageDigest},agentSlug:$agentSlug},runner:{validationDependencies:$validationDependencies,verificationCommands:$verificationCommands,driftChecks:$driftChecks,writablePaths:$writablePaths,baseRef:$baseRef,docsBranch:$docsBranch,successRequiresPr:$successRequiresPr},artifacts:{expected:($artifactDeclarations|map(.name)),declarations:$artifactDeclarations}}')"
+            '{schema:"docs-agent/runner-recipe/v1",targetRepository:$targetRepository,prompt:$prompt,docsAgent:{externalPackageSource:{repository:$repository,revision:$revision,path:$packagePath,digest:$packageDigest},agentSlug:$agentSlug},runner:{contextRepositories:$contextRepositories,bootstrapContract:$bootstrapContract,sourceDelta:$sourceDelta,validationDependencies:$validationDependencies,verificationCommands:$verificationCommands,driftChecks:$driftChecks,writablePaths:$writablePaths,baseRef:$baseRef,docsBranch:$docsBranch,successRequiresPr:$successRequiresPr},artifacts:{expected:($artifactDeclarations|map(.name)),declarations:$artifactDeclarations}}')"
           external_package_source="$(jq -cn --arg repository "Automattic/docs-agent" --arg revision "$DOCS_AGENT_PACKAGE_REVISION" --arg path "$package_path" --arg digest "$package_digest" '{repository:$repository,revision:$revision,path:$path,digest:$digest}')"
           runtime_sources='[{"version":1,"role":"component","repository":"Automattic/agents-api","revision":"78e2dd409010f98fa4d26cdd72572117384ab18d","path":".","metadata":{"slug":"agents-api","loadAs":"mu-plugin","pluginFile":"agents-api.php"}},{"version":1,"role":"provider_plugin","source":{"type":"https_zip","url":"https://downloads.wordpress.org/plugin/ai-provider-for-openai.1.0.3.zip","sha256":"48f3c0c714b3164cda79d320829830d5a0ea1116e0b19653da8af898a22d3bb6","archive_root":"ai-provider-for-openai"},"metadata":{"slug":"ai-provider-for-openai","pluginFile":"plugin.php","activate":true,"providers":["openai"]}},{"version":1,"role":"bundled_library","repository":"WordPress/php-ai-client","revision":"631704201d15ffeff7091ad3bc7156db74054956","path":".","metadata":{"library":"php-ai-client","strategy":"wordpress-scoped-bundle"}}]'
 
@@ -236,6 +305,19 @@ jobs:
             '{enabled:true,repo:$repo,clone_url:("https://github.com/" + $repo + ".git"),branch:$branch,branch_prefix:$branch,base:$baseRef,from:("origin/" + $baseRef)}')"
           expected_artifacts="$(printf '%s' "$artifact_declarations" | jq -c 'map(.name)')"
           output_projections="$(jq -cn --arg path 'metadata.runner_workspace_publication.pull_request.url' --argjson required "$success_requires_pr" '{docs_agent_publication:{path:$path,required:$required}}')"
+          if ! printf '%s' "$DOCS_AGENT_COMPLETION_CONTRACT_REVISION" | grep -Eq '^[0-9a-fA-F]{40}$'; then
+            printf 'DOCS_AGENT_COMPLETION_CONTRACT_REVISION must be a full immutable Docs Agent commit SHA.\n' >&2
+            exit 1
+          fi
+          contract_url="https://raw.githubusercontent.com/Automattic/docs-agent/$DOCS_AGENT_COMPLETION_CONTRACT_REVISION/scripts/validate-docs-agent-completion.php"
+          bootstrap_contract_b64="$(printf '%s' "$bootstrap_contract" | base64 -w0)"
+          source_delta_b64="$(printf '%s' "$source_delta" | base64 -w0)"
+          completion_artifact_path="docs-agent-completion-report.json"
+          completion_command="curl --fail --silent --show-error '$contract_url' --output .codebox/validate-docs-agent-completion.php && php .codebox/validate-docs-agent-completion.php --workspace . --lane '$AUDIENCE' --run-kind '$RUN_KIND' --writable-paths '$INPUT_WRITABLE_PATHS' --bootstrap-contract-b64 '$bootstrap_contract_b64' --source-delta-b64 '$source_delta_b64' --transcript-root .codebox/agent-task-artifacts --artifact-path '$completion_artifact_path'"
+          completion_check="$(jq -cn --arg command "$completion_command" --arg path "$completion_artifact_path" '{command:$command,description:"Validate Docs Agent completion report against the actual workspace diff",artifact:{name:"docs_agent_completion_report",type:"DocsAgentCompletionReport",path:$path}}')"
+          effective_drift_checks="$(jq -cn --argjson caller "$drift_checks" --argjson completion "$completion_check" '$caller + [$completion]')"
+          allowed_repos="$(printf '%s' "$context_repositories" | jq -c --arg target "$GITHUB_REPOSITORY_NAME" '([$target] + map(.repository)) | unique')"
+          access_token_repos="$(printf '%s' "$allowed_repos" | jq -r 'join(",")')"
 
           {
             printf 'recipe_json<<EOF\n%s\nEOF\n' "$recipe_json"
@@ -245,7 +327,10 @@ jobs:
             printf 'prompt<<EOF\n%s\nEOF\n' "$prompt"
             printf 'validation_dependencies<<EOF\n%s\nEOF\n' "$INPUT_VALIDATION_DEPENDENCIES"
             printf 'verification_commands<<EOF\n%s\nEOF\n' "$verification_commands"
-            printf 'drift_checks<<EOF\n%s\nEOF\n' "$drift_checks"
+            printf 'drift_checks<<EOF\n%s\nEOF\n' "$effective_drift_checks"
+            printf 'completion_check<<EOF\n%s\nEOF\n' "$completion_check"
+            printf 'allowed_repos=%s\n' "$allowed_repos"
+            printf 'access_token_repos=%s\n' "$access_token_repos"
             printf 'runner_workspace<<EOF\n%s\nEOF\n' "$runner_workspace"
             printf 'expected_artifacts<<EOF\n%s\nEOF\n' "$expected_artifacts"
             printf 'output_projections<<EOF\n%s\nEOF\n' "$output_projections"
@@ -259,7 +344,7 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
-    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@v0.12.29
+    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@12a5bb19a97b89d0a78b502fc71adede5b122359
     with:
       wp_codebox_release_ref: v0.12.29
       external_package_source: ${{ needs.prepare.outputs.external_package_source }}
@@ -275,8 +360,8 @@ jobs:
       verification_commands: ${{ needs.prepare.outputs.verification_commands }}
       drift_checks: ${{ needs.prepare.outputs.drift_checks }}
       success_requires_pr: ${{ needs.prepare.outputs.success_requires_pr == 'true' }}
-      access_token_repos: ${{ github.repository }}
-      allowed_repos: '["${{ github.repository }}"]'
+      access_token_repos: ${{ needs.prepare.outputs.access_token_repos }}
+      allowed_repos: ${{ needs.prepare.outputs.allowed_repos }}
       expected_artifacts: ${{ needs.prepare.outputs.expected_artifacts }}
       artifact_declarations: ${{ needs.prepare.outputs.artifact_declarations }}
       output_projections: ${{ needs.prepare.outputs.output_projections }}

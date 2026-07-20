@@ -40,11 +40,11 @@ agents_api_smoke_require_module();
 do_action( 'init' );
 
 $packages = array(
-	'technical-docs-bootstrap-agent'   => array( 'path' => 'bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json', 'write_gate' => 'require-doc-write' ),
-	'technical-docs-maintenance-agent' => array( 'path' => 'bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json', 'write_gate' => 'require-doc-write' ),
-	'user-docs-bootstrap-agent'        => array( 'path' => 'bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json', 'write_gate' => 'require-doc-write' ),
-	'user-docs-maintenance-agent'      => array( 'path' => 'bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json', 'write_gate' => 'require-doc-write' ),
-	'skills-maintenance-agent'         => array( 'path' => 'bundles/skills-agent/native/skills-maintenance-agent.agent.json', 'write_gate' => 'require-skill-write' ),
+	'technical-docs-bootstrap-agent'   => array( 'path' => 'bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json' ),
+	'technical-docs-maintenance-agent' => array( 'path' => 'bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json' ),
+	'user-docs-bootstrap-agent'        => array( 'path' => 'bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json' ),
+	'user-docs-maintenance-agent'      => array( 'path' => 'bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json' ),
+	'skills-maintenance-agent'         => array( 'path' => 'bundles/skills-agent/native/skills-maintenance-agent.agent.json' ),
 );
 
 $specs = array();
@@ -67,10 +67,9 @@ foreach ( array_keys( $packages ) as $index => $slug ) {
 	$agent  = wp_get_agent( $slug );
 	$config = $agent instanceof WP_Agent ? $agent->get_default_config() : array();
 	$rules  = is_array( $config['tool_call_rules'] ?? null ) ? $config['tool_call_rules'] : array();
-	$gate   = array_values( array_filter( $rules, static fn( $rule ): bool => is_array( $rule ) && $package['write_gate'] === ( $rule['id'] ?? '' ) ) );
 
 	agents_api_smoke_assert_equals( true, in_array( 'workspace_write', $config['enabled_tools'] ?? array(), true ), "{$slug} preserves the workspace write tool", $failures, $passes );
-	agents_api_smoke_assert_equals( true, isset( $gate[0] ) && true === ( $gate[0]['require_tool_use'] ?? false ), "{$slug} preserves the required write gate", $failures, $passes );
+	agents_api_smoke_assert_equals( array(), $rules, "{$slug} permits clean evidence-backed no-change completion", $failures, $passes );
 
 	$chat = AgentsAPI\AI\Channels\WP_Agent_Default_Chat_Handler::execute( array( 'agent' => $slug, 'message' => 'Verify native registration.' ) );
 	agents_api_smoke_assert_equals( 'agents_chat_provider_required', $chat instanceof WP_Error ? $chat->get_error_code() : '', "{$slug} resolves through the default native chat handler", $failures, $passes );

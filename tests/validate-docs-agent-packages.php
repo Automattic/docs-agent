@@ -33,6 +33,7 @@ $expected_artifact_schemas = array(
 	'docs_agent_change_summary'        => 'docs-agent/change-summary/v1',
 	'docs_agent_verification_report'   => 'docs-agent/verification-report/v1',
 	'docs_agent_drift_report'          => 'docs-agent/drift-report/v1',
+	'docs_agent_completion_report'     => 'docs-agent/completion-report/v1',
 	'docs_agent_workspace_publication' => 'docs-agent/workspace-publication/v1',
 );
 
@@ -44,9 +45,9 @@ $assert( 'OWNER/REPO' === ( $example['targetRepository'] ?? null ), 'Example con
 $assert( 'docs-agent/runner-recipe/v1' === ( $recipe['schema'] ?? null ), 'Runner recipe must use the portable Docs Agent runner recipe schema.' );
 $expected_package_source = array(
 	'repository' => 'Automattic/docs-agent',
-	'revision'   => '85443eb91c12b2759d8e207f1ae4421407b4cc5e',
+	'revision'   => '85f0d162a7d499fdc1286891371342727d084c88',
 	'path'       => 'bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json',
-	'digest'     => 'sha256-bytes-v1:78fef9f8d787866c7b48b8f044769d38c0528778c8e2a82af816f9f8ea65014f',
+	'digest'     => 'sha256-bytes-v1:975c7b0a0a7aff52897c52be5ac903a7fb110ea3c33e16227f8694c74c932519',
 );
 foreach ( array( $recipe, $example ) as $runner_recipe ) {
 	$assert( $expected_package_source === ( $runner_recipe['docsAgent']['externalPackageSource'] ?? null ), 'Runner recipes must use the immutable Docs Agent package source.' );
@@ -70,11 +71,25 @@ $assert( str_contains( $maintain_docs_workflow, 'declared_artifacts_json:' ), 'm
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 'maintain-docs.yml must prepare typed artifact declarations without caller-specific projections.' );
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 'maintain-docs.yml must expose artifact declarations through workflow outputs.' );
 
-$generic_codebox_agent_task_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@v0.12.29';
-$assert( str_contains( $maintain_docs_workflow, $generic_codebox_agent_task_workflow ), 'maintain-docs.yml must call the generic Codebox agent-task workflow.' );
+$wp_codebox_producer_revision        = '12a5bb19a97b89d0a78b502fc71adede5b122359';
+$generic_codebox_agent_task_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@' . $wp_codebox_producer_revision;
+$assert( str_contains( $maintain_docs_workflow, $generic_codebox_agent_task_workflow ), 'maintain-docs.yml must call the immutable generic Codebox agent-task workflow candidate.' );
 $assert( str_contains( $maintain_docs_workflow, 'wp_codebox_release_ref: v0.12.29' ), 'maintain-docs.yml must pass the matching WP Codebox release tag.' );
 
 $assert( str_contains( $maintain_docs_workflow, '--arg writablePaths "$INPUT_WRITABLE_PATHS"' ), 'maintain-docs.yml must include writable paths in the portable recipe.' );
+$assert( str_contains( $maintain_docs_workflow, 'contextRepositories:$contextRepositories' ), 'maintain-docs.yml must retain read-only context repositories in the portable recipe.' );
+$assert( str_contains( $maintain_docs_workflow, 'bootstrapContract:$bootstrapContract' ), 'maintain-docs.yml must retain caller bootstrap criteria in the portable recipe.' );
+$assert( str_contains( $maintain_docs_workflow, 'sourceDelta:$sourceDelta' ), 'maintain-docs.yml must retain caller-known bounded source deltas in the portable recipe.' );
+$assert( str_contains( $maintain_docs_workflow, 'source_delta must contain at least one caller-bounded item for maintenance.' ), 'maintain-docs.yml must reject empty maintenance source deltas before execution.' );
+$assert( str_contains( $maintain_docs_workflow, 'validate-docs-agent-completion.php' ), 'maintain-docs.yml must execute the Docs Agent-owned completion validator.' );
+$completion_contract_revision = 'cc6ec369d1e47ffdf541e3ec2c72bce5eed5f685';
+$assert( str_contains( $maintain_docs_workflow, 'DOCS_AGENT_COMPLETION_CONTRACT_REVISION: ' . $completion_contract_revision ), 'maintain-docs.yml must pin the completion validator to its immutable implementation commit.' );
+$assert( str_contains( $maintain_docs_workflow, 'Automattic/docs-agent/$DOCS_AGENT_COMPLETION_CONTRACT_REVISION/scripts/validate-docs-agent-completion.php' ), 'maintain-docs.yml must fetch the validator independently of native package provenance.' );
+$historical_validator = shell_exec( 'git -C ' . escapeshellarg( $root ) . ' show ' . escapeshellarg( $completion_contract_revision . ':scripts/validate-docs-agent-completion.php' ) );
+$assert( is_string( $historical_validator ) && $historical_validator === file_get_contents( $root . '/scripts/validate-docs-agent-completion.php' ), 'The pinned completion validator revision must contain the current validator bytes.' );
+$assert( str_contains( $maintain_docs_workflow, '$caller + [$completion]' ), 'maintain-docs.yml must keep caller drift checks separate from the completion check.' );
+$assert( str_contains( $maintain_docs_workflow, '--artifact-path \'$completion_artifact_path\'' ), 'maintain-docs.yml must make the validator write the declared completion artifact.' );
+$assert( str_contains( $maintain_docs_workflow, 'artifact:{name:"docs_agent_completion_report",type:"DocsAgentCompletionReport",path:$path}' ), 'The mandatory completion drift check must declare the generic WP Codebox command artifact shape.' );
 $assert( str_contains( $maintain_docs_workflow, 'output_projections:' ), 'maintain-docs.yml must project the bounded runner publication result.' );
 $assert( str_contains( $maintain_docs_workflow, 'OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}' ), 'maintain-docs.yml must explicitly forward OPENAI_API_KEY to the native runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'ACCESS_TOKEN: ${{ github.token }}' ), 'maintain-docs.yml must forward the caller-scoped GitHub token to the native runner.' );
@@ -125,6 +140,13 @@ foreach ( $expected_artifact_schemas as $name => $schema ) {
 	$assert( 'docs-agent/artifact-declaration/v1' === ( $example_artifacts_by_name[ $name ]['schema'] ?? '' ), "Example runner config typed artifact {$name} declaration schema mismatch." );
 	$assert( $schema === ( $example_artifacts_by_name[ $name ]['artifact_schema'] ?? '' ), "Example runner config typed artifact {$name} schema mismatch." );
 }
+$completion_declaration = $example_artifacts_by_name['docs_agent_completion_report'];
+$assert( false === ( $completion_declaration['required'] ?? null ), 'The runtime completion artifact declaration must remain optional until post-command validation runs.' );
+$example_source_delta = $example['runner']['sourceDelta'] ?? array();
+$assert( is_array( $example_source_delta ) && array() !== $example_source_delta && array() !== ( $example_source_delta[0]['source_refs'] ?? array() ), 'The maintenance recipe example must use a non-empty caller-bounded source delta.' );
+$example_completion_checks = array_values( array_filter( $example['runner']['driftChecks'] ?? array(), static fn( $check ): bool => isset( $check['artifact']['name'] ) && 'docs_agent_completion_report' === $check['artifact']['name'] ) );
+$assert( 1 === count( $example_completion_checks ), 'The recipe example must declare exactly one completion command artifact.' );
+$assert( array( 'name' => 'docs_agent_completion_report', 'type' => 'DocsAgentCompletionReport', 'path' => 'docs-agent-completion-report.json' ) === $example_completion_checks[0]['artifact'], 'The example completion command artifact must use the generic name/type/path shape.' );
 
 /*
  * Native Agents API package validation.
@@ -192,16 +214,7 @@ foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertion
 	);
 	$assert( ( $native_assertions['permitted_workspace_tools'] ?? array() ) === $workspace_tools, "Native package {$native_file} workspace tools do not match its permitted workspace tool policy." );
 
-	$write_gate_id = $native_assertions['required_write_gate'] ?? '';
-	$write_gates   = array_filter(
-		$config['tool_call_rules'] ?? array(),
-		static fn( $rule ): bool => is_array( $rule ) && $write_gate_id === ( $rule['id'] ?? '' )
-	);
-	$write_gate = reset( $write_gates );
-	$assert( is_array( $write_gate ), "Native package {$native_file} must declare its required write gate." );
-	$assert( true === ( $write_gate['require_tool_use'] ?? false ), "Native package {$native_file} write gate must require tool use." );
-	$assert( 1 === ( $write_gate['min_tool_calls'] ?? 0 ), "Native package {$native_file} write gate must require at least one write." );
-	$assert( array( 'workspace_write', 'workspace_edit', 'workspace_apply_patch' ) === ( $write_gate['require_one_of'] ?? array() ), "Native package {$native_file} write gate must require an allowed workspace write tool." );
+	$assert( array() === ( $config['tool_call_rules'] ?? null ), "Native package {$native_file} must allow evidence-backed no-change completion without a no-op write." );
 
 	// Runner-neutral boundary: no agent-owned publication tools.
 	foreach ( $native_spec['forbidden_publication_tools'] ?? array() as $forbidden_tool ) {

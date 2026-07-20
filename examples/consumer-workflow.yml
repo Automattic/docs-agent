@@ -28,6 +28,8 @@ jobs:
       base_ref: trunk
       docs_branch: docs-agent/example-docs
       writable_paths: README.md,docs/**
+      context_repositories: '[{"alias":"agents-api","repository":"Automattic/agents-api","revision":"main"}]'
+      source_delta: '[{"id":"agents-api-runtime-contract","source_refs":["src/runtime/**","tests/runtime/**"],"requires_documentation_change":false}]'
       prompt: ${{ github.event_name == 'workflow_dispatch' && inputs.prompt || '' }}
       run_agent: ${{ github.event_name != 'workflow_dispatch' || inputs.run_agent }}
     secrets:
