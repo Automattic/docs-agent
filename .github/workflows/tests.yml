@@ -26,6 +26,7 @@ jobs:
           repository: Automattic/agents-api
           ref: 21a8b9b7845e6b89f82bdf34e62f739220184ec7
           path: agents-api
+          fetch-depth: 0
           token: ${{ github.token }}
           persist-credentials: false
 
