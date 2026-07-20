@@ -70,9 +70,8 @@ $assert( str_contains( $maintain_docs_workflow, 'schema:"docs-agent/runner-recip
 $assert( str_contains( $maintain_docs_workflow, 'declared_artifacts_json:' ), 'maintain-docs.yml must expose typed artifact declarations as a reusable workflow output.' );
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 'maintain-docs.yml must prepare typed artifact declarations without caller-specific projections.' );
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 'maintain-docs.yml must expose artifact declarations through workflow outputs.' );
-$assert( str_contains( $maintain_docs_workflow, 'Return valid compact JSON with double-quoted keys and strings, no markdown fence, no comments, no placeholders, and no trailing commas.' ), 'maintain-docs.yml must give the model explicit JSON serialization criteria.' );
-$assert( str_contains( $maintain_docs_workflow, 'Exact report shape (replace example documentation paths, evidence, dispositions, outcome, and changed_paths with verified values; preserve caller IDs and source refs)' ), 'maintain-docs.yml must give the model a complete completion-report object shape.' );
-$assert( str_contains( $maintain_docs_workflow, '{schema:"docs-agent/completion-report/v1",lane:$lane,run_kind:$run_kind,outcome:"changes",scope:' ), 'maintain-docs.yml completion example must include the nested v1 report fields.' );
+$assert( str_contains( $maintain_docs_workflow, 'The host generates and stages the completion report from caller inputs, Git, and filesystem checks' ), 'maintain-docs.yml must make host-owned completion generation explicit.' );
+$assert( ! str_contains( $maintain_docs_workflow, 'DOCS_AGENT_COMPLETION_REPORT' ), 'maintain-docs.yml must not request model-authored completion reports.' );
 
 $wp_codebox_producer_revision        = 'a6fe2d208e990a8d04104aa74aacbb8d1539fbc1';
 $generic_codebox_agent_task_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@' . $wp_codebox_producer_revision;
@@ -86,13 +85,13 @@ $assert( str_contains( $maintain_docs_workflow, 'bootstrapContract:$bootstrapCon
 $assert( str_contains( $maintain_docs_workflow, 'sourceDelta:$sourceDelta' ), 'maintain-docs.yml must retain caller-known bounded source deltas in the portable recipe.' );
 $assert( str_contains( $maintain_docs_workflow, 'source_delta must contain at least one caller-bounded item for maintenance.' ), 'maintain-docs.yml must reject empty maintenance source deltas before execution.' );
 $assert( str_contains( $maintain_docs_workflow, 'validate-docs-agent-completion.php' ), 'maintain-docs.yml must execute the Docs Agent-owned completion validator.' );
-$completion_contract_revision = 'a39d9db230eb9e0b72ed84465f4d61bd8dda1bab';
+$completion_contract_revision = '44f1e60e9278dd351fafea53434999de4782514b';
 $assert( str_contains( $maintain_docs_workflow, 'DOCS_AGENT_COMPLETION_CONTRACT_REVISION: ' . $completion_contract_revision ), 'maintain-docs.yml must pin the completion validator to its immutable implementation commit.' );
 $assert( str_contains( $maintain_docs_workflow, 'Automattic/docs-agent/$DOCS_AGENT_COMPLETION_CONTRACT_REVISION/scripts/validate-docs-agent-completion.php' ), 'maintain-docs.yml must fetch the validator independently of native package provenance.' );
 $historical_validator = shell_exec( 'git -C ' . escapeshellarg( $root ) . ' show ' . escapeshellarg( $completion_contract_revision . ':scripts/validate-docs-agent-completion.php' ) );
 $assert( is_string( $historical_validator ) && $historical_validator === file_get_contents( $root . '/scripts/validate-docs-agent-completion.php' ), 'The pinned completion validator revision must contain the current validator bytes.' );
 $assert( str_contains( $maintain_docs_workflow, '$caller + [$completion]' ), 'maintain-docs.yml must keep caller drift checks separate from the completion check.' );
-$assert( str_contains( $maintain_docs_workflow, '--artifact-path \'$completion_artifact_path\'' ), 'maintain-docs.yml must make the validator write the declared completion artifact.' );
+$assert( str_contains( $maintain_docs_workflow, '--artifact-path \'$completion_artifact_path\'' ) && ! str_contains( $maintain_docs_workflow, '--transcript-root' ), 'maintain-docs.yml must make the validator write the declared artifact without transcript parsing.' );
 $assert( str_contains( $maintain_docs_workflow, 'artifact:{name:"docs_agent_completion_report",type:"DocsAgentCompletionReport",path:$path}' ), 'The mandatory completion drift check must declare the generic WP Codebox command artifact shape.' );
 $assert( str_contains( $maintain_docs_workflow, 'output_projections:' ), 'maintain-docs.yml must project the bounded runner publication result.' );
 $assert( str_contains( $maintain_docs_workflow, 'OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}' ), 'maintain-docs.yml must explicitly forward OPENAI_API_KEY to the native runner.' );

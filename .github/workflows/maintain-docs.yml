@@ -4,7 +4,7 @@ env:
   # Advance this revision and all package digests together when package bytes change.
   DOCS_AGENT_PACKAGE_REVISION: a39d9db230eb9e0b72ed84465f4d61bd8dda1bab
   # Advance independently when the post-command completion validator changes.
-  DOCS_AGENT_COMPLETION_CONTRACT_REVISION: a39d9db230eb9e0b72ed84465f4d61bd8dda1bab
+  DOCS_AGENT_COMPLETION_CONTRACT_REVISION: 44f1e60e9278dd351fafea53434999de4782514b
 
 'on':
   workflow_call:
@@ -242,30 +242,18 @@ jobs:
             {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_change_summary","type":"DocsAgentChangeSummary","artifact_schema":"docs-agent/change-summary/v1","description":"Reviewable summary of documentation or skill changes made by the run.","required":false},
             {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_verification_report","type":"DocsAgentVerificationReport","artifact_schema":"docs-agent/verification-report/v1","description":"Runner verification command results for the target workspace.","required":false},
             {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_drift_report","type":"DocsAgentDriftReport","artifact_schema":"docs-agent/drift-report/v1","description":"Drift-check results for generated documentation, skills, or packaged outputs.","required":false},
-            {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_completion_report","type":"DocsAgentCompletionReport","artifact_schema":"docs-agent/completion-report/v1","description":"Versioned completion and drift report validated from the canonical native transcript and staged by WP Codebox.","required":false},
+            {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_completion_report","type":"DocsAgentCompletionReport","artifact_schema":"docs-agent/completion-report/v1","description":"Versioned host-observed completion and drift report staged by WP Codebox.","required":false},
             {"schema":"docs-agent/artifact-declaration/v1","name":"docs_agent_workspace_publication","type":"DocsAgentWorkspacePublication","artifact_schema":"docs-agent/workspace-publication/v1","description":"Canonical branch and pull request links published by the runner workspace.","required":false}
           ]'
 
           context_prompt="$(printf '%s' "$context_repositories" | jq -r 'if length == 0 then "No additional context repositories are declared." else "Read-only context repositories (cite aliases in evidence):\n" + (map("- " + .alias + ": " + .repository + "@" + .revision) | join("\n")) end')"
-          completion_prompt="$(jq -nr --arg lane "$AUDIENCE" --arg run_kind "$RUN_KIND" --argjson bootstrap "$bootstrap_contract" --argjson delta "$source_delta" '
-            ($delta | map(.source_refs) | add // ["repository inventory"]) as $source_refs |
-            (if $run_kind == "maintenance" then
-              ($delta | map({id,source_refs,documentation_paths:["docs/example.md"],disposition:(if .requires_documentation_change then "updated" else "verified_current" end),evidence:"Describe the source comparison and documentation decision."}))
-            else
-              [{id:"inventory",source_refs:$source_refs,documentation_paths:["README.md","docs/README.md"],disposition:"updated",evidence:"Describe the repository inventory and resulting documentation system."}]
-            end) as $items |
-            ({schema:"docs-agent/completion-report/v1",lane:$lane,run_kind:$run_kind,outcome:"changes",scope:{source_basis:(if $run_kind == "maintenance" then "bounded_delta" else "inventory" end),source_refs:$source_refs,documentation_surfaces:["README.md","docs/example.md"]},items:$items,changed_paths:["docs/example.md"]}|tojson) as $report_shape |
-            "Completion contract (mandatory):\n" +
-            "- End with exactly one <DOCS_AGENT_COMPLETION_REPORT>{JSON}</DOCS_AGENT_COMPLETION_REPORT> block and no other report block.\n" +
-            "- Return valid compact JSON with double-quoted keys and strings, no markdown fence, no comments, no placeholders, and no trailing commas.\n" +
-            "- JSON schema: docs-agent/completion-report/v1; lane=" + $lane + "; run_kind=" + $run_kind + ".\n" +
-            "- Include outcome (changes or no_changes), scope.source_basis, non-empty scope.source_refs and scope.documentation_surfaces, non-empty evidence-backed per-item dispositions, and changed_paths.\n" +
-            "- Maintenance must use bounded_delta and cover every caller source_delta ID and source ref in its matching evidence-backed report item. Bootstrap may use inventory with its positive bootstrap contract.\n" +
-            "- changed_paths must exactly match workspace_git_status/workspace_git_diff. A write call without a byte diff is not a change.\n" +
-            "- For no_changes, use only verified_current or not_documentation_relevant dispositions, cover every bounded source delta, and leave the documentation diff clean.\n" +
-            "- For changes, use created/updated dispositions and report every actual changed path. Never write outside writable paths.\n" +
+          completion_prompt="$(jq -nr --argjson bootstrap "$bootstrap_contract" --argjson delta "$source_delta" '
+            "Completion contract:\n" +
+            "- Interpret the caller-known source delta and edit only within writable paths when source evidence requires documentation updates.\n" +
+            "- Leave the workspace clean when the documentation is current.\n" +
+            "- Every source delta marked requires_documentation_change needs an actual Markdown or MDX workspace diff.\n" +
             "- Bootstrap must satisfy every caller criterion and create a substantive navigable initial documentation system on a fresh surface.\n" +
-            "Exact report shape (replace example documentation paths, evidence, dispositions, outcome, and changed_paths with verified values; preserve caller IDs and source refs):\n<DOCS_AGENT_COMPLETION_REPORT>" + $report_shape + "</DOCS_AGENT_COMPLETION_REPORT>\n" +
+            "- The host generates and stages the completion report from caller inputs, Git, and filesystem checks; finish with normal concise prose.\n" +
             "Bootstrap contract JSON: " + ($bootstrap|tojson) + "\n" +
             "Caller-known source delta JSON: " + ($delta|tojson)
           ')"
@@ -322,7 +310,7 @@ jobs:
           bootstrap_contract_b64="$(printf '%s' "$bootstrap_contract" | base64 -w0)"
           source_delta_b64="$(printf '%s' "$source_delta" | base64 -w0)"
           completion_artifact_path="docs-agent-completion-report.json"
-          completion_command="curl --fail --silent --show-error '$contract_url' --output .codebox/validate-docs-agent-completion.php && php .codebox/validate-docs-agent-completion.php --workspace . --lane '$AUDIENCE' --run-kind '$RUN_KIND' --writable-paths '$INPUT_WRITABLE_PATHS' --bootstrap-contract-b64 '$bootstrap_contract_b64' --source-delta-b64 '$source_delta_b64' --transcript-root .codebox/agent-task-artifacts --artifact-path '$completion_artifact_path'"
+          completion_command="curl --fail --silent --show-error '$contract_url' --output .codebox/validate-docs-agent-completion.php && php .codebox/validate-docs-agent-completion.php --workspace . --lane '$AUDIENCE' --run-kind '$RUN_KIND' --writable-paths '$INPUT_WRITABLE_PATHS' --bootstrap-contract-b64 '$bootstrap_contract_b64' --source-delta-b64 '$source_delta_b64' --artifact-path '$completion_artifact_path'"
           completion_check="$(jq -cn --arg command "$completion_command" --arg path "$completion_artifact_path" '{command:$command,description:"Validate Docs Agent completion report against the actual workspace diff",artifact:{name:"docs_agent_completion_report",type:"DocsAgentCompletionReport",path:$path}}')"
           effective_drift_checks="$(jq -cn --argjson caller "$drift_checks" --argjson completion "$completion_check" '$caller + [$completion]')"
           allowed_repos="$(printf '%s' "$context_repositories" | jq -c --arg target "$GITHUB_REPOSITORY_NAME" '([$target] + map(.repository)) | unique')"

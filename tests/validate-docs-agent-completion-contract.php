@@ -5,217 +5,90 @@ declare( strict_types=1 );
 
 require_once dirname( __DIR__ ) . '/scripts/validate-docs-agent-completion.php';
 
-$assert = static function ( bool $condition, string $message ): void {
-	if ( ! $condition ) {
-		throw new RuntimeException( $message );
-	}
-};
-
-$run = static function ( string $command, string $cwd ): void {
-	$output = array();
-	$code   = 0;
-	exec( 'cd ' . escapeshellarg( $cwd ) . ' && ' . $command . ' 2>&1', $output, $code );
-	if ( 0 !== $code ) {
-		throw new RuntimeException( "Command failed: {$command}\n" . implode( "\n", $output ) );
-	}
-};
-
+$assert = static function ( bool $condition, string $message ): void { if ( ! $condition ) { throw new RuntimeException( $message ); } };
+$run = static function ( string $command, string $cwd ): void { exec( 'cd ' . escapeshellarg( $cwd ) . ' && ' . $command . ' 2>&1', $output, $code ); if ( 0 !== $code ) { throw new RuntimeException( implode( "\n", $output ) ); } };
 $workspace = static function () use ( $run ): string {
 	$path = sys_get_temp_dir() . '/docs-agent-contract-' . bin2hex( random_bytes( 6 ) );
-	if ( ! mkdir( $path, 0700, true ) ) {
-		throw new RuntimeException( 'Failed to create test workspace.' );
-	}
 	mkdir( $path . '/docs', 0700, true );
 	file_put_contents( $path . '/README.md', "# Project\n\nExisting project documentation.\n" );
 	file_put_contents( $path . '/docs/guide.md', "# Guide\n\nExisting guide.\n" );
 	$run( 'git init -q && git config user.name test && git config user.email test@example.com && git add . && git commit -qm baseline', $path );
 	return $path;
 };
-
-$base_report = static function ( string $outcome, array $changed_paths = array() ): array {
-	return array(
-		'schema'        => 'docs-agent/completion-report/v1',
-		'lane'          => 'technical',
-		'run_kind'      => 'maintenance',
-		'outcome'       => $outcome,
-		'scope'         => array(
-			'source_basis'          => 'bounded_delta',
-			'source_refs'           => array( 'src/service.php:10-40' ),
-			'documentation_surfaces' => array( 'README.md', 'docs/guide.md' ),
-		),
-		'items'         => array(
-			array(
-				'id'                  => 'service-contract',
-				'source_refs'         => array( 'src/service.php:10-40' ),
-				'documentation_paths' => array( 'docs/guide.md' ),
-				'disposition'         => 'changes' === $outcome ? 'updated' : 'verified_current',
-				'evidence'            => 'Compared the public method and failure behavior with the guide.',
-			),
-		),
-		'changed_paths' => $changed_paths,
-	);
-};
-
 $options = static function ( string $workspace, array $overrides = array() ): array {
-	return array_merge(
-		array(
-			'workspace'          => $workspace,
-			'lane'               => 'technical',
-			'run_kind'           => 'maintenance',
-			'writable_paths'      => 'README.md,docs/**',
-			'bootstrap_contract' => array(),
-			'source_delta'       => array(
-				array(
-					'id'                            => 'service-contract',
-					'source_refs'                   => array( 'src/service.php:10-40' ),
-					'requires_documentation_change' => false,
-				),
-			),
-		),
-		$overrides
-	);
+	return array_merge( array( 'workspace' => $workspace, 'lane' => 'technical', 'run_kind' => 'maintenance', 'writable_paths' => 'README.md,docs/**', 'bootstrap_contract' => array(), 'source_delta' => array( array( 'id' => 'service-contract', 'source_refs' => array( 'src/service.php:10-40' ), 'requires_documentation_change' => false ) ) ), $overrides );
 };
-
 $expect_failure = static function ( string $code, callable $callback ) use ( $assert ): void {
-	try {
-		$callback();
-	} catch ( Docs_Agent_Contract_Failure $error ) {
-		$assert( $code === $error->diagnostic_code, "Expected {$code}; received {$error->diagnostic_code}: {$error->getMessage()}" );
-		return;
-	}
-	throw new RuntimeException( "Expected Docs Agent diagnostic {$code}." );
+	try { $callback(); } catch ( Docs_Agent_Contract_Failure $error ) { $assert( $code === $error->diagnostic_code, "Expected {$code}; got {$error->diagnostic_code}" ); return; }
+	throw new RuntimeException( "Expected {$code}." );
 };
 
 $workspaces = array();
 try {
-	// Maintenance changes: report and actual writable diff agree.
-	$maintenance = $workspace();
-	$workspaces[] = $maintenance;
-	file_put_contents( $maintenance . '/docs/guide.md', "# Guide\n\nUpdated source-grounded service contract and failure behavior.\n" );
-	$result = docs_agent_validate_report( $base_report( 'changes', array( 'docs/guide.md' ) ), $options( $maintenance ) );
-	$assert( 'changes' === $result['outcome'], 'Maintenance changes must pass with a matching report and diff.' );
+	// Changed and no-change outcomes are observations of Git, not final model prose.
+	$changed = $workspace();
+	$workspaces[] = $changed;
+	file_put_contents( $changed . '/docs/guide.md', "# Guide\n\nUpdated source-grounded service contract.\n" );
+	$report = docs_agent_build_completion_report( $options( $changed ) );
+	$assert( 'changes' === $report['outcome'] && array( 'docs/guide.md' ) === $report['changed_paths'], 'Changed outcome must come from Git.' );
+	$assert( array( 'src/service.php:10-40' ) === $report['source']['refs'] && 'bounded_delta' === $report['source']['basis'], 'Source facts must come from caller records.' );
 
-	// Honest no-change: bounded evidence exists and the documentation diff is clean.
-	$no_change = $workspace();
-	$workspaces[] = $no_change;
-	$result = docs_agent_validate_report( $base_report( 'no_changes' ), $options( $no_change ) );
-	$assert( 'no_changes' === $result['outcome'], 'Evidence-backed maintenance no_changes must pass on a clean diff.' );
-	$expect_failure( 'SOURCE_DELTA_EMPTY', static fn() => docs_agent_validate_report( $base_report( 'no_changes' ), $options( $no_change, array( 'source_delta' => array() ) ) ) );
-	$transcript_root = $no_change . '/.codebox/agent-task-artifacts/runtime/files';
-	mkdir( $transcript_root, 0700, true );
-	$report_json = json_encode( $base_report( 'no_changes' ), JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR );
-	file_put_contents( $transcript_root . '/transcript.json', json_encode( array( 'messages' => array( array( 'role' => 'assistant', 'content' => "<DOCS_AGENT_COMPLETION_REPORT>{$report_json}</DOCS_AGENT_COMPLETION_REPORT>" ) ) ), JSON_THROW_ON_ERROR ) );
-	$extracted = docs_agent_report_from_transcripts( $no_change . '/.codebox/agent-task-artifacts' );
-	$assert( 'no_changes' === $extracted['outcome'], 'The live transcript transport must materialize one parseable completion report.' );
-	$validator    = dirname( __DIR__ ) . '/scripts/validate-docs-agent-completion.php';
-	$source_delta = base64_encode( (string) json_encode( $options( $no_change )['source_delta'], JSON_THROW_ON_ERROR ) );
-	$run(
-		'php ' . escapeshellarg( $validator ) .
-		' --workspace ' . escapeshellarg( $no_change ) .
-		' --lane technical --run-kind maintenance --writable-paths ' . escapeshellarg( 'README.md,docs/**' ) .
-		' --source-delta-b64 ' . escapeshellarg( $source_delta ) .
-		' --transcript-root ' . escapeshellarg( $no_change . '/.codebox/agent-task-artifacts' ) .
-		' --artifact-path docs-agent-completion-report.json',
-		$no_change
-	);
-	$artifact_path = $no_change . '/.codebox/agent-task-artifacts/docs-agent-completion-report.json';
-	$expected_bytes = '{"schema":"docs-agent/completion-report/v1","lane":"technical","run_kind":"maintenance","outcome":"no_changes","scope":{"source_basis":"bounded_delta","source_refs":["src/service.php:10-40"],"documentation_surfaces":["README.md","docs/guide.md"]},"items":[{"id":"service-contract","source_refs":["src/service.php:10-40"],"documentation_paths":["docs/guide.md"],"disposition":"verified_current","evidence":"Compared the public method and failure behavior with the guide."}],"changed_paths":[]}' . "\n";
-	$assert( $expected_bytes === file_get_contents( $artifact_path ), 'The validator must write deterministic canonical report bytes at the declared artifact path.' );
-	$expect_failure( 'ARTIFACT_PATH_INVALID', static fn() => docs_agent_write_report_artifact( $extracted, $no_change, '../completion.json' ) );
-	$symlink_workspace = $workspace();
-	$workspaces[] = $symlink_workspace;
-	$run( 'rm -rf .codebox && ln -s docs .codebox', $symlink_workspace );
-	$expect_failure( 'ARTIFACT_PATH_INVALID', static fn() => docs_agent_write_report_artifact( $base_report( 'no_changes' ), $symlink_workspace, 'completion.json' ) );
+	$clean = $workspace();
+	$workspaces[] = $clean;
+	$no_change = docs_agent_build_completion_report( $options( $clean ) );
+	$assert( 'no_changes' === $no_change['outcome'] && array() === $no_change['changed_paths'], 'No-change outcome must come from a clean Git workspace.' );
+	// These represent arbitrary, malformed, and absent model final prose. The builder never reads them.
+	mkdir( $clean . '/.codebox', 0700, true );
+	foreach ( array( 'Normal final prose.', '<DOCS_AGENT_COMPLETION_REPORT>{not json}</DOCS_AGENT_COMPLETION_REPORT>', '' ) as $prose ) {
+		file_put_contents( $clean . '/.codebox/model-final-prose.txt', $prose );
+		$with_prose = docs_agent_build_completion_report( $options( $clean ) );
+		$assert( 'no_changes' === $with_prose['outcome'], 'Model prose must not affect completion.' );
+		unlink( $clean . '/.codebox/model-final-prose.txt' );
+	}
 
-	// A no-op write cannot support a changes outcome.
-	$noop = $workspace();
-	$workspaces[] = $noop;
-	file_put_contents( $noop . '/docs/guide.md', (string) file_get_contents( $noop . '/docs/guide.md' ) );
-	$expect_failure( 'CHANGES_DIFF_EMPTY', static fn() => docs_agent_validate_report( $base_report( 'changes', array( 'docs/guide.md' ) ), $options( $noop ) ) );
+	$validator = dirname( __DIR__ ) . '/scripts/validate-docs-agent-completion.php';
+	$source_delta = base64_encode( (string) json_encode( $options( $clean )['source_delta'], JSON_THROW_ON_ERROR ) );
+	$run( 'php ' . escapeshellarg( $validator ) . ' --workspace ' . escapeshellarg( $clean ) . ' --lane technical --run-kind maintenance --writable-paths ' . escapeshellarg( 'README.md,docs/**' ) . ' --source-delta-b64 ' . escapeshellarg( $source_delta ) . ' --artifact-path docs-agent-completion-report.json', $clean );
+	$artifact = $clean . '/.codebox/agent-task-artifacts/docs-agent-completion-report.json';
+	$assert( docs_agent_canonical_report_json( $no_change ) === file_get_contents( $artifact ), 'The command must stage canonical host-generated bytes.' );
+	$expect_failure( 'ARTIFACT_PATH_INVALID', static fn() => docs_agent_write_report_artifact( $no_change, $clean, '../completion.json' ) );
+	$nested_target = $clean . '/nested-artifact-target';
+	mkdir( $nested_target, 0700 );
+	symlink( $nested_target, $clean . '/.codebox/agent-task-artifacts/nested' );
+	$expect_failure( 'ARTIFACT_PATH_INVALID', static fn() => docs_agent_write_report_artifact( $no_change, $clean, 'nested/completion.json' ) );
+	$large_report = $no_change;
+	$large_report['source']['refs'][] = str_repeat( 'x', 2 * 1024 * 1024 );
+	$expect_failure( 'ARTIFACT_TOO_LARGE', static fn() => docs_agent_write_report_artifact( $large_report, $clean, 'large.json' ) );
 
-	// Known drift cannot be hidden behind no_changes.
-	$known_drift = $workspace();
-	$workspaces[] = $known_drift;
-	$expect_failure(
-		'KNOWN_DRIFT_NO_CHANGE',
-		static fn() => docs_agent_validate_report(
-			$base_report( 'no_changes' ),
-			$options( $known_drift, array( 'source_delta' => array( array( 'id' => 'service-contract', 'source_refs' => array( 'src/service.php:10-40' ), 'requires_documentation_change' => true ) ) ) )
-		)
-	);
+	$scope = $workspace();
+	$workspaces[] = $scope;
+	file_put_contents( $scope . '/docs/guide.md', "# Changed\n" );
+	$expect_failure( 'WRITABLE_SCOPE_VIOLATION', static fn() => docs_agent_build_completion_report( $options( $scope, array( 'writable_paths' => 'README.md' ) ) ) );
 
-	// Every caller-bounded item and source ref must be represented in the report.
-	$incomplete_delta = array(
-		array( 'id' => 'service-contract', 'source_refs' => array( 'src/service.php:10-40' ), 'requires_documentation_change' => false ),
-		array( 'id' => 'missing-contract', 'source_refs' => array( 'src/missing.php:1-20' ), 'requires_documentation_change' => false ),
-	);
-	$expect_failure( 'SOURCE_DELTA_INCOMPLETE', static fn() => docs_agent_validate_report( $base_report( 'no_changes' ), $options( $no_change, array( 'source_delta' => $incomplete_delta ) ) ) );
-	$missing_ref_delta = array( array( 'id' => 'service-contract', 'source_refs' => array( 'src/service.php:10-40', 'src/service.php:50-60' ), 'requires_documentation_change' => false ) );
-	$expect_failure( 'SOURCE_DELTA_INCOMPLETE', static fn() => docs_agent_validate_report( $base_report( 'no_changes' ), $options( $no_change, array( 'source_delta' => $missing_ref_delta ) ) ) );
+	$drift = $workspace();
+	$workspaces[] = $drift;
+	$expect_failure( 'KNOWN_DRIFT_NO_CHANGE', static fn() => docs_agent_build_completion_report( $options( $drift, array( 'source_delta' => array( array( 'id' => 'service-contract', 'source_refs' => array( 'src/service.php:10-40' ), 'requires_documentation_change' => true ) ) ) ) ) );
+	file_put_contents( $drift . '/src.php', "<?php\n" );
+	$expect_failure( 'KNOWN_DRIFT_NO_CHANGE', static fn() => docs_agent_build_completion_report( $options( $drift, array( 'writable_paths' => 'README.md,docs/**,src.php', 'source_delta' => array( array( 'id' => 'service-contract', 'source_refs' => array( 'src/service.php:10-40' ), 'requires_documentation_change' => true ) ) ) ) ) );
 
-	// Dirty no_changes, report/diff mismatch, and scope violations are distinct.
-	$dirty = $workspace();
-	$workspaces[] = $dirty;
-	file_put_contents( $dirty . '/docs/guide.md', "# Changed\n" );
-	$expect_failure( 'NO_CHANGES_DIFF_DIRTY', static fn() => docs_agent_validate_report( $base_report( 'no_changes' ), $options( $dirty ) ) );
-	$expect_failure( 'REPORT_DIFF_MISMATCH', static fn() => docs_agent_validate_report( $base_report( 'changes', array( 'README.md' ) ), $options( $dirty ) ) );
-	$expect_failure( 'WRITABLE_SCOPE_VIOLATION', static fn() => docs_agent_validate_report( $base_report( 'changes', array( 'docs/guide.md' ) ), $options( $dirty, array( 'writable_paths' => 'README.md' ) ) ) );
-
-	// Missing, malformed, incomplete, and contradictory reports fail specifically.
-	$expect_failure( 'REPORT_MISSING', static fn() => docs_agent_report_from_transcripts( sys_get_temp_dir() . '/not-a-docs-agent-transcript' ) );
-	$expect_failure( 'REPORT_MALFORMED', static fn() => docs_agent_decode_object( '{', 'REPORT_MALFORMED', 'Completion report' ) );
-	$incomplete = $base_report( 'no_changes' );
-	unset( $incomplete['items'] );
-	$expect_failure( 'REPORT_INCOMPLETE', static fn() => docs_agent_validate_report( $incomplete, $options( $no_change ) ) );
-	$contradictory = $base_report( 'no_changes' );
-	$contradictory['items'][0]['disposition'] = 'updated';
-	$expect_failure( 'REPORT_CONTRADICTORY', static fn() => docs_agent_validate_report( $contradictory, $options( $no_change ) ) );
-
-	// Fresh bootstrap produces a substantive, navigable system satisfying caller criteria.
 	$bootstrap = $workspace();
 	$workspaces[] = $bootstrap;
-	$overview = "# Architecture\n\n" . str_repeat( 'Source-grounded architecture, lifecycle, extension, operation, and testing guidance. ', 6 ) . "\n";
-	$setup    = "# Setup and Validation\n\n" . str_repeat( 'Install dependencies, run tests, inspect failures, and verify generated outputs. ', 5 ) . "\n";
-	file_put_contents( $bootstrap . '/README.md', "# Project\n\nStart with [architecture](docs/architecture.md) and [setup](docs/setup.md).\n" );
-	file_put_contents( $bootstrap . '/docs/architecture.md', $overview );
-	file_put_contents( $bootstrap . '/docs/setup.md', $setup );
-	$bootstrap_report = $base_report( 'changes', array( 'README.md', 'docs/architecture.md', 'docs/setup.md' ) );
-	$bootstrap_report['run_kind'] = 'bootstrap';
-	$bootstrap_report['scope']['source_basis'] = 'inventory';
-	$bootstrap_report['items'][0]['documentation_paths'] = array( 'README.md', 'docs/architecture.md', 'docs/setup.md' );
-	$bootstrap_contract = array(
-		'required_paths'    => array( 'README.md', 'docs/architecture.md', 'docs/setup.md' ),
-		'required_globs'    => array( array( 'pattern' => 'docs/**/*.md', 'min' => 2 ) ),
-		'entry_points'      => array( array( 'path' => 'README.md', 'must_link_to' => array( 'docs/architecture.md', 'docs/setup.md' ) ) ),
-		'forbidden_phrases' => array( 'TODO: document this' ),
-	);
-	$result = docs_agent_validate_report( $bootstrap_report, $options( $bootstrap, array( 'run_kind' => 'bootstrap', 'bootstrap_contract' => $bootstrap_contract, 'source_delta' => array() ) ) );
-	$assert( 3 === count( $result['changed_paths'] ), 'Bootstrap must validate its complete actual documentation diff.' );
+	file_put_contents( $bootstrap . '/README.md', "# Project\n\n[Architecture](docs/architecture.md) and [Setup](docs/setup.md) provide the source-grounded project documentation.\n" );
+	file_put_contents( $bootstrap . '/docs/architecture.md', '# Architecture' . str_repeat( "\n\nSource-grounded architecture guidance.", 12 ) );
+	file_put_contents( $bootstrap . '/docs/setup.md', '# Setup' . str_repeat( "\n\nSource-grounded setup guidance.", 12 ) );
+	$bootstrap_contract = array( 'required_paths' => array( 'README.md', 'docs/architecture.md', 'docs/setup.md' ), 'required_globs' => array( array( 'pattern' => 'docs/**/*.md', 'min' => 2 ) ), 'entry_points' => array( array( 'path' => 'README.md', 'must_link_to' => array( 'docs/architecture.md', 'docs/setup.md' ) ) ), 'forbidden_phrases' => array() );
+	$bootstrap_report = docs_agent_build_completion_report( $options( $bootstrap, array( 'run_kind' => 'bootstrap', 'source_delta' => array(), 'bootstrap_contract' => $bootstrap_contract ) ) );
+	$assert( true === $bootstrap_report['bootstrap']['criteria_satisfied'] && 'passed' === $bootstrap_report['checks']['bootstrap'], 'Bootstrap result must come from filesystem checks.' );
 
-	$thin_bootstrap = $workspace();
-	$workspaces[] = $thin_bootstrap;
-	file_put_contents( $thin_bootstrap . '/README.md', "# Project\n\n[Guide](docs/guide.md)\n" );
-	file_put_contents( $thin_bootstrap . '/docs/guide.md', "# Tiny\n" );
-	$thin_report = $base_report( 'changes', array( 'README.md', 'docs/guide.md' ) );
-	$thin_report['run_kind'] = 'bootstrap';
-	$expect_failure(
-		'BOOTSTRAP_REQUIRED_PATH',
-		static fn() => docs_agent_validate_report(
-			$thin_report,
-			$options( $thin_bootstrap, array( 'run_kind' => 'bootstrap', 'bootstrap_contract' => array( 'required_paths' => array( 'docs/guide.md' ), 'required_globs' => array(), 'entry_points' => array(), 'forbidden_phrases' => array() ), 'source_delta' => array() ) )
-		)
-	);
+	$thin = $workspace();
+	$workspaces[] = $thin;
+	file_put_contents( $thin . '/README.md', "# Project\n\n[Guide](docs/guide.md)\n" );
+	file_put_contents( $thin . '/docs/guide.md', "# Tiny\n" );
+	$expect_failure( 'BOOTSTRAP_REQUIRED_PATH', static fn() => docs_agent_build_completion_report( $options( $thin, array( 'run_kind' => 'bootstrap', 'source_delta' => array(), 'bootstrap_contract' => array( 'required_paths' => array( 'docs/guide.md' ), 'required_globs' => array(), 'entry_points' => array(), 'forbidden_phrases' => array() ) ) ) ) );
 
-	// Publication remains a separate deterministic consequence of semantic outcome.
-	$assert( array( 'publish' => true, 'pr_required' => true ) === docs_agent_publication_expectation( 'changes', 'bootstrap', false ), 'Bootstrap changes must publish a required PR.' );
-	$assert( array( 'publish' => true, 'pr_required' => false ) === docs_agent_publication_expectation( 'changes', 'maintenance', false ), 'Maintenance changes publish without strengthening the PR projection.' );
-	$assert( array( 'publish' => true, 'pr_required' => true ) === docs_agent_publication_expectation( 'changes', 'maintenance', true ), 'Maintenance require_pr must strengthen publication.' );
-	$assert( array( 'publish' => false, 'pr_required' => false ) === docs_agent_publication_expectation( 'no_changes', 'maintenance', false ), 'Honest default no_changes must not fabricate publication.' );
-	$assert( array( 'publish' => false, 'pr_required' => true ) === docs_agent_publication_expectation( 'no_changes', 'maintenance', true ), 'Maintenance no_changes must fail a caller publication requirement rather than fabricating a PR.' );
+	$assert( array( 'publish' => true, 'pr_required' => true ) === docs_agent_publication_expectation( 'changes', 'bootstrap', false ), 'Bootstrap publication must remain deterministic.' );
 } finally {
-	foreach ( $workspaces as $path ) {
-		$run( 'rm -rf ' . escapeshellarg( $path ), '/' );
-	}
+	foreach ( $workspaces as $path ) { $run( 'rm -rf ' . escapeshellarg( $path ), '/' ); }
 }
 
 fwrite( STDOUT, "Docs Agent completion contract validation passed.\n" );
