@@ -129,10 +129,10 @@ Docs Agent declares the review artifacts it expects the runner to materialize as
 | `docs_agent_change_summary` | `docs-agent/change-summary/v1` | Reviewable summary of documentation or skill changes. |
 | `docs_agent_verification_report` | `docs-agent/verification-report/v1` | Verification command results for the target workspace. |
 | `docs_agent_drift_report` | `docs-agent/drift-report/v1` | Drift-check results for generated docs, skills, or packaged outputs. |
-| `docs_agent_completion_report` | `docs-agent/completion-report/v1` | Native completion and source-to-document disposition report validated against the host diff. |
+| `docs_agent_completion_report` | `docs-agent/completion-report/v1` | Host-observed completion report generated from caller inputs, Git, and filesystem checks. |
 | `docs_agent_workspace_publication` | `docs-agent/workspace-publication/v1` | Canonical branch and pull request links published by the runner workspace. |
 
-`maintain-docs.yml` writes `expected_artifacts` and `artifact_declarations` into a portable Docs Agent recipe and exposes the same declaration objects as `declared_artifacts_json`. The runtime declaration for `docs_agent_completion_report` remains `required: false` because WP Codebox may evaluate runtime-level required artifacts before post-command validation. The final completion drift entry is mandatory and declares `{name,type,path}`; after successful semantic validation, the validator atomically writes canonical JSON to `.codebox/agent-task-artifacts/docs-agent-completion-report.json`, and WP Codebox stages that declared command artifact for reviewers.
+`maintain-docs.yml` writes `expected_artifacts` and `artifact_declarations` into a portable Docs Agent recipe and exposes the same declaration objects as `declared_artifacts_json`. The runtime declaration for `docs_agent_completion_report` remains `required: false` because WP Codebox may evaluate runtime-level required artifacts before post-command validation. The final completion drift entry is mandatory and declares `{name,type,path}`; after deterministic host validation, the validator atomically writes canonical JSON to `.codebox/agent-task-artifacts/docs-agent-completion-report.json`, and WP Codebox stages that declared command artifact for reviewers.
 
 The reusable workflow and helper implementation are pinned to accepted revision `a6fe2d208e990a8d04104aa74aacbb8d1539fbc1`; `v0.12.29` remains only the `wp_codebox_release_ref` for released packaged runtime assets at `bc982947ec33c78160125026e16d357b7ece3ea1`.
 
@@ -147,25 +147,25 @@ Portable recipe fields include `docsAgent`, `runner.contextRepositories`, `runne
 A live run succeeds only when four independent layers pass:
 
 1. Agents API completes the selected native package through WP Codebox.
-2. Docs Agent validates exactly one `docs-agent/completion-report/v1` from the canonical transcript against the actual host workspace diff and writable paths.
+2. Docs Agent generates `docs-agent/completion-report/v1` from validated caller inputs, actual host workspace changes, writable paths, and bootstrap filesystem checks.
 3. Caller dependency, verification, and drift commands pass.
 4. WP Codebox publishes and verifies a pull request when the outcome and caller policy require one.
 
-For `changes`, `changed_paths` must exactly equal the Git diff, every path must be writable, and at least one evidence-backed item must be `created` or `updated`. A write-tool call that leaves no byte diff fails as `CHANGES_DIFF_EMPTY`.
+For `changes`, `changed_paths` exactly equals the Git diff and every path must be writable. A write-tool call that leaves no byte diff produces `no_changes`.
 
-For every maintenance outcome, `source_delta` must be non-empty and caller-bounded: each item has a unique ID and non-empty source refs, the report uses `bounded_delta`, and its matching evidence-backed item covers every declared ref. For maintenance `no_changes`, the documentation diff must also be clean and dispositions may only be `verified_current` or `not_documentation_relevant`. Caller-known drift marked `requires_documentation_change: true` cannot be reported as no-change. Bootstrap may instead use `inventory` with its required positive bootstrap contract. Missing, malformed, empty, incomplete, contradictory, diff-mismatched, and out-of-scope reports fail with distinct `docs-agent.completion-contract.*` diagnostics.
+For every maintenance outcome, `source_delta` must be non-empty and caller-bounded: each item has a unique ID and non-empty source refs, and those records are copied canonically into the report. Caller-known drift marked `requires_documentation_change: true` requires an actual Markdown or MDX diff. Bootstrap uses `inventory` with its required positive bootstrap contract and deterministic substantive filesystem checks. Model final prose is never parsed or used for completion.
 
-The untrusted report originates in the native canonical transcript, not as a target-repository file, so honest no-change runs remain clean and do not trigger publication. Only after semantic validation does the validator write canonical report bytes under the excluded `.codebox` artifact root. The command artifact declaration lets WP Codebox expose those validated bytes to reviewers; a runtime declaration or private transcript alone never satisfies semantic completion.
+The validator writes canonical report bytes under the excluded `.codebox` artifact root, so honest no-change runs remain clean and do not trigger publication. The command artifact declaration lets WP Codebox expose those deterministic bytes to reviewers; a runtime declaration or private transcript alone never satisfies semantic completion.
 
 ## Pull Request Behavior
 
 Docs Agent opens or updates one canonical PR for the configured branch.
 
-- If the selected maintenance surface is current, the run succeeds only with a non-empty caller-bounded source delta, complete evidence-backed coverage, and no workspace diff.
+- If the selected maintenance surface is current, the run succeeds only with a non-empty caller-bounded source delta and no workspace diff.
 - If maintenance is needed, changes are written only under `writable_paths`.
 - If the canonical PR is already open, later runs reuse the same `docs_branch` and PR instead of creating duplicates.
 - `validation_dependencies` is an optional caller-owned reusable-workflow input. It is passed through the portable recipe and runs before verification commands when a live runner execution needs setup.
-- `job_status`, `transcript_summary`, `credential_mode`, `success_requires_pr`, `validation_dependencies`, and bounded `projected_outputs_json` are exposed as reusable workflow outputs. A `run_agent: false` call returns `job_status: skipped`; a `dry_run: true` call validates without starting a model run. `OPENAI_API_KEY` is only required for a live OpenAI run and is never included in recipes, workflow outputs, or artifacts. Bootstrap lanes require a published pull request and its projected URL for success. Maintenance lanes allow a bounded evidence-backed no-change result by default; set `require_pr: true` when an acceptance or remediation run must fail without a valid target-repository PR. Runtime typed artifact declarations remain optional, while the completion post-command artifact is mandatory and exposed through WP Codebox declared-artifact staging. Raw engine data is not exposed as a workflow output or uploaded reviewer artifact.
+- `job_status`, `transcript_summary`, `credential_mode`, `success_requires_pr`, `validation_dependencies`, and bounded `projected_outputs_json` are exposed as reusable workflow outputs. A `run_agent: false` call returns `job_status: skipped`; a `dry_run: true` call validates without starting a model run. `OPENAI_API_KEY` is only required for a live OpenAI run and is never included in recipes, workflow outputs, or artifacts. Bootstrap lanes require a published pull request and its projected URL for success. Maintenance lanes allow a bounded no-change result by default; set `require_pr: true` when an acceptance or remediation run must fail without a valid target-repository PR. Runtime typed artifact declarations remain optional, while the completion post-command artifact is mandatory and exposed through WP Codebox declared-artifact staging. Raw engine data is not exposed as a workflow output or uploaded reviewer artifact.
 
 ## Quality Bar
 

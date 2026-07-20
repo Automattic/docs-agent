@@ -1,55 +1,28 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/Automattic/docs-agent/main/contracts/docs-agent-completion-report.v1.json",
-  "title": "Docs Agent completion and drift report v1",
+  "title": "Docs Agent host-observed completion report v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "lane", "run_kind", "outcome", "scope", "items", "changed_paths"],
+  "required": ["schema", "lane", "run_kind", "outcome", "changed_paths", "writable_paths", "source", "bootstrap", "checks"],
   "properties": {
     "schema": { "const": "docs-agent/completion-report/v1" },
     "lane": { "enum": ["technical", "user", "skills"] },
     "run_kind": { "enum": ["bootstrap", "maintenance"] },
     "outcome": { "enum": ["changes", "no_changes"] },
-    "scope": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["source_basis", "source_refs", "documentation_surfaces"],
+    "changed_paths": { "$ref": "#/$defs/strings" },
+    "writable_paths": { "$ref": "#/$defs/nonEmptyStrings" },
+    "source": {
+      "type": "object", "additionalProperties": false, "required": ["basis", "refs", "records"],
       "properties": {
-        "source_basis": { "enum": ["inventory", "bounded_delta"] },
-        "source_refs": { "$ref": "#/$defs/nonEmptyStrings" },
-        "documentation_surfaces": { "$ref": "#/$defs/nonEmptyStrings" }
+        "basis": { "enum": ["inventory", "bounded_delta"] },
+        "refs": { "$ref": "#/$defs/nonEmptyStrings" },
+        "records": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "source_refs", "requires_documentation_change"], "properties": { "id": { "type": "string", "minLength": 1 }, "source_refs": { "$ref": "#/$defs/nonEmptyStrings" }, "requires_documentation_change": { "type": "boolean" } } } }
       }
     },
-    "items": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id", "source_refs", "documentation_paths", "disposition", "evidence"],
-        "properties": {
-          "id": { "type": "string", "minLength": 1 },
-          "source_refs": { "$ref": "#/$defs/nonEmptyStrings" },
-          "documentation_paths": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
-          "disposition": { "enum": ["created", "updated", "verified_current", "not_documentation_relevant"] },
-          "evidence": { "type": "string", "minLength": 1 }
-        }
-      }
-    },
-    "changed_paths": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+    "bootstrap": { "type": "object", "additionalProperties": false, "required": ["criteria_satisfied"], "properties": { "criteria_satisfied": { "type": "boolean" } } },
+    "checks": { "type": "object", "additionalProperties": false, "required": ["workspace", "writable_scope", "source_drift", "bootstrap", "verification", "drift_checks"], "properties": { "workspace": { "const": "passed" }, "writable_scope": { "const": "passed" }, "source_drift": { "const": "passed" }, "bootstrap": { "enum": ["passed", "not_applicable"] }, "verification": { "const": "passed" }, "drift_checks": { "const": "passed" } } }
   },
-  "allOf": [
-    {
-      "if": { "properties": { "run_kind": { "const": "maintenance" } }, "required": ["run_kind"] },
-      "then": { "properties": { "scope": { "properties": { "source_basis": { "const": "bounded_delta" } } } } }
-    }
-  ],
-  "$defs": {
-    "nonEmptyStrings": {
-      "type": "array",
-      "minItems": 1,
-      "items": { "type": "string", "minLength": 1 },
-      "uniqueItems": true
-    }
-  }
+  "allOf": [{ "if": { "properties": { "run_kind": { "const": "maintenance" } }, "required": ["run_kind"] }, "then": { "properties": { "source": { "properties": { "basis": { "const": "bounded_delta" } } }, "bootstrap": { "properties": { "criteria_satisfied": { "const": false } } } } }],
+  "$defs": { "strings": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }, "nonEmptyStrings": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } }
 }
