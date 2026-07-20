@@ -16,7 +16,7 @@
     "technical-docs-bootstrap-agent.agent.json": {
       "package": "technical-docs-agent",
       "agent_slug": "technical-docs-bootstrap-agent",
-      "source_revision": "7b67d341b531288bb2a1847d8d9b09096519a867",
+      "source_revision": "a51e79ac698610177852170332a1135a9c315951",
       "required_tools": [
         "get_github_file",
         "workspace_read",
