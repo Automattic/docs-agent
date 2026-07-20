@@ -21,7 +21,7 @@
       }
     },
     "bootstrap": { "type": "object", "additionalProperties": false, "required": ["criteria_satisfied"], "properties": { "criteria_satisfied": { "type": "boolean" } } },
-    "checks": { "type": "object", "additionalProperties": false, "required": ["workspace", "writable_scope", "source_drift", "bootstrap", "verification", "drift_checks"], "properties": { "workspace": { "const": "passed" }, "writable_scope": { "const": "passed" }, "source_drift": { "const": "passed" }, "bootstrap": { "enum": ["passed", "not_applicable"] }, "verification": { "const": "passed" }, "drift_checks": { "const": "passed" } } }
+    "checks": { "type": "object", "additionalProperties": false, "required": ["workspace", "writable_scope", "source_drift", "bootstrap"], "properties": { "workspace": { "const": "passed" }, "writable_scope": { "const": "passed" }, "source_drift": { "const": "passed" }, "bootstrap": { "enum": ["passed", "not_applicable"] } } }
   },
   "allOf": [{ "if": { "properties": { "run_kind": { "const": "maintenance" } }, "required": ["run_kind"] }, "then": { "properties": { "source": { "properties": { "basis": { "const": "bounded_delta" } } }, "bootstrap": { "properties": { "criteria_satisfied": { "const": false } } } } }],
   "$defs": { "strings": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }, "nonEmptyStrings": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } }

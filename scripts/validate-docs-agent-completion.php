@@ -207,7 +207,7 @@ function docs_agent_build_completion_report( array $options ): array {
 			'records' => $source['records'],
 		),
 		'bootstrap' => array( 'criteria_satisfied' => $bootstrap ),
-		'checks' => array( 'workspace' => 'passed', 'writable_scope' => 'passed', 'source_drift' => 'passed', 'bootstrap' => $bootstrap ? 'passed' : 'not_applicable', 'verification' => 'passed', 'drift_checks' => 'passed' ),
+		'checks' => array( 'workspace' => 'passed', 'writable_scope' => 'passed', 'source_drift' => 'passed', 'bootstrap' => $bootstrap ? 'passed' : 'not_applicable' ),
 	);
 }
 
@@ -226,14 +226,27 @@ function docs_agent_write_report_artifact( array $report, string $workspace, str
 	if ( false === $workspace_real ) {
 		docs_agent_fail( 'ARTIFACT_PATH_INVALID', 'Completion artifact workspace must be a real directory.' );
 	}
-	$root = $workspace_real . '/.codebox/agent-task-artifacts';
-	if ( ( ! is_dir( $root ) && ! mkdir( $root, 0700, true ) ) || is_link( $workspace_real . '/.codebox' ) || is_link( $root ) ) {
-		docs_agent_fail( 'ARTIFACT_PATH_INVALID', 'Completion artifact root must be a writable real directory.' );
+	$codebox = $workspace_real . '/.codebox';
+	if ( ( ! is_dir( $codebox ) && ! mkdir( $codebox, 0700 ) ) || is_link( $codebox ) ) {
+		docs_agent_fail( 'ARTIFACT_PATH_INVALID', 'Completion artifact path must not traverse a .codebox symlink.' );
+	}
+	$root = $codebox . '/agent-task-artifacts';
+	if ( ( ! is_dir( $root ) && ! mkdir( $root, 0700, true ) ) || is_link( $root ) ) {
+		docs_agent_fail( 'ARTIFACT_WRITE_FAILED', 'Completion artifact root must be a writable real directory.' );
+	}
+	$parent = $root;
+	foreach ( array_slice( explode( '/', $artifact_path ), 0, -1 ) as $segment ) {
+		if ( '' === $segment || '.' === $segment ) {
+			continue;
+		}
+		$parent .= '/' . $segment;
+		if ( ( ! is_dir( $parent ) && ! mkdir( $parent, 0700 ) ) || is_link( $parent ) ) {
+			docs_agent_fail( 'ARTIFACT_PATH_INVALID', 'Completion artifact path must not traverse symlinks.' );
+		}
 	}
 	$target = $root . '/' . $artifact_path;
-	$parent = dirname( $target );
-	if ( ! is_dir( $parent ) && ! mkdir( $parent, 0700, true ) ) {
-		docs_agent_fail( 'ARTIFACT_WRITE_FAILED', 'Could not create completion artifact parent directory.' );
+	if ( is_link( $target ) ) {
+		docs_agent_fail( 'ARTIFACT_PATH_INVALID', 'Completion artifact path must not traverse symlinks.' );
 	}
 	$root_real = realpath( $root );
 	$parent_real = realpath( $parent );
@@ -241,6 +254,9 @@ function docs_agent_write_report_artifact( array $report, string $workspace, str
 		docs_agent_fail( 'ARTIFACT_PATH_INVALID', 'Completion artifact path escapes .codebox/agent-task-artifacts.' );
 	}
 	$bytes = docs_agent_canonical_report_json( $report );
+	if ( strlen( $bytes ) > 2 * 1024 * 1024 ) {
+		docs_agent_fail( 'ARTIFACT_TOO_LARGE', 'Completion artifact exceeds the 2 MiB bound.' );
+	}
 	$temp = tempnam( $parent_real, '.docs-agent-completion-' );
 	if ( false === $temp || strlen( $bytes ) !== file_put_contents( $temp, $bytes ) || ! rename( $temp, $target ) ) {
 		if ( is_string( $temp ) ) {
