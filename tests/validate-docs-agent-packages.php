@@ -70,6 +70,9 @@ $assert( str_contains( $maintain_docs_workflow, 'schema:"docs-agent/runner-recip
 $assert( str_contains( $maintain_docs_workflow, 'declared_artifacts_json:' ), 'maintain-docs.yml must expose typed artifact declarations as a reusable workflow output.' );
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 'maintain-docs.yml must prepare typed artifact declarations without caller-specific projections.' );
 $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 'maintain-docs.yml must expose artifact declarations through workflow outputs.' );
+$assert( str_contains( $maintain_docs_workflow, 'Return valid compact JSON with double-quoted keys and strings, no markdown fence, no comments, no placeholders, and no trailing commas.' ), 'maintain-docs.yml must give the model explicit JSON serialization criteria.' );
+$assert( str_contains( $maintain_docs_workflow, 'Exact report shape (replace example documentation paths, evidence, dispositions, outcome, and changed_paths with verified values; preserve caller IDs and source refs)' ), 'maintain-docs.yml must give the model a complete completion-report object shape.' );
+$assert( str_contains( $maintain_docs_workflow, '{schema:"docs-agent/completion-report/v1",lane:$lane,run_kind:$run_kind,outcome:"changes",scope:' ), 'maintain-docs.yml completion example must include the nested v1 report fields.' );
 
 $wp_codebox_producer_revision        = 'a6fe2d208e990a8d04104aa74aacbb8d1539fbc1';
 $generic_codebox_agent_task_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@' . $wp_codebox_producer_revision;
