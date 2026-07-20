@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: Automattic/agents-api
-          ref: 89dd23903489882cfcf14a0d293daf939ad4e1a5
+          ref: 21a8b9b7845e6b89f82bdf34e62f739220184ec7
           path: agents-api
           token: ${{ github.token }}
           persist-credentials: false
