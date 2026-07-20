@@ -230,11 +230,11 @@ Docs Agent has one canonical architecture: five standalone native Agents API pac
 - `bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json`
 - `bundles/skills-agent/native/skills-maintenance-agent.agent.json`
 
-These five `.agent.json` files are the complete executable package surface. Each package is the sole executable instruction authority for its lane. The reusable workflow maps `audience` and `run_kind` to exactly one package and its canonical agent slug; it does not select a separate manifest, flow, pipeline, or memory envelope. Every descriptor uses the package-source revision `a39d9db230eb9e0b72ed84465f4d61bd8dda1bab`, independently of the revision that invokes the reusable workflow, and supplies a byte-level `sha256-bytes-v1` digest.
+These five `.agent.json` files are the complete executable package surface. Each package is the sole executable instruction authority for its lane. The reusable workflow maps `audience` and `run_kind` to exactly one package and its canonical agent slug; it does not select a separate manifest, flow, pipeline, or memory envelope. Every descriptor uses the package-source revision `a51e79ac698610177852170332a1135a9c315951`, independently of the revision that invokes the reusable workflow, and supplies a byte-level `sha256-bytes-v1` digest.
 
 Package updates advance the package-source revision and all five declared digests atomically. The immutable-source validator reads each package blob from that Git revision, recomputes its digest and canonical slug, and rejects a descriptor that does not match those historical bytes.
 
-All five packages support direct import through `wp_agent_import_runtime_bundles()` and retain the source-grounded workspace-only editing boundary. They intentionally have no required write-tool gate: deterministic report/diff postconditions reject no-op writes while allowing honest no-change maintenance.
+All five packages support direct import through `wp_agent_import_runtime_bundles()` and retain the source-grounded workspace-only editing boundary. Technical bootstrap has an Agents API completion gate that requires a workspace documentation write before it can finish, so a fresh surface cannot complete as prose only. Maintenance and the other no-change-capable lanes intentionally have no required write-tool gate; deterministic report/diff postconditions continue to reject no-op writes while allowing honest no-change maintenance.
 
 ### Compatibility Impact
 
