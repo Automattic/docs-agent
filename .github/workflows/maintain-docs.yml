@@ -248,8 +248,16 @@ jobs:
 
           context_prompt="$(printf '%s' "$context_repositories" | jq -r 'if length == 0 then "No additional context repositories are declared." else "Read-only context repositories (cite aliases in evidence):\n" + (map("- " + .alias + ": " + .repository + "@" + .revision) | join("\n")) end')"
           completion_prompt="$(jq -nr --arg lane "$AUDIENCE" --arg run_kind "$RUN_KIND" --argjson bootstrap "$bootstrap_contract" --argjson delta "$source_delta" '
+            ($delta | map(.source_refs) | add // ["repository inventory"]) as $source_refs |
+            (if $run_kind == "maintenance" then
+              ($delta | map({id,source_refs,documentation_paths:["docs/example.md"],disposition:(if .requires_documentation_change then "updated" else "verified_current" end),evidence:"Describe the source comparison and documentation decision."}))
+            else
+              [{id:"inventory",source_refs:$source_refs,documentation_paths:["README.md","docs/README.md"],disposition:"updated",evidence:"Describe the repository inventory and resulting documentation system."}]
+            end) as $items |
+            ({schema:"docs-agent/completion-report/v1",lane:$lane,run_kind:$run_kind,outcome:"changes",scope:{source_basis:(if $run_kind == "maintenance" then "bounded_delta" else "inventory" end),source_refs:$source_refs,documentation_surfaces:["README.md","docs/example.md"]},items:$items,changed_paths:["docs/example.md"]}|tojson) as $report_shape |
             "Completion contract (mandatory):\n" +
             "- End with exactly one <DOCS_AGENT_COMPLETION_REPORT>{JSON}</DOCS_AGENT_COMPLETION_REPORT> block and no other report block.\n" +
+            "- Return valid compact JSON with double-quoted keys and strings, no markdown fence, no comments, no placeholders, and no trailing commas.\n" +
             "- JSON schema: docs-agent/completion-report/v1; lane=" + $lane + "; run_kind=" + $run_kind + ".\n" +
             "- Include outcome (changes or no_changes), scope.source_basis, non-empty scope.source_refs and scope.documentation_surfaces, non-empty evidence-backed per-item dispositions, and changed_paths.\n" +
             "- Maintenance must use bounded_delta and cover every caller source_delta ID and source ref in its matching evidence-backed report item. Bootstrap may use inventory with its positive bootstrap contract.\n" +
@@ -257,6 +265,7 @@ jobs:
             "- For no_changes, use only verified_current or not_documentation_relevant dispositions, cover every bounded source delta, and leave the documentation diff clean.\n" +
             "- For changes, use created/updated dispositions and report every actual changed path. Never write outside writable paths.\n" +
             "- Bootstrap must satisfy every caller criterion and create a substantive navigable initial documentation system on a fresh surface.\n" +
+            "Exact report shape (replace example documentation paths, evidence, dispositions, outcome, and changed_paths with verified values; preserve caller IDs and source refs):\n<DOCS_AGENT_COMPLETION_REPORT>" + $report_shape + "</DOCS_AGENT_COMPLETION_REPORT>\n" +
             "Bootstrap contract JSON: " + ($bootstrap|tojson) + "\n" +
             "Caller-known source delta JSON: " + ($delta|tojson)
           ')"
