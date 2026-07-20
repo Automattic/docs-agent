@@ -1,7 +1,7 @@
 {
   "tag": "v0.12.29",
   "revision": "bc982947ec33c78160125026e16d357b7ece3ea1",
-  "producer_revision": "12a5bb19a97b89d0a78b502fc71adede5b122359",
+  "producer_revision": "0227ca7551d8cd98f14242b31e142b50f78dff13",
   "package_version": "0.12.29",
   "published_assets": {
     "01-wp-codebox.zip": "sha256:a239c72ae79c5b24fe7bed9ccfd375c0b70892ca66406d98140a51d219cfaaee",
