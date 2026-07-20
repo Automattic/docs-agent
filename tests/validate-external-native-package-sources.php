@@ -30,7 +30,7 @@ $read_revision_package = static function ( string $revision, string $path ) use 
 	return $contents;
 };
 
-$package_revision = '85f0d162a7d499fdc1286891371342727d084c88';
+$package_revision = 'a39d9db230eb9e0b72ed84465f4d61bd8dda1bab';
 $packages = array(
 	'technical:bootstrap' => array( 'path' => 'bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json', 'slug' => 'technical-docs-bootstrap-agent', 'digest' => '0230e0e3fd8a4f045a545407d3d01c22df537b05f031260e29d6b531285b7839' ),
 	'technical:maintenance' => array( 'path' => 'bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json', 'slug' => 'technical-docs-maintenance-agent', 'digest' => '975c7b0a0a7aff52897c52be5ac903a7fb110ea3c33e16227f8694c74c932519' ),

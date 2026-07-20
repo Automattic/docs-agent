@@ -230,7 +230,7 @@ Docs Agent has one canonical architecture: five standalone native Agents API pac
 - `bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json`
 - `bundles/skills-agent/native/skills-maintenance-agent.agent.json`
 
-These five `.agent.json` files are the complete executable package surface. Each package is the sole executable instruction authority for its lane. The reusable workflow maps `audience` and `run_kind` to exactly one package and its canonical agent slug; it does not select a separate manifest, flow, pipeline, or memory envelope. Every descriptor uses the package-source revision `85f0d162a7d499fdc1286891371342727d084c88`, independently of the revision that invokes the reusable workflow, and supplies a byte-level `sha256-bytes-v1` digest.
+These five `.agent.json` files are the complete executable package surface. Each package is the sole executable instruction authority for its lane. The reusable workflow maps `audience` and `run_kind` to exactly one package and its canonical agent slug; it does not select a separate manifest, flow, pipeline, or memory envelope. Every descriptor uses the package-source revision `a39d9db230eb9e0b72ed84465f4d61bd8dda1bab`, independently of the revision that invokes the reusable workflow, and supplies a byte-level `sha256-bytes-v1` digest.
 
 Package updates advance the package-source revision and all five declared digests atomically. The immutable-source validator reads each package blob from that Git revision, recomputes its digest and canonical slug, and rejects a descriptor that does not match those historical bytes.
 
