@@ -169,9 +169,12 @@ $assert( $release_tag === ( $caller_inputs['wp_codebox_release_ref'] ?? null ), 
 $assert( $producer_candidate_revision === ( $caller_inputs['wp_codebox_workflow_ref'] ?? null ), 'Docs Agent must execute helpers from the accepted WP Codebox producer revision.' );
 $assert( '${{ needs.prepare.outputs.runtime_sources }}' === ( $caller_inputs['runtime_sources'] ?? null ), 'Docs Agent must pass its prepared runtime closure to WP Codebox.' );
 $assert( '${{ needs.prepare.outputs.validation_dependencies }}' === ( $caller_inputs['validation_dependencies'] ?? null ), 'Docs Agent must pass caller-owned validation dependencies to WP Codebox.' );
-$assert( ! isset( $caller_inputs['provider'], $caller_inputs['model'] ), 'Docs Agent must leave provider/model selection to the published WP Codebox contract.' );
+$assert( ! isset( $caller_inputs['provider'] ), 'Docs Agent must leave provider selection to the published WP Codebox contract.' );
+$assert( '${{ inputs.model }}' === ( $caller_inputs['model'] ?? null ), 'Docs Agent must forward the caller-selected model to WP Codebox.' );
 $assert( 'string' === ( $contract['inputs']['provider']['type'] ?? null ) && 'openai' === ( $contract['inputs']['provider']['default'] ?? null ), 'WP Codebox must publish the OpenAI provider input.' );
 $assert( 'string' === ( $contract['inputs']['model']['type'] ?? null ) && 'gpt-5.5' === ( $contract['inputs']['model']['default'] ?? null ), 'WP Codebox must publish the default model input.' );
+$maintain_workflow = (string) file_get_contents( dirname( __DIR__ ) . '/.github/workflows/maintain-docs.yml' );
+$assert( 1 === preg_match( '/^      model:\n(?:        [^\n]*\n)*?        default: ([^\n]+)$/m', $maintain_workflow, $model_default ) && ( $contract['inputs']['model']['default'] ?? null ) === trim( $model_default[1] ), 'Docs Agent model input default must equal the published WP Codebox default so omitting it changes nothing.' );
 $is_coherent_producer_pair = static function ( string $consumer_workflow, string $producer_revision, string $runtime_release_tag ): bool {
 	preg_match( '/uses: Automattic\/wp-codebox\/\.github\/workflows\/run-agent-task\.yml@(?<workflow_revision>[^\s]+)/', $consumer_workflow, $workflow_match );
 	preg_match( '/^\s+wp_codebox_release_ref: (?<release_tag>[^\s]+)$/m', $consumer_workflow, $release_match );

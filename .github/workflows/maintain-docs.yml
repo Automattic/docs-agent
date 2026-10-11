@@ -61,6 +61,10 @@ env:
         description: Optional maintenance instruction appended to the default Docs Agent prompt.
         type: string
         default: ""
+      model:
+        description: OpenAI model id for the live Docs Agent run. Defaults to the published WP Codebox contract default.
+        type: string
+        default: gpt-5.5
       run_agent:
         description: Run the prepared Docs Agent task through the generic Codebox agent-task workflow.
         type: boolean
@@ -352,6 +356,7 @@ jobs:
       component_id: docs-agent
       target_repo: ${{ github.repository }}
       prompt: ${{ needs.prepare.outputs.prompt }}
+      model: ${{ inputs.model }}
       writable_paths: ${{ inputs.writable_paths }}
       runner_workspace: ${{ needs.prepare.outputs.runner_workspace }}
       validation_dependencies: ${{ needs.prepare.outputs.validation_dependencies }}
