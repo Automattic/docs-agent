@@ -98,6 +98,7 @@ The consumer API is product-level. Consumer repositories configure the documenta
 | `verification_commands` | `[]` | JSON array of canonical runner verification commands executed in the target workspace. |
 | `drift_checks` | `[]` | JSON array of canonical runner drift checks executed after verification. |
 | `prompt` | empty | Optional additional maintenance instruction. |
+| `model` | `gpt-5.5` | OpenAI model id for the live run. Defaults to the WP Codebox contract default, so omitting it changes nothing. |
 | `run_agent` | `true` | Set `false` to skip after deterministic preflight says docs are current. |
 | `dry_run` | `false` | Set `true` to validate the prepared task without starting a live agent run. |
 
