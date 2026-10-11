@@ -30,7 +30,18 @@
         "workspace_git_status",
         "workspace_git_diff"
       ],
-      "tool_call_rules": []
+      "tool_call_rules": [
+        {
+          "id": "require-bootstrap-workspace-write",
+          "require_tool_use": true,
+          "min_tool_calls": 1,
+          "require_one_of": [
+            "workspace_write",
+            "workspace_edit",
+            "workspace_apply_patch"
+          ]
+        }
+      ]
     },
     "meta": {
       "source_type": "runtime-agent-package",
