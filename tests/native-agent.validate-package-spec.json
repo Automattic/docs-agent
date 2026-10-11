@@ -83,9 +83,15 @@
     "user-docs-bootstrap-agent.agent.json": {
       "package": "user-docs-agent",
       "agent_slug": "user-docs-bootstrap-agent",
-      "source_revision": "02e01e6d72ee158e45413185c32fcf30a5a04724",
+      "source_revision": "f3d965758c6318bd900b32d7fb91ccae125c3204",
       "required_tools": ["get_github_file", "workspace_read", "workspace_grep", "workspace_write", "workspace_git_status", "workspace_git_diff"],
       "permitted_workspace_tools": ["workspace_show", "workspace_ls", "workspace_read", "workspace_grep", "workspace_write", "workspace_edit", "workspace_apply_patch", "workspace_git_status", "workspace_git_diff"],
+      "required_tool_call_rule": {
+        "id": "require-bootstrap-workspace-write",
+        "require_tool_use": true,
+        "min_tool_calls": 1,
+        "require_one_of": ["workspace_write", "workspace_edit", "workspace_apply_patch"]
+      },
       "instructions_must_contain": ["non-technical product documentation", "frontend users", "one-shot first-run user documentation generation pass", "product-facing evidence", "complete initial documentation system", "docs/user/", "consumer-declared writable paths", "required documentation write", "workspace_git_status", "workspace_git_diff"]
     },
     "user-docs-maintenance-agent.agent.json": {
