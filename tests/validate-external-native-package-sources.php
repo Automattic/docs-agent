@@ -30,11 +30,11 @@ $read_revision_package = static function ( string $revision, string $path ) use 
 	return $contents;
 };
 
-$package_revision = 'a51e79ac698610177852170332a1135a9c315951';
+$package_revision = 'f3d965758c6318bd900b32d7fb91ccae125c3204';
 $packages = array(
-	'technical:bootstrap' => array( 'path' => 'bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json', 'slug' => 'technical-docs-bootstrap-agent', 'digest' => '124924f004474d5296294a3f2c99285d0848c46ed622926b1b283ed018b2bcf0' ),
+	'technical:bootstrap' => array( 'path' => 'bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json', 'slug' => 'technical-docs-bootstrap-agent', 'digest' => '21b4efe1323ace3fd9c445c3eae36d42c128bc1e3d2dd0b575b89ecb38b02eae' ),
 	'technical:maintenance' => array( 'path' => 'bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json', 'slug' => 'technical-docs-maintenance-agent', 'digest' => '975c7b0a0a7aff52897c52be5ac903a7fb110ea3c33e16227f8694c74c932519' ),
-	'user:bootstrap'      => array( 'path' => 'bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json', 'slug' => 'user-docs-bootstrap-agent', 'digest' => 'a3ada797a125f638364caac43004bbb47fcc8c7bdc89021f25fcfcdc4c2d502f' ),
+	'user:bootstrap'      => array( 'path' => 'bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json', 'slug' => 'user-docs-bootstrap-agent', 'digest' => '526ff81a024f75445ab44fcad16910c0b9b8f8765c3cba930490469eb1af74d3' ),
 	'user:maintenance'    => array( 'path' => 'bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json', 'slug' => 'user-docs-maintenance-agent', 'digest' => '747de10fdb52d7c1543b404030e0e0a2604b6496e95d50143149f72c975a98fb' ),
 	'skills:maintenance'  => array( 'path' => 'bundles/skills-agent/native/skills-maintenance-agent.agent.json', 'slug' => 'skills-maintenance-agent', 'digest' => '0f8d35fe0026aa62b9ddf2e86c4f9432b4d8aae90757dfbaf334d4a0671fb8a3' ),
 );

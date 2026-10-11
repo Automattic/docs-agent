@@ -2,8 +2,8 @@
   "schema_version": 1,
   "bundle_slug": "user-docs-bootstrap-agent",
   "bundle_version": "0.1.0",
-  "source_ref": "Automattic/docs-agent@02e01e6d72ee158e45413185c32fcf30a5a04724",
-  "source_revision": "02e01e6d72ee158e45413185c32fcf30a5a04724",
+  "source_ref": "Automattic/docs-agent@f3d965758c6318bd900b32d7fb91ccae125c3204",
+  "source_revision": "f3d965758c6318bd900b32d7fb91ccae125c3204",
   "agent": {
     "agent_slug": "user-docs-bootstrap-agent",
     "agent_name": "User Docs Bootstrap Agent",
@@ -30,12 +30,23 @@
         "workspace_git_status",
         "workspace_git_diff"
       ],
-      "tool_call_rules": []
+      "tool_call_rules": [
+        {
+          "id": "require-bootstrap-workspace-write",
+          "require_tool_use": true,
+          "min_tool_calls": 1,
+          "require_one_of": [
+            "workspace_write",
+            "workspace_edit",
+            "workspace_apply_patch"
+          ]
+        }
+      ]
     },
     "meta": {
       "source_type": "runtime-agent-package",
       "source_package": "user-docs-agent",
-      "source_version": "02e01e6d72ee158e45413185c32fcf30a5a04724",
+      "source_version": "f3d965758c6318bd900b32d7fb91ccae125c3204",
       "role": "user-docs-bootstrap",
       "runtime": "agents-api-native-chat",
       "default_provider": "openai",
