@@ -98,6 +98,8 @@ $assert( str_contains( $maintain_docs_workflow, 'OPENAI_API_KEY: ${{ secrets.OPE
 $assert( str_contains( $maintain_docs_workflow, 'ACCESS_TOKEN: ${{ github.token }}' ), 'maintain-docs.yml must forward the caller-scoped GitHub token to the native runner.' );
 $assert( str_contains( $maintain_docs_workflow, 'EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.EXTERNAL_PACKAGE_SOURCE_POLICY }}' ), 'maintain-docs.yml must explicitly forward the external package source policy.' );
 $assert( str_contains( $maintain_docs_workflow, 'runtime_sources: ${{ needs.prepare.outputs.runtime_sources }}' ), 'maintain-docs.yml must pass its complete native runtime closure to WP Codebox.' );
+$assert( str_contains( $maintain_docs_workflow, 'max_turns: ${{ inputs.max_turns }}' ), 'maintain-docs.yml must forward its documentation-sized turn budget to WP Codebox.' );
+$assert( 1 === preg_match( '/max_turns:\s*\n\s+description:.*\n\s+type: number\s*\n\s+default: 32/', $maintain_docs_workflow ), 'maintain-docs.yml must default to enough turns for bootstrap discovery, writes, and diff inspection.' );
 
 $workflow_readme = (string) file_get_contents( $root . '/.github/workflows/README.md' );
 foreach ( array( 'Docs Agent Runner Recipe', 'portable recipe', 'Docs Agent owns the native package' ) as $migration_note_text ) {
