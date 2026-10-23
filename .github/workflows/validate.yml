@@ -10,11 +10,11 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Checkout WP Codebox producer contract
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: Automattic/wp-codebox
           ref: a6fe2d208e990a8d04104aa74aacbb8d1539fbc1
