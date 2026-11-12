@@ -45,6 +45,8 @@ jobs:
 
 Docs Agent targets the calling repository and forwards its scoped `${{ github.token }}` to WP Codebox for checkout and publication. The consumer must grant `contents: write`, `pull-requests: write`, and `issues: write`; no `ACCESS_TOKEN` secret is required for this same-repository contract. `OPENAI_API_KEY` is optional in the reusable workflow schema but required for a live `run_agent: true` OpenAI run. `EXTERNAL_PACKAGE_SOURCE_POLICY` is a separate required secret: WP Codebox uses it to authorize the selected Docs Agent package and the complete WordPress-native runtime closure. Replace the prior v1 secret value with the exact value below; its secret name and workflow mapping are unchanged.
 
+`PUBLISH_TOKEN` is optional. When it is empty, Docs Agent uses `${{ github.token }}` as above. GitHub does not start `pull_request` workflows for pull requests opened with `github.token`, so docs pull requests opened that way get no CI. To get CI on them, store a fine-grained personal access token as a repository secret and pass it as `PUBLISH_TOKEN`. Limit the token to the calling repository, with `contents`, `pull-requests`, and `issues` write. The pull request then opens as that token's account. Prefer a dedicated machine account, because the token reaches the agent run's checkout and publication. A GitHub App installation token minted in an earlier caller job does not work: GitHub drops job outputs that contain secrets, so the token cannot reach a reusable workflow call.
+
 Configure `DOCS_AGENT_EXTERNAL_PACKAGE_SOURCE_POLICY` with this exact v1 JSON value:
 
 ```json
