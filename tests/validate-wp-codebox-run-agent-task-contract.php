@@ -202,7 +202,7 @@ foreach ( $contract['secrets'] ?? array() as $name => $secret ) {
 	}
 }
 
-$assert( '${{ github.token }}' === ( $caller_secrets['ACCESS_TOKEN'] ?? null ), 'Docs Agent must explicitly forward the caller-scoped GitHub token as ACCESS_TOKEN.' );
+$assert( '${{ secrets.PUBLISH_TOKEN || github.token }}' === ( $caller_secrets['ACCESS_TOKEN'] ?? null ), 'Docs Agent must forward ACCESS_TOKEN as the optional PUBLISH_TOKEN, falling back to the caller-scoped GitHub token.' );
 $assert( '${{ secrets.OPENAI_API_KEY }}' === ( $caller_secrets['OPENAI_API_KEY'] ?? null ), 'Docs Agent must explicitly forward OPENAI_API_KEY.' );
 $assert( '${{ secrets.EXTERNAL_PACKAGE_SOURCE_POLICY }}' === ( $caller_secrets['EXTERNAL_PACKAGE_SOURCE_POLICY'] ?? null ), 'Docs Agent must explicitly forward the external package policy secret.' );
 $assert( preg_match( '/secrets:\n      OPENAI_API_KEY:\n(?:        .*\n)*        required: false/m', $workflow ) === 1, 'Docs Agent must expose OPENAI_API_KEY as an optional reusable-workflow secret.' );

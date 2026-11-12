@@ -73,8 +73,9 @@ $assert( ! str_contains( $workflow, 'agent_bundle:' ), 'The active workflow must
 $assert( ! str_contains( $workflow, 'pipeline_slug' ) && ! str_contains( $workflow, 'flow_slug' ) && ! str_contains( $workflow, 'bundle_path' ), 'The active workflow must not pass legacy bundle envelopes.' );
 $assert( str_contains( $workflow, 'EXTERNAL_PACKAGE_SOURCE_POLICY:' ) && str_contains( $workflow, 'EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.EXTERNAL_PACKAGE_SOURCE_POLICY }}' ), 'The policy secret must be required and forwarded without serialization.' );
 $assert( str_contains( $workflow, 'OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}' ), 'OPENAI_API_KEY must be forwarded without serialization.' );
-$assert( str_contains( $workflow, 'ACCESS_TOKEN: ${{ github.token }}' ), 'Same-repository publication must use the caller-scoped GitHub token.' );
-$assert( ! str_contains( $workflow, 'secrets.ACCESS_TOKEN' ), 'Docs Agent must not require a consumer ACCESS_TOKEN override.' );
+$assert( str_contains( $workflow, 'ACCESS_TOKEN: ${{ secrets.PUBLISH_TOKEN || github.token }}' ), 'Same-repository publication must default to the caller-scoped GitHub token.' );
+$assert( ! str_contains( $workflow, 'secrets.ACCESS_TOKEN' ), 'Docs Agent must not accept a raw ACCESS_TOKEN override.' );
+$assert( preg_match( '/      PUBLISH_TOKEN:\n(?:        .*\n)*?        required: false/m', $workflow ) === 1, 'PUBLISH_TOKEN must stay optional so callers need no extra secret.' );
 
 $readme = (string) file_get_contents( $root . '/README.md' );
 $policy_json = '{"version":1,"repositories":{"automattic/docs-agent":["bundles/technical-docs-agent/native/technical-docs-bootstrap-agent.agent.json","bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json","bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json","bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json","bundles/skills-agent/native/skills-maintenance-agent.agent.json"]},"runtime_sources":{"automattic/agents-api":["."],"wordpress/php-ai-client":["."]},"runtime_artifacts":[{"url":"https://downloads.wordpress.org/plugin/ai-provider-for-openai.1.0.3.zip","sha256":"48f3c0c714b3164cda79d320829830d5a0ea1116e0b19653da8af898a22d3bb6"}]}';

@@ -80,6 +80,9 @@ env:
       EXTERNAL_PACKAGE_SOURCE_POLICY:
         description: Version 1 JSON policy authorizing Docs Agent standalone native packages.
         required: true
+      PUBLISH_TOKEN:
+        description: Optional token for checkout and publication. Defaults to the caller-scoped github.token. Pass a GitHub App installation token so the docs pull request opens as that app and triggers the repository's pull_request workflows, which GitHub suppresses for github.token.
+        required: false
     outputs:
       job_status:
         description: Docs Agent run status.
@@ -373,5 +376,5 @@ jobs:
       dry_run: ${{ inputs.dry_run }}
     secrets:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      ACCESS_TOKEN: ${{ github.token }}
+      ACCESS_TOKEN: ${{ secrets.PUBLISH_TOKEN || github.token }}
       EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.EXTERNAL_PACKAGE_SOURCE_POLICY }}

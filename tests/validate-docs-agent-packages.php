@@ -95,7 +95,7 @@ $assert( str_contains( $maintain_docs_workflow, '--artifact-path \'$completion_a
 $assert( str_contains( $maintain_docs_workflow, 'artifact:{name:"docs_agent_completion_report",type:"DocsAgentCompletionReport",path:$path}' ), 'The mandatory completion drift check must declare the generic WP Codebox command artifact shape.' );
 $assert( str_contains( $maintain_docs_workflow, 'output_projections:' ), 'maintain-docs.yml must project the bounded runner publication result.' );
 $assert( str_contains( $maintain_docs_workflow, 'OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}' ), 'maintain-docs.yml must explicitly forward OPENAI_API_KEY to the native runner.' );
-$assert( str_contains( $maintain_docs_workflow, 'ACCESS_TOKEN: ${{ github.token }}' ), 'maintain-docs.yml must forward the caller-scoped GitHub token to the native runner.' );
+$assert( str_contains( $maintain_docs_workflow, 'ACCESS_TOKEN: ${{ secrets.PUBLISH_TOKEN || github.token }}' ), 'maintain-docs.yml must forward an optional PUBLISH_TOKEN and fall back to the caller-scoped GitHub token.' );
 $assert( str_contains( $maintain_docs_workflow, 'EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.EXTERNAL_PACKAGE_SOURCE_POLICY }}' ), 'maintain-docs.yml must explicitly forward the external package source policy.' );
 $assert( str_contains( $maintain_docs_workflow, 'runtime_sources: ${{ needs.prepare.outputs.runtime_sources }}' ), 'maintain-docs.yml must pass its complete native runtime closure to WP Codebox.' );
 
