@@ -247,6 +247,21 @@ foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertion
 	foreach ( $native_assertions['instructions_must_contain'] ?? array() as $required_phrase ) {
 		$assert( str_contains( $instructions, strtolower( (string) $required_phrase ) ), "Native package {$native_file} instructions missing required text: {$required_phrase}" );
 	}
+
+	// Maintenance must not strip accurate content (docs-agent#190): it keeps
+	// accurate text and concrete source-backed values, edits only what source
+	// contradicts or lacks, and deletes a section only when the feature is gone.
+	if ( ! empty( $native_assertions['requires_content_preservation'] ) ) {
+		$preservation_phrases = $native_spec['content_preservation_phrases'] ?? array();
+		$assert( is_array( $preservation_phrases ) && count( $preservation_phrases ) >= 5, 'The package spec must declare the content-preservation phrases.' );
+		foreach ( $preservation_phrases as $preservation_phrase ) {
+			$assert( str_contains( $instructions, strtolower( (string) $preservation_phrase ) ), "Native package {$native_file} must carry the content-preservation rule: {$preservation_phrase}" );
+		}
+	}
+}
+
+foreach ( array( 'technical-docs-maintenance-agent.agent.json', 'user-docs-maintenance-agent.agent.json' ) as $maintenance_package ) {
+	$assert( ! empty( $native_spec['agents'][ $maintenance_package ]['requires_content_preservation'] ), "Maintenance package {$maintenance_package} must be validated for content preservation." );
 }
 
 fwrite( STDOUT, "Docs Agent native package validation passed.\n" );

@@ -185,6 +185,18 @@ Docs Agent should produce changes that help a new reader or agent adopt the proj
 - Keep generated changes focused and reviewable.
 - Prefer a no-op result over speculative or unsupported maintenance.
 
+### Maintenance Keeps Accurate Content
+
+Both maintenance packages treat the existing docs as the baseline. A maintenance run:
+
+- keeps accurate content word for word instead of rephrasing it for tone or brevity;
+- changes only what source evidence contradicts and adds what is missing;
+- deletes a section, list item, or example only when the feature it describes is gone from the source, and leaves unverified claims unchanged;
+- keeps concrete, source-supported examples and numbers (prices, percentages, limits, notice periods, worked examples) rather than replacing them with pointers such as "check the tab";
+- reviews `workspace_git_diff` before finishing and restores any removal that the source does not justify.
+
+This rule was added after a shop maintenance run removed accurate sections and a worked fee example ([docs-agent#190](https://github.com/Automattic/docs-agent/issues/190)). `tests/validate-docs-agent-packages.php` fails if either maintenance package loses it.
+
 ## Lane Guidance
 
 Use `audience: technical` for developer-facing docs:
