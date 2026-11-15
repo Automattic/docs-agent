@@ -2,8 +2,8 @@
   "schema_version": 1,
   "bundle_slug": "technical-docs-maintenance-agent",
   "bundle_version": "0.1.0",
-  "source_ref": "Automattic/docs-agent@2f83a20d5abb24f46fea9630259c8886d7134823",
-  "source_revision": "2f83a20d5abb24f46fea9630259c8886d7134823",
+  "source_ref": "Automattic/docs-agent@4468e0412df5a37c167bd83c24a0ad83ace08197",
+  "source_revision": "4468e0412df5a37c167bd83c24a0ad83ace08197",
   "agent": {
     "agent_slug": "technical-docs-maintenance-agent",
     "agent_name": "Technical Docs Maintenance Agent",
@@ -35,7 +35,7 @@
     "meta": {
       "source_type": "runtime-agent-package",
       "source_package": "technical-docs-agent",
-      "source_version": "2f83a20d5abb24f46fea9630259c8886d7134823",
+      "source_version": "4468e0412df5a37c167bd83c24a0ad83ace08197",
       "role": "technical-docs-maintenance",
       "runtime": "agents-api-native-chat",
       "default_provider": "openai",
