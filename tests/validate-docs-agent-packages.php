@@ -73,10 +73,10 @@ $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 
 $assert( str_contains( $maintain_docs_workflow, 'The host generates and stages the completion report from caller inputs, Git, and filesystem checks' ), 'maintain-docs.yml must make host-owned completion generation explicit.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'DOCS_AGENT_COMPLETION_REPORT' ), 'maintain-docs.yml must not request model-authored completion reports.' );
 
-$wp_codebox_producer_revision        = '126f85b2a8b887ae8e2457d1cb71b15ebdb712cd';
+$wp_codebox_producer_revision        = '823e68cbb180579cd9dfd7d861be7bdc4074ff91';
 $generic_codebox_agent_task_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@' . $wp_codebox_producer_revision;
 $assert( str_contains( $maintain_docs_workflow, $generic_codebox_agent_task_workflow ), 'maintain-docs.yml must call the immutable generic Codebox agent-task workflow candidate.' );
-$assert( str_contains( $maintain_docs_workflow, 'wp_codebox_release_ref: v0.33.4' ), 'maintain-docs.yml must pass the matching WP Codebox release tag.' );
+$assert( str_contains( $maintain_docs_workflow, 'wp_codebox_release_ref: v0.33.5' ), 'maintain-docs.yml must pass the matching WP Codebox release tag.' );
 $assert( str_contains( $maintain_docs_workflow, 'wp_codebox_workflow_ref: ' . $wp_codebox_producer_revision ), 'maintain-docs.yml must execute helpers from the accepted producer revision.' );
 
 $assert( str_contains( $maintain_docs_workflow, '--arg writablePaths "$INPUT_WRITABLE_PATHS"' ), 'maintain-docs.yml must include writable paths in the portable recipe.' );
@@ -103,7 +103,7 @@ $workflow_readme = (string) file_get_contents( $root . '/.github/workflows/READM
 foreach ( array( 'Docs Agent Runner Recipe', 'portable recipe', 'Docs Agent owns the native package' ) as $migration_note_text ) {
 	$assert( str_contains( $workflow_readme, $migration_note_text ), "Workflow README missing agent runtime note: {$migration_note_text}" );
 }
-$assert( str_contains( $workflow_readme, 'v0.33.4' ), 'Workflow README must record the WP Codebox release tag.' );
+$assert( str_contains( $workflow_readme, 'v0.33.5' ), 'Workflow README must record the WP Codebox release tag.' );
 $assert( str_contains( $workflow_readme, 'Diagnostic messages that name runtime classes remain reviewable' ), 'Workflow README must document diagnostic-versus-source detection.' );
 $assert( str_contains( $workflow_readme, 'allowlisted review artifacts' ), 'Workflow README must document the WP Codebox upload allowlist.' );
 $assert( str_contains( $workflow_readme, 'normalized failed result' ), 'Workflow README must document normalized WP Codebox failures.' );
