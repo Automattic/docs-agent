@@ -62,7 +62,7 @@
       "package": "technical-docs-agent",
       "agent_slug": "technical-docs-maintenance-agent",
       "requires_content_preservation": true,
-      "source_revision": "3da1b8076359db9bf9f4ee7dadcc3932c080ed71",
+      "source_revision": "2f83a20d5abb24f46fea9630259c8886d7134823",
       "required_tools": [
         "get_github_file",
         "workspace_read",
@@ -115,7 +115,7 @@
       "package": "user-docs-agent",
       "agent_slug": "user-docs-maintenance-agent",
       "requires_content_preservation": true,
-      "source_revision": "667a3d7e43b938cae157235131da4462b09eebb5",
+      "source_revision": "2f83a20d5abb24f46fea9630259c8886d7134823",
       "required_tools": ["get_github_file", "workspace_read", "workspace_grep", "workspace_edit", "workspace_git_status", "workspace_git_diff"],
       "permitted_workspace_tools": ["workspace_show", "workspace_ls", "workspace_read", "workspace_grep", "workspace_write", "workspace_edit", "workspace_apply_patch", "workspace_git_status", "workspace_git_diff"],
       "instructions_must_contain": ["non-technical product documentation", "maintenance pass", "work page by page", "product-facing evidence", "docs/user/", "consumer-declared writable paths", "no_changes", "required documentation write", "workspace_git_status", "workspace_git_diff"]

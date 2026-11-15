@@ -45,9 +45,9 @@ $assert( 'OWNER/REPO' === ( $example['targetRepository'] ?? null ), 'Example con
 $assert( 'docs-agent/runner-recipe/v1' === ( $recipe['schema'] ?? null ), 'Runner recipe must use the portable Docs Agent runner recipe schema.' );
 $expected_package_source = array(
 	'repository' => 'Automattic/docs-agent',
-	'revision'   => '667a3d7e43b938cae157235131da4462b09eebb5',
+	'revision'   => '2f83a20d5abb24f46fea9630259c8886d7134823',
 	'path'       => 'bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json',
-	'digest'     => 'sha256-bytes-v1:975c7b0a0a7aff52897c52be5ac903a7fb110ea3c33e16227f8694c74c932519',
+	'digest'     => 'sha256-bytes-v1:4c0b545c7490ba62c243e085f6a145907787b19e76d72e3d83911657f6b187ab',
 );
 foreach ( array( $recipe, $example ) as $runner_recipe ) {
 	$assert( $expected_package_source === ( $runner_recipe['docsAgent']['externalPackageSource'] ?? null ), 'Runner recipes must use the immutable Docs Agent package source.' );
@@ -73,10 +73,10 @@ $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 
 $assert( str_contains( $maintain_docs_workflow, 'The host generates and stages the completion report from caller inputs, Git, and filesystem checks' ), 'maintain-docs.yml must make host-owned completion generation explicit.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'DOCS_AGENT_COMPLETION_REPORT' ), 'maintain-docs.yml must not request model-authored completion reports.' );
 
-$wp_codebox_producer_revision        = '4875fb1550a34e4f07c44cff20bad477b83115de';
+$wp_codebox_producer_revision        = '9764022156a61ba7d2b4d8a2196b01ccb33b82b5';
 $generic_codebox_agent_task_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@' . $wp_codebox_producer_revision;
 $assert( str_contains( $maintain_docs_workflow, $generic_codebox_agent_task_workflow ), 'maintain-docs.yml must call the immutable generic Codebox agent-task workflow candidate.' );
-$assert( str_contains( $maintain_docs_workflow, 'wp_codebox_release_ref: v0.33.6' ), 'maintain-docs.yml must pass the matching WP Codebox release tag.' );
+$assert( str_contains( $maintain_docs_workflow, 'wp_codebox_release_ref: v0.33.7' ), 'maintain-docs.yml must pass the matching WP Codebox release tag.' );
 $assert( str_contains( $maintain_docs_workflow, 'wp_codebox_workflow_ref: ' . $wp_codebox_producer_revision ), 'maintain-docs.yml must execute helpers from the accepted producer revision.' );
 
 $assert( str_contains( $maintain_docs_workflow, '--arg writablePaths "$INPUT_WRITABLE_PATHS"' ), 'maintain-docs.yml must include writable paths in the portable recipe.' );
@@ -103,7 +103,7 @@ $workflow_readme = (string) file_get_contents( $root . '/.github/workflows/READM
 foreach ( array( 'Docs Agent Runner Recipe', 'portable recipe', 'Docs Agent owns the native package' ) as $migration_note_text ) {
 	$assert( str_contains( $workflow_readme, $migration_note_text ), "Workflow README missing agent runtime note: {$migration_note_text}" );
 }
-$assert( str_contains( $workflow_readme, 'v0.33.6' ), 'Workflow README must record the WP Codebox release tag.' );
+$assert( str_contains( $workflow_readme, 'v0.33.7' ), 'Workflow README must record the WP Codebox release tag.' );
 $assert( str_contains( $workflow_readme, 'Diagnostic messages that name runtime classes remain reviewable' ), 'Workflow README must document diagnostic-versus-source detection.' );
 $assert( str_contains( $workflow_readme, 'allowlisted review artifacts' ), 'Workflow README must document the WP Codebox upload allowlist.' );
 $assert( str_contains( $workflow_readme, 'normalized failed result' ), 'Workflow README must document normalized WP Codebox failures.' );

@@ -2,7 +2,7 @@ name: Maintain Docs
 
 env:
   # Advance this revision and all package digests together when package bytes change.
-  DOCS_AGENT_PACKAGE_REVISION: 667a3d7e43b938cae157235131da4462b09eebb5
+  DOCS_AGENT_PACKAGE_REVISION: 2f83a20d5abb24f46fea9630259c8886d7134823
   # Advance independently when the post-command completion validator changes.
   DOCS_AGENT_COMPLETION_CONTRACT_REVISION: b136f9bc84e6f0ad9d5d0d5cdbb3df9c62e382e2
 
@@ -26,9 +26,13 @@ env:
         type: string
         default: main
       docs_branch:
-        description: Stable branch reused for the canonical Docs Agent pull request.
+        description: Stable branch reused for the canonical Docs Agent pull request. Used exactly as given; WP Codebox appends -<base-sha-12> only when the branch exists without an open pull request.
         type: string
         default: docs-agent/docs-upkeep
+      docs_scope:
+        description: 'Conventional-commit scope for the docs pull request title, such as the component name, giving `docs(<scope>): <lane> docs <run_kind>`. Defaults to the repository name.'
+        type: string
+        default: ""
       writable_paths:
         description: Comma-separated paths Docs Agent may edit.
         type: string
@@ -157,6 +161,7 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           INPUT_DOCS_BRANCH: ${{ inputs.docs_branch }}
+          INPUT_DOCS_SCOPE: ${{ inputs.docs_scope }}
           INPUT_BASE_REF: ${{ inputs.base_ref }}
           GITHUB_REPOSITORY_NAME: ${{ github.repository }}
           GITHUB_SERVER_URL: ${{ github.server_url }}
@@ -175,21 +180,21 @@ jobs:
             technical:maintenance)
               package_path="bundles/technical-docs-agent/native/technical-docs-maintenance-agent.agent.json"
               agent_slug="technical-docs-maintenance-agent"
-              package_digest="sha256-bytes-v1:975c7b0a0a7aff52897c52be5ac903a7fb110ea3c33e16227f8694c74c932519"
+              package_digest="sha256-bytes-v1:4c0b545c7490ba62c243e085f6a145907787b19e76d72e3d83911657f6b187ab"
               lane_requires_pr=false
               default_prompt="Maintain source-grounded developer documentation that helps developers understand, use, and extend the code in the repository."
               ;;
             user:bootstrap)
               package_path="bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json"
               agent_slug="user-docs-bootstrap-agent"
-              package_digest="sha256-bytes-v1:d22cf858b4413e150226989ff8cf253e2cfa7ef88b041d8ce14360f22df9d3a4"
+              package_digest="sha256-bytes-v1:b2e61a5052e35be709b00210b36cea5dc2d5d4f42d1f183bc7af597270f552e1"
               lane_requires_pr=true
               default_prompt="Bootstrap source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs."
               ;;
             user:maintenance)
               package_path="bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json"
               agent_slug="user-docs-maintenance-agent"
-              package_digest="sha256-bytes-v1:c93ce43cd7e057759779d36499fd26de45f8c7d3395bbf08583bbc83121e80e6"
+              package_digest="sha256-bytes-v1:dfdc3281afae497e311bd515a4bda8db40a9653b82ac5e621798cace53e1487c"
               lane_requires_pr=false
               default_prompt="Maintain source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs."
               ;;
@@ -310,11 +315,39 @@ jobs:
           external_package_source="$(jq -cn --arg repository "Automattic/docs-agent" --arg revision "$DOCS_AGENT_PACKAGE_REVISION" --arg path "$package_path" --arg digest "$package_digest" '{repository:$repository,revision:$revision,path:$path,digest:$digest}')"
           runtime_sources='[{"version":1,"role":"component","repository":"Automattic/agents-api","revision":"78e2dd409010f98fa4d26cdd72572117384ab18d","path":".","metadata":{"slug":"agents-api","loadAs":"mu-plugin","pluginFile":"agents-api.php"}},{"version":1,"role":"provider_plugin","source":{"type":"https_zip","url":"https://downloads.wordpress.org/plugin/ai-provider-for-openai.1.0.3.zip","sha256":"48f3c0c714b3164cda79d320829830d5a0ea1116e0b19653da8af898a22d3bb6","archive_root":"ai-provider-for-openai"},"metadata":{"slug":"ai-provider-for-openai","pluginFile":"plugin.php","activate":true,"providers":["openai"]}},{"version":1,"role":"bundled_library","repository":"WordPress/php-ai-client","revision":"631704201d15ffeff7091ad3bc7156db74054956","path":".","metadata":{"library":"php-ai-client","strategy":"wordpress-scoped-bundle"}}]'
 
+          # Pull request title and body. The title says what the run did instead of
+          # the generic workload label; WP Codebox appends the changed-files list.
+          docs_scope="${INPUT_DOCS_SCOPE:-${GITHUB_REPOSITORY_NAME##*/}}"
+          if ! printf '%s' "$docs_scope" | grep -Eq '^[A-Za-z0-9._/-]+$'; then
+            printf 'docs_scope must contain only letters, digits, dot, underscore, slash, and hyphen.\n' >&2
+            exit 1
+          fi
+          case "$AUDIENCE" in
+            skills) lane_title="skills" ;;
+            *) lane_title="$AUDIENCE docs" ;;
+          esac
+          pr_title="docs($docs_scope): $lane_title $RUN_KIND"
+          pr_body="$(jq -nr \
+            --arg scope "$docs_scope" \
+            --arg lane "$lane_title" \
+            --arg runKind "$RUN_KIND" \
+            --arg runUrl "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY_NAME/actions/runs/$GITHUB_RUN_ID_VALUE" \
+            --arg writablePaths "$INPUT_WRITABLE_PATHS" \
+            --argjson delta "$source_delta" '
+            "Automated " + $lane + " " + $runKind + " for `" + $scope + "` by [Docs Agent](https://github.com/Automattic/docs-agent).\n\n" +
+            "- Workflow run: " + $runUrl + "\n" +
+            "- Writable paths: `" + $writablePaths + "`\n" +
+            (if ($delta | length) > 0 then "- Source delta: " + ($delta | map("`" + .id + "`") | join(", ")) + "\n" else "" end) +
+            "\nGenerated documentation needs human review before merge. Check that every removed or rewritten line is contradicted by the source, and that accurate sections and concrete values were kept."
+          ')"
+
           runner_workspace="$(jq -cn \
             --arg repo "$GITHUB_REPOSITORY_NAME" \
             --arg branch "$INPUT_DOCS_BRANCH" \
             --arg baseRef "$INPUT_BASE_REF" \
-            '{enabled:true,repo:$repo,clone_url:("https://github.com/" + $repo + ".git"),branch:$branch,branch_prefix:$branch,base:$baseRef,from:("origin/" + $baseRef)}')"
+            --arg title "$pr_title" \
+            --arg body "$pr_body" \
+            '{enabled:true,repo:$repo,clone_url:("https://github.com/" + $repo + ".git"),branch:$branch,base:$baseRef,from:("origin/" + $baseRef),title:$title,commit_message:$title,body:$body}')"
           expected_artifacts="$(printf '%s' "$artifact_declarations" | jq -c 'map(.name)')"
           output_projections="$(jq -cn --arg path 'metadata.runner_workspace_publication.pull_request.url' --argjson required "$success_requires_pr" '{docs_agent_publication:{path:$path,required:$required}}')"
           if ! printf '%s' "$DOCS_AGENT_COMPLETION_CONTRACT_REVISION" | grep -Eq '^[0-9a-fA-F]{40}$'; then
@@ -356,10 +389,10 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
-    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@4875fb1550a34e4f07c44cff20bad477b83115de
+    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@9764022156a61ba7d2b4d8a2196b01ccb33b82b5
     with:
-      wp_codebox_release_ref: v0.33.6
-      wp_codebox_workflow_ref: 4875fb1550a34e4f07c44cff20bad477b83115de
+      wp_codebox_release_ref: v0.33.7
+      wp_codebox_workflow_ref: 9764022156a61ba7d2b4d8a2196b01ccb33b82b5
       external_package_source: ${{ needs.prepare.outputs.external_package_source }}
       runtime_sources: ${{ needs.prepare.outputs.runtime_sources }}
       workload_id: docs-agent-${{ inputs.audience }}-${{ inputs.run_kind }}
