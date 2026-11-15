@@ -58,10 +58,10 @@ $assert( substr( $release_tag, 1 ) === ( $release['package_version'] ?? null ), 
 $published_assets = $release['published_assets'] ?? null;
 $assert( is_array( $published_assets ), 'WP Codebox release fixture must record published release assets.' );
 $assert( array(
-	'wp-codebox-cli-linux-x64.tar.gz' => 'sha256:c37f770deb9a9c26e8191b44292da759f150b0641705af45ee6d41640ac695ab',
-	'wp-codebox-workspace-0.33.4.tgz' => 'sha256:57e8daf900de6504590edb1f1aa9a992c64b7fad8b5526162a3d377c63f95279',
-	'wp-codebox.zip' => 'sha256:46dc08b55eb4fd3d6fbd67d1ea25978816dea1eeade07c0444ad660ee547c975',
-) === $published_assets, 'WP Codebox release fixture must retain the published v0.33.4 asset digests.' );
+	'wp-codebox-cli-linux-x64.tar.gz' => 'sha256:98ecf24593e9d0e5d01826e6327702e7f30ad8a0e133d630d35a71c61b628260',
+	'wp-codebox-workspace-0.33.5.tgz' => 'sha256:3a6ecdd5e1a3ba93544fc8e3ffbf8895f3312cddf10e921aab776b50ec1f1f15',
+	'wp-codebox.zip' => 'sha256:2e35008606ca08de9b0aa86a52da7f167973dae098fe0ce3b6d5c6fd6fc418b6',
+) === $published_assets, 'WP Codebox release fixture must retain the published v0.33.5 asset digests.' );
 $run = $release['run'] ?? null;
 $assert( is_string( $run ) && preg_match( '/^\d+$/', $run ) === 1, 'WP Codebox release fixture must retain the regression run reference.' );
 $diagnostic_regression_run = $release['diagnostic_regression_run'] ?? null;
