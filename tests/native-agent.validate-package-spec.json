@@ -92,7 +92,13 @@
         "min_tool_calls": 1,
         "require_one_of": ["workspace_write", "workspace_edit", "workspace_apply_patch"]
       },
-      "instructions_must_contain": ["non-technical product documentation", "frontend users", "one-shot first-run user documentation generation pass", "product-facing evidence", "complete initial documentation system", "docs/user/", "consumer-declared writable paths", "required documentation write", "workspace_git_status", "workspace_git_diff"]
+      "required_bounded_discovery_rules": [
+        {"id": "bootstrap-first-write-budget", "after_tool": "workspace_show", "limited_tools": ["workspace_ls", "workspace_read", "workspace_grep", "list_github_tree", "get_github_file", "list_github_issues", "get_github_issue", "list_github_pulls", "get_github_pull", "get_github_pull_files", "get_github_pull_review_context", "github_pr_documentation_impact"], "max_calls": 24, "require_one_of": ["workspace_write", "workspace_edit", "workspace_apply_patch"], "gate_calls": true, "gate_completion": true},
+        {"id": "bootstrap-write-cadence-after-write", "after_tool": "workspace_write", "limited_tools": ["workspace_ls", "workspace_read", "workspace_grep", "list_github_tree", "get_github_file", "list_github_issues", "get_github_issue", "list_github_pulls", "get_github_pull", "get_github_pull_files", "get_github_pull_review_context", "github_pr_documentation_impact"], "max_calls": 16, "require_one_of": ["workspace_write", "workspace_edit", "workspace_apply_patch"], "gate_calls": true, "gate_completion": false},
+        {"id": "bootstrap-write-cadence-after-edit", "after_tool": "workspace_edit", "limited_tools": ["workspace_ls", "workspace_read", "workspace_grep", "list_github_tree", "get_github_file", "list_github_issues", "get_github_issue", "list_github_pulls", "get_github_pull", "get_github_pull_files", "get_github_pull_review_context", "github_pr_documentation_impact"], "max_calls": 16, "require_one_of": ["workspace_write", "workspace_edit", "workspace_apply_patch"], "gate_calls": true, "gate_completion": false},
+        {"id": "bootstrap-write-cadence-after-apply-patch", "after_tool": "workspace_apply_patch", "limited_tools": ["workspace_ls", "workspace_read", "workspace_grep", "list_github_tree", "get_github_file", "list_github_issues", "get_github_issue", "list_github_pulls", "get_github_pull", "get_github_pull_files", "get_github_pull_review_context", "github_pr_documentation_impact"], "max_calls": 16, "require_one_of": ["workspace_write", "workspace_edit", "workspace_apply_patch"], "gate_calls": true, "gate_completion": false}
+      ],
+      "instructions_must_contain": ["non-technical product documentation", "frontend users", "one-shot first-run user documentation generation pass", "write as you go", "discovery budget", "product-facing evidence", "complete initial documentation system", "docs/user/", "consumer-declared writable paths", "required documentation write", "workspace_git_status", "workspace_git_diff"]
     },
     "user-docs-maintenance-agent.agent.json": {
       "package": "user-docs-agent",
@@ -100,7 +106,7 @@
       "source_revision": "02e01e6d72ee158e45413185c32fcf30a5a04724",
       "required_tools": ["get_github_file", "workspace_read", "workspace_grep", "workspace_edit", "workspace_git_status", "workspace_git_diff"],
       "permitted_workspace_tools": ["workspace_show", "workspace_ls", "workspace_read", "workspace_grep", "workspace_write", "workspace_edit", "workspace_apply_patch", "workspace_git_status", "workspace_git_diff"],
-      "instructions_must_contain": ["non-technical product documentation", "maintenance pass", "product-facing evidence", "docs/user/", "consumer-declared writable paths", "no_changes", "required documentation write", "workspace_git_status", "workspace_git_diff"]
+      "instructions_must_contain": ["non-technical product documentation", "maintenance pass", "work page by page", "product-facing evidence", "docs/user/", "consumer-declared writable paths", "no_changes", "required documentation write", "workspace_git_status", "workspace_git_diff"]
     },
     "skills-maintenance-agent.agent.json": {
       "package": "skills-agent",

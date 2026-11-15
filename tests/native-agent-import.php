@@ -84,6 +84,34 @@ foreach ( array_keys( $packages ) as $index => $slug ) {
 		$after_write = array_merge( $fresh_surface, array( AgentsAPI\AI\WP_Agent_Message::toolCall( '', 'workspace_write', array( 'path' => $required_path ), 1, array( 'tool_call_id' => 'bootstrap-docs-index' ) ) ) );
 		$allowed = $gate instanceof AgentsAPI\AI\WP_Agent_Tool_Call_Gate ? $gate->evaluate_completion( $after_write ) : array();
 		agents_api_smoke_assert_equals( true, $allowed['allowed'] ?? null, "{$slug} accepts completion after a required workspace write", $failures, $passes );
+
+		if ( 'user-docs-bootstrap-agent' === $slug && $gate instanceof AgentsAPI\AI\WP_Agent_Tool_Call_Gate ) {
+			// Bounded discovery: reading the whole tree before writing exhausted
+			// the turn budget, so reads are capped before the first write and
+			// between writes.
+			$call = static fn( string $tool, int $n ): array => AgentsAPI\AI\WP_Agent_Message::toolCall( '', $tool, array( 'path' => "docs/user/page-{$n}.md" ), 1, array( 'tool_call_id' => "call-{$tool}-{$n}" ) );
+			$reads = array( $call( 'workspace_show', 0 ) );
+			for ( $n = 1; $n <= 24; $n++ ) {
+				$reads[] = $call( 'workspace_read', $n );
+			}
+			$read_blocked = $gate->evaluate_call( 'workspace_read', $reads );
+			agents_api_smoke_assert_equals( false, $read_blocked['allowed'] ?? null, "{$slug} blocks discovery past its first-write budget", $failures, $passes );
+			agents_api_smoke_assert_equals( 'bootstrap-first-write-budget', $read_blocked['context']['rule_id'] ?? '', "{$slug} names the first-write discovery budget", $failures, $passes );
+			agents_api_smoke_assert_equals( true, $gate->evaluate_call( 'workspace_write', $reads )['allowed'] ?? null, "{$slug} always allows the documentation write", $failures, $passes );
+
+			$after_first_write = array_merge( $reads, array( $call( 'workspace_write', 100 ) ) );
+			agents_api_smoke_assert_equals( true, $gate->evaluate_call( 'workspace_read', $after_first_write )['allowed'] ?? null, "{$slug} resets the discovery budget after a write", $failures, $passes );
+			for ( $n = 101; $n <= 116; $n++ ) {
+				$after_first_write[] = $call( 'workspace_grep', $n );
+			}
+			$cadence_blocked = $gate->evaluate_call( 'workspace_read', $after_first_write );
+			agents_api_smoke_assert_equals( false, $cadence_blocked['allowed'] ?? null, "{$slug} requires another write after its per-page discovery budget", $failures, $passes );
+			agents_api_smoke_assert_equals( 'bootstrap-write-cadence-after-write', $cadence_blocked['context']['rule_id'] ?? '', "{$slug} names the per-page write cadence", $failures, $passes );
+			$after_edit = array_merge( $after_first_write, array( $call( 'workspace_edit', 200 ) ) );
+			agents_api_smoke_assert_equals( true, $gate->evaluate_call( 'workspace_read', $after_edit )['allowed'] ?? null, "{$slug} accepts an edit as the next write", $failures, $passes );
+			agents_api_smoke_assert_equals( true, $gate->evaluate_call( 'workspace_git_diff', $after_edit )['allowed'] ?? null, "{$slug} allows the final git diff review after its last write", $failures, $passes );
+			agents_api_smoke_assert_equals( true, $gate->evaluate_completion( $after_first_write )['allowed'] ?? null, "{$slug} may finish once it has written", $failures, $passes );
+		}
 	} else {
 		agents_api_smoke_assert_equals( array(), $rules, "{$slug} permits clean evidence-backed no-change completion", $failures, $passes );
 	}

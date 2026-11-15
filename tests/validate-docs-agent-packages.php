@@ -224,6 +224,20 @@ foreach ( $native_spec['agents'] ?? array() as $native_file => $native_assertion
 		$assert( array() === ( $config['tool_call_rules'] ?? null ), "Native package {$native_file} must allow evidence-backed no-change completion without a no-op write." );
 	}
 
+	// Bounded discovery keeps a write-required lane from spending its whole
+	// turn budget reading: discovery is capped before the first write and
+	// between writes, so documentation lands incrementally.
+	foreach ( $native_assertions['required_bounded_discovery_rules'] ?? array() as $bounded_rule ) {
+		$assert( in_array( $bounded_rule, $config['tool_call_rules'] ?? array(), true ), "Native package {$native_file} must enforce bounded discovery rule: " . ( $bounded_rule['id'] ?? '' ) );
+		foreach ( array_merge( $bounded_rule['limited_tools'] ?? array(), $bounded_rule['require_one_of'] ?? array(), array( $bounded_rule['after_tool'] ?? '' ) ) as $rule_tool ) {
+			$assert( in_array( $rule_tool, $tools, true ), "Native package {$native_file} bounded discovery rule references a tool it does not enable: {$rule_tool}" );
+		}
+		$assert( array() === array_intersect( $bounded_rule['limited_tools'] ?? array(), $bounded_rule['require_one_of'] ?? array() ), "Native package {$native_file} bounded discovery must not limit its own commit tools." );
+	}
+	if ( isset( $native_assertions['required_bounded_discovery_rules'] ) ) {
+		$assert( count( $native_assertions['required_bounded_discovery_rules'] ) + 1 === count( $config['tool_call_rules'] ?? array() ), "Native package {$native_file} must declare only its write gate and bounded discovery rules." );
+	}
+
 	// Runner-neutral boundary: no agent-owned publication tools.
 	foreach ( $native_spec['forbidden_publication_tools'] ?? array() as $forbidden_tool ) {
 		$assert( ! in_array( $forbidden_tool, $tools, true ), "Native package {$native_file} must not enable publication tool: {$forbidden_tool}" );
