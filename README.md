@@ -103,6 +103,8 @@ The consumer API is product-level. Consumer repositories configure the documenta
 | `model` | `gpt-5.5` | OpenAI model id for the live run. Defaults to the WP Codebox contract default, so omitting it changes nothing. |
 | `run_agent` | `true` | Set `false` to skip after deterministic preflight says docs are current. |
 | `dry_run` | `false` | Set `true` to validate the prepared task without starting a live agent run. |
+| `max_turns` | `40` | Maximum agent turns. WP Codebox defaults to 12, which a large source tree can use up on reading before any write. |
+| `time_budget_ms` | `1800000` | Agent run time budget in milliseconds. |
 
 `verification_commands` and `drift_checks` are executable caller inputs. Docs Agent appends its own completion-contract check as a separate drift entry after them. The target repository remains the only writable PR boundary.
 

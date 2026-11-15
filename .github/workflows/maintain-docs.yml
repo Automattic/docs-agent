@@ -73,6 +73,14 @@ env:
         description: Validate the prepared Docs Agent task without starting a live agent run.
         type: boolean
         default: false
+      max_turns:
+        description: Maximum agent turns. Reading a large source tree before writing needs more than WP Codebox's default of 12.
+        type: number
+        default: 40
+      time_budget_ms:
+        description: Agent run time budget in milliseconds.
+        type: number
+        default: 1800000
     secrets:
       OPENAI_API_KEY:
         description: Optional OpenAI credential used for live Docs Agent runs.
@@ -374,6 +382,8 @@ jobs:
       callback_data: ${{ needs.prepare.outputs.recipe_json }}
       run_agent: ${{ inputs.run_agent }}
       dry_run: ${{ inputs.dry_run }}
+      max_turns: ${{ inputs.max_turns }}
+      time_budget_ms: ${{ inputs.time_budget_ms }}
     secrets:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       ACCESS_TOKEN: ${{ secrets.PUBLISH_TOKEN || github.token }}

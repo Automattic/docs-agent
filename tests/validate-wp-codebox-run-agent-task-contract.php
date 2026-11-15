@@ -160,7 +160,7 @@ foreach ( $caller_inputs as $name => $value ) {
 	$input = $contract['inputs'][ $name ] ?? null;
 	$assert( is_array( $input ), "Docs Agent passes producer input {$name}, which is absent from the producer schema." );
 	$type = $input['type'] ?? null;
-	$actual_type = preg_match( '/^(true|false)$/', $value ) === 1 || in_array( $name, array( 'success_requires_pr', 'run_agent', 'dry_run' ), true ) ? 'boolean' : ( is_numeric( $value ) ? 'number' : 'string' );
+	$actual_type = preg_match( '/^(true|false)$/', $value ) === 1 || in_array( $name, array( 'success_requires_pr', 'run_agent', 'dry_run' ), true ) ? 'boolean' : ( is_numeric( $value ) || in_array( $name, array( 'max_turns', 'time_budget_ms' ), true ) ? 'number' : 'string' );
 	$assert( $type === $actual_type, "Docs Agent input {$name} has {$actual_type} shape; producer requires {$type}." );
 }
 
@@ -217,6 +217,8 @@ $assert( preg_match( '/secrets:\n      ACCESS_TOKEN:/m', $workflow ) !== 1, 'Doc
 $assert( preg_match( '/secrets:\n(?:      [A-Z_]+:\n(?:        .*\n)*        required: (?:true|false)\n)*      EXTERNAL_PACKAGE_SOURCE_POLICY:\n(?:        .*\n)*        required: true/m', $workflow ) === 1, 'Docs Agent must require EXTERNAL_PACKAGE_SOURCE_POLICY from reusable-workflow callers.' );
 $assert( '${{ inputs.run_agent }}' === ( $caller_inputs['run_agent'] ?? null ), 'Docs Agent must delegate run_agent so WP Codebox reports deterministic skipped status.' );
 $assert( '${{ inputs.dry_run }}' === ( $caller_inputs['dry_run'] ?? null ), 'Docs Agent must delegate dry_run so WP Codebox validates without starting a live run.' );
+$assert( '${{ inputs.max_turns }}' === ( $caller_inputs['max_turns'] ?? null ), 'Docs Agent must delegate max_turns; the producer default of 12 turns ends source-heavy runs before any write.' );
+$assert( '${{ inputs.time_budget_ms }}' === ( $caller_inputs['time_budget_ms'] ?? null ), 'Docs Agent must delegate time_budget_ms alongside max_turns.' );
 $assert( preg_match( '/validation_dependencies:\n        description: Optional caller-owned command that installs dependencies needed before validation\.\n        type: string\n        default: ""/', $workflow ) === 1, 'Docs Agent must expose validation_dependencies as an optional empty-string reusable-workflow input.' );
 $assert( preg_match( '/require_pr:\n        description: Require a published target-repository pull request for successful maintenance\.\n        type: boolean\n        default: false/', $workflow ) === 1, 'Docs Agent must expose require_pr as an optional boolean reusable-workflow input.' );
 $assert( preg_match( '/\n    if: inputs\.run_agent\n/', $workflow ) !== 1, 'Docs Agent must not skip the producer job outside the producer contract.' );
