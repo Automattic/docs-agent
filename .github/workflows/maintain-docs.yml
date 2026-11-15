@@ -2,7 +2,7 @@ name: Maintain Docs
 
 env:
   # Advance this revision and all package digests together when package bytes change.
-  DOCS_AGENT_PACKAGE_REVISION: f3d965758c6318bd900b32d7fb91ccae125c3204
+  DOCS_AGENT_PACKAGE_REVISION: 667a3d7e43b938cae157235131da4462b09eebb5
   # Advance independently when the post-command completion validator changes.
   DOCS_AGENT_COMPLETION_CONTRACT_REVISION: b136f9bc84e6f0ad9d5d0d5cdbb3df9c62e382e2
 
@@ -182,14 +182,14 @@ jobs:
             user:bootstrap)
               package_path="bundles/user-docs-agent/native/user-docs-bootstrap-agent.agent.json"
               agent_slug="user-docs-bootstrap-agent"
-              package_digest="sha256-bytes-v1:526ff81a024f75445ab44fcad16910c0b9b8f8765c3cba930490469eb1af74d3"
+              package_digest="sha256-bytes-v1:d22cf858b4413e150226989ff8cf253e2cfa7ef88b041d8ce14360f22df9d3a4"
               lane_requires_pr=true
               default_prompt="Bootstrap source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs."
               ;;
             user:maintenance)
               package_path="bundles/user-docs-agent/native/user-docs-maintenance-agent.agent.json"
               agent_slug="user-docs-maintenance-agent"
-              package_digest="sha256-bytes-v1:747de10fdb52d7c1543b404030e0e0a2604b6496e95d50143149f72c975a98fb"
+              package_digest="sha256-bytes-v1:c93ce43cd7e057759779d36499fd26de45f8c7d3395bbf08583bbc83121e80e6"
               lane_requires_pr=false
               default_prompt="Maintain source-grounded product documentation for onboarding, setup, common tasks, expected outcomes, permissions, compatibility, troubleshooting, and FAQs."
               ;;
@@ -356,10 +356,10 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
-    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@823e68cbb180579cd9dfd7d861be7bdc4074ff91
+    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@4875fb1550a34e4f07c44cff20bad477b83115de
     with:
-      wp_codebox_release_ref: v0.33.5
-      wp_codebox_workflow_ref: 823e68cbb180579cd9dfd7d861be7bdc4074ff91
+      wp_codebox_release_ref: v0.33.6
+      wp_codebox_workflow_ref: 4875fb1550a34e4f07c44cff20bad477b83115de
       external_package_source: ${{ needs.prepare.outputs.external_package_source }}
       runtime_sources: ${{ needs.prepare.outputs.runtime_sources }}
       workload_id: docs-agent-${{ inputs.audience }}-${{ inputs.run_kind }}
