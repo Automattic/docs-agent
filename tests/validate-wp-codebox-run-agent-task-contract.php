@@ -247,7 +247,7 @@ foreach ( array( 'job_status', 'transcript_summary', 'projected_outputs_json', '
 
 $assert( isset( $caller_inputs['external_package_source'] ), 'Docs Agent must provide the required external package descriptor.' );
 $assert( ! isset( $caller_inputs['agent_bundle'] ), 'Docs Agent must not pass the removed agent_bundle input.' );
-$assert( str_contains( $workflow, 'DOCS_AGENT_PACKAGE_REVISION: 2f83a20d5abb24f46fea9630259c8886d7134823' ), 'Docs Agent must use the fixed native package source revision.' );
+$assert( str_contains( $workflow, 'DOCS_AGENT_PACKAGE_REVISION: 4468e0412df5a37c167bd83c24a0ad83ace08197' ), 'Docs Agent must use the fixed native package source revision.' );
 $assert( ! str_contains( $workflow, 'github.job_workflow_sha' ), 'Docs Agent must not depend on unavailable called-workflow provenance.' );
 
 preg_match( "/runtime_sources='(?<json>[^']+)'/", $workflow, $runtime_sources_match );
