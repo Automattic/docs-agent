@@ -20,7 +20,8 @@
     "keep it unchanged",
     "Keep concrete examples and numbers when the source supports them",
     "Never replace a concrete, source-supported value with a vague pointer",
-    "review every removed or rewritten line"
+    "review every removed or rewritten line",
+    "A value that the source reads from settings, options, or configuration is not contradicted by the source"
   ],
   "agents": {
     "technical-docs-bootstrap-agent.agent.json": {

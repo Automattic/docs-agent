@@ -196,6 +196,7 @@ Both maintenance packages treat the existing docs as the baseline. A maintenance
 - changes only what source evidence contradicts and adds what is missing;
 - deletes a section, list item, or example only when the feature it describes is gone from the source, and leaves unverified claims unchanged;
 - keeps concrete, source-supported examples and numbers (prices, percentages, limits, notice periods, worked examples) rather than replacing them with pointers such as "check the tab";
+- treats a value read from settings or configuration as not contradicted, so a documented rate stays unless the source shows a different one;
 - reviews `workspace_git_diff` before finishing and restores any removal that the source does not justify.
 
 This rule was added after a shop maintenance run removed accurate sections and a worked fee example ([docs-agent#190](https://github.com/Automattic/docs-agent/issues/190)). `tests/validate-docs-agent-packages.php` fails if either maintenance package loses it.
