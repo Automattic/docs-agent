@@ -1,11 +1,12 @@
 {
-  "tag": "v0.12.29",
-  "revision": "bc982947ec33c78160125026e16d357b7ece3ea1",
-  "producer_revision": "a6fe2d208e990a8d04104aa74aacbb8d1539fbc1",
-  "package_version": "0.12.29",
+  "tag": "v0.33.4",
+  "revision": "126f85b2a8b887ae8e2457d1cb71b15ebdb712cd",
+  "producer_revision": "126f85b2a8b887ae8e2457d1cb71b15ebdb712cd",
+  "package_version": "0.33.4",
   "published_assets": {
-    "01-wp-codebox.zip": "sha256:a239c72ae79c5b24fe7bed9ccfd375c0b70892ca66406d98140a51d219cfaaee",
-    "02-wp-codebox-workspace-0.12.29.tgz": "sha256:d332924b3b91ef8e47b5ebca7063b2964734d3ac081dd62fa18ec9417fefdcd5"
+    "wp-codebox-cli-linux-x64.tar.gz": "sha256:c37f770deb9a9c26e8191b44292da759f150b0641705af45ee6d41640ac695ab",
+    "wp-codebox-workspace-0.33.4.tgz": "sha256:57e8daf900de6504590edb1f1aa9a992c64b7fad8b5526162a3d377c63f95279",
+    "wp-codebox.zip": "sha256:46dc08b55eb4fd3d6fbd67d1ea25978816dea1eeade07c0444ad660ee547c975"
   },
   "run": "29350690551",
   "diagnostic_regression_run": "29307978522",
@@ -39,6 +40,9 @@
   "workspace_integrity_change_evidence": true,
   "non_git_workspace_snapshot_fallback": true,
   "canonical_repository_casing": true,
+  "runner_workspace_apply_outcome": true,
+  "writes_not_applied_fails_closed": true,
+  "decoded_reviewer_transcript_write_ledger": true,
   "native_result_path": ".codebox/native-agent-task-result.json",
   "workflow_result_path": ".codebox/agent-task-workflow-result.json"
 }

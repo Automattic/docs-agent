@@ -348,10 +348,10 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
-    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@a6fe2d208e990a8d04104aa74aacbb8d1539fbc1
+    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@126f85b2a8b887ae8e2457d1cb71b15ebdb712cd
     with:
-      wp_codebox_release_ref: v0.12.29
-      wp_codebox_workflow_ref: a6fe2d208e990a8d04104aa74aacbb8d1539fbc1
+      wp_codebox_release_ref: v0.33.4
+      wp_codebox_workflow_ref: 126f85b2a8b887ae8e2457d1cb71b15ebdb712cd
       external_package_source: ${{ needs.prepare.outputs.external_package_source }}
       runtime_sources: ${{ needs.prepare.outputs.runtime_sources }}
       workload_id: docs-agent-${{ inputs.audience }}-${{ inputs.run_kind }}
