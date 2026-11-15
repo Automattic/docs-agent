@@ -2,8 +2,8 @@
   "schema_version": 1,
   "bundle_slug": "user-docs-bootstrap-agent",
   "bundle_version": "0.1.0",
-  "source_ref": "Automattic/docs-agent@f3d965758c6318bd900b32d7fb91ccae125c3204",
-  "source_revision": "f3d965758c6318bd900b32d7fb91ccae125c3204",
+  "source_ref": "Automattic/docs-agent@667a3d7e43b938cae157235131da4462b09eebb5",
+  "source_revision": "667a3d7e43b938cae157235131da4462b09eebb5",
   "agent": {
     "agent_slug": "user-docs-bootstrap-agent",
     "agent_name": "User Docs Bootstrap Agent",
@@ -150,7 +150,7 @@
     "meta": {
       "source_type": "runtime-agent-package",
       "source_package": "user-docs-agent",
-      "source_version": "f3d965758c6318bd900b32d7fb91ccae125c3204",
+      "source_version": "667a3d7e43b938cae157235131da4462b09eebb5",
       "role": "user-docs-bootstrap",
       "runtime": "agents-api-native-chat",
       "default_provider": "openai",

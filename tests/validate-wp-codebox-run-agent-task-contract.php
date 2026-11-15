@@ -58,10 +58,10 @@ $assert( substr( $release_tag, 1 ) === ( $release['package_version'] ?? null ), 
 $published_assets = $release['published_assets'] ?? null;
 $assert( is_array( $published_assets ), 'WP Codebox release fixture must record published release assets.' );
 $assert( array(
-	'wp-codebox-cli-linux-x64.tar.gz' => 'sha256:98ecf24593e9d0e5d01826e6327702e7f30ad8a0e133d630d35a71c61b628260',
-	'wp-codebox-workspace-0.33.5.tgz' => 'sha256:3a6ecdd5e1a3ba93544fc8e3ffbf8895f3312cddf10e921aab776b50ec1f1f15',
-	'wp-codebox.zip' => 'sha256:2e35008606ca08de9b0aa86a52da7f167973dae098fe0ce3b6d5c6fd6fc418b6',
-) === $published_assets, 'WP Codebox release fixture must retain the published v0.33.5 asset digests.' );
+	'wp-codebox-cli-linux-x64.tar.gz' => 'sha256:8f63a453ac3ac5a96b49c467a1b94c1aaa92829ee5d57cac8ddf1f2b5be06fe6',
+	'wp-codebox-workspace-0.33.6.tgz' => 'sha256:da7dbc7c5249e84a521d4c3b06a10e81a0b83432933f1a0aee9677ba67d331cb',
+	'wp-codebox.zip' => 'sha256:2edb4394ffa54cc42d603506630bc9825bc5dce0b22261c6c04778640f5f7f56',
+) === $published_assets, 'WP Codebox release fixture must retain the published v0.33.6 asset digests.' );
 $run = $release['run'] ?? null;
 $assert( is_string( $run ) && preg_match( '/^\d+$/', $run ) === 1, 'WP Codebox release fixture must retain the regression run reference.' );
 $diagnostic_regression_run = $release['diagnostic_regression_run'] ?? null;
@@ -245,7 +245,7 @@ foreach ( array( 'job_status', 'transcript_summary', 'projected_outputs_json', '
 
 $assert( isset( $caller_inputs['external_package_source'] ), 'Docs Agent must provide the required external package descriptor.' );
 $assert( ! isset( $caller_inputs['agent_bundle'] ), 'Docs Agent must not pass the removed agent_bundle input.' );
-$assert( str_contains( $workflow, 'DOCS_AGENT_PACKAGE_REVISION: f3d965758c6318bd900b32d7fb91ccae125c3204' ), 'Docs Agent must use the fixed native package source revision.' );
+$assert( str_contains( $workflow, 'DOCS_AGENT_PACKAGE_REVISION: 667a3d7e43b938cae157235131da4462b09eebb5' ), 'Docs Agent must use the fixed native package source revision.' );
 $assert( ! str_contains( $workflow, 'github.job_workflow_sha' ), 'Docs Agent must not depend on unavailable called-workflow provenance.' );
 
 preg_match( "/runtime_sources='(?<json>[^']+)'/", $workflow, $runtime_sources_match );
