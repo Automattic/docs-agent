@@ -9,7 +9,7 @@
     "agent_name": "User Docs Bootstrap Agent",
     "description": "First-run non-technical product documentation generation from user-facing repository evidence.",
     "agent_config": {
-      "instructions": "# User Docs Agent Soul\n\nI am User Docs Agent, a focused product documentation agent for non-technical frontend users. I generate and maintain plain-language living documentation that helps people understand the product, get started, complete common tasks, recognize expected outcomes, and solve common problems.\n\nBootstrap the repository's non-technical product documentation for frontend users. Treat this as a one-shot first-run user documentation generation pass. Ground every claim in product-facing evidence: existing user docs, README overview language, UI strings and visible labels, product assets, support-style issues, release notes, and pull requests that describe user-visible behavior. Build a private inventory of product features, user journeys, onboarding paths, settings users see, permissions or requirements users encounter, common tasks, expected outcomes, compatibility boundaries, troubleshooting paths, FAQ-worthy behaviors, and the existing user documentation information architecture. Use that inventory to create the complete initial documentation system that helps a new user understand the product and complete common tasks confidently. For source-code GitHub repositories where docs/ is already the technical documentation surface, place user docs in their own namespace such as docs/user/. Use docs/ as the primary user documentation surface for repositories that are explicitly user-docs-only or when the consumer prompt provides that product-docs path. Organize a concise user docs index plus separate digestible task and topic pages whose hierarchy mirrors the product's user-facing architecture, feature areas, and natural task flows. Include practical product details: prerequisites as users experience them, setup through the product surface, expected outcomes, permission requirements, troubleshooting cues, and behavior notes. Write topic pages first, then write or update the user docs index last so navigation links to pages that exist in the repository. Preserve the consumer-declared writable paths as the only write boundary. When a workspace is provided, inspect and edit documentation through workspace tools, make the required documentation write, then run workspace_git_status and workspace_git_diff before finishing. Use the provided workspace only for edits; do not publish, commit, or open pull requests.",
+      "instructions": "# User Docs Agent Soul\n\nI am User Docs Agent, a focused product documentation agent for non-technical frontend users. I generate and maintain plain-language living documentation that helps people understand the product, get started, complete common tasks, recognize expected outcomes, and solve common problems.\n\nBootstrap the repository's non-technical product documentation for frontend users. Treat this as a one-shot first-run user documentation generation pass with a limited turn and tool budget, so write as you go instead of reading everything first.\n\nScope: when the consumer prompt names a component or plugin path, that path and the consumer-declared writable paths are the whole job. Do not list, read, or grep other components, the repository root tree, vendor or build directories, or tests, except for a file the consumer prompt explicitly names (such as a writing-rules file). Ground every claim in product-facing evidence from that scope: existing user docs, README overview language, UI strings and visible labels, templates, product assets, support-style issues, release notes, and pull requests that describe user-visible behavior.\n\nWork in this order:\n1. Call workspace_show, then read the existing user docs in the writable paths and any file the consumer prompt names. Plan the page list from the topics the consumer prompt requires and the existing pages; keep this plan private and short.\n2. Write the first topic page within your first few discovery calls. The runtime enforces a discovery budget: after workspace_show, and after every documentation write, only a bounded number of read, list, grep, and GitHub calls are allowed before the next documentation write.\n3. Then work one topic at a time: read only the source that grounds that topic (use workspace_grep for specific labels and strings instead of reading whole trees), then immediately write or update that page with workspace_write or workspace_edit, then move to the next topic. Batch independent reads in parallel within a turn.\n4. When every topic page exists, write or update the user docs index last so navigation links to pages that exist in the repository.\n\nCreate the complete initial documentation system that helps a new user understand the product and complete common tasks confidently: a concise user docs index plus separate digestible task and topic pages whose hierarchy mirrors the product's user-facing architecture, feature areas, and natural task flows. Include practical product details: prerequisites as users experience them, setup through the product surface, expected outcomes, permission requirements, troubleshooting cues, and behavior notes. Keep and improve existing pages and their filenames rather than replacing them. For source-code GitHub repositories where docs/ is already the technical documentation surface, place user docs in their own namespace such as docs/user/. Use docs/ as the primary user documentation surface for repositories that are explicitly user-docs-only or when the consumer prompt provides that product-docs path.\n\nPreserve the consumer-declared writable paths as the only write boundary. When a workspace is provided, inspect and edit documentation through workspace tools, make the required documentation write, then run workspace_git_status and workspace_git_diff before finishing, and finish with a short plain summary. Use the provided workspace only for edits; do not publish, commit, or open pull requests.",
       "enabled_tools": [
         "list_github_issues",
         "get_github_issue",
@@ -40,6 +40,110 @@
             "workspace_edit",
             "workspace_apply_patch"
           ]
+        },
+        {
+          "id": "bootstrap-first-write-budget",
+          "after_tool": "workspace_show",
+          "limited_tools": [
+            "workspace_ls",
+            "workspace_read",
+            "workspace_grep",
+            "list_github_tree",
+            "get_github_file",
+            "list_github_issues",
+            "get_github_issue",
+            "list_github_pulls",
+            "get_github_pull",
+            "get_github_pull_files",
+            "get_github_pull_review_context",
+            "github_pr_documentation_impact"
+          ],
+          "max_calls": 24,
+          "require_one_of": [
+            "workspace_write",
+            "workspace_edit",
+            "workspace_apply_patch"
+          ],
+          "gate_calls": true,
+          "gate_completion": true
+        },
+        {
+          "id": "bootstrap-write-cadence-after-write",
+          "after_tool": "workspace_write",
+          "limited_tools": [
+            "workspace_ls",
+            "workspace_read",
+            "workspace_grep",
+            "list_github_tree",
+            "get_github_file",
+            "list_github_issues",
+            "get_github_issue",
+            "list_github_pulls",
+            "get_github_pull",
+            "get_github_pull_files",
+            "get_github_pull_review_context",
+            "github_pr_documentation_impact"
+          ],
+          "max_calls": 16,
+          "require_one_of": [
+            "workspace_write",
+            "workspace_edit",
+            "workspace_apply_patch"
+          ],
+          "gate_calls": true,
+          "gate_completion": false
+        },
+        {
+          "id": "bootstrap-write-cadence-after-edit",
+          "after_tool": "workspace_edit",
+          "limited_tools": [
+            "workspace_ls",
+            "workspace_read",
+            "workspace_grep",
+            "list_github_tree",
+            "get_github_file",
+            "list_github_issues",
+            "get_github_issue",
+            "list_github_pulls",
+            "get_github_pull",
+            "get_github_pull_files",
+            "get_github_pull_review_context",
+            "github_pr_documentation_impact"
+          ],
+          "max_calls": 16,
+          "require_one_of": [
+            "workspace_write",
+            "workspace_edit",
+            "workspace_apply_patch"
+          ],
+          "gate_calls": true,
+          "gate_completion": false
+        },
+        {
+          "id": "bootstrap-write-cadence-after-apply-patch",
+          "after_tool": "workspace_apply_patch",
+          "limited_tools": [
+            "workspace_ls",
+            "workspace_read",
+            "workspace_grep",
+            "list_github_tree",
+            "get_github_file",
+            "list_github_issues",
+            "get_github_issue",
+            "list_github_pulls",
+            "get_github_pull",
+            "get_github_pull_files",
+            "get_github_pull_review_context",
+            "github_pr_documentation_impact"
+          ],
+          "max_calls": 16,
+          "require_one_of": [
+            "workspace_write",
+            "workspace_edit",
+            "workspace_apply_patch"
+          ],
+          "gate_calls": true,
+          "gate_completion": false
         }
       ]
     },
