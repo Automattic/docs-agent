@@ -1,12 +1,12 @@
 {
-  "tag": "v0.33.6",
-  "revision": "4875fb1550a34e4f07c44cff20bad477b83115de",
-  "producer_revision": "4875fb1550a34e4f07c44cff20bad477b83115de",
-  "package_version": "0.33.6",
+  "tag": "v0.33.7",
+  "revision": "9764022156a61ba7d2b4d8a2196b01ccb33b82b5",
+  "producer_revision": "9764022156a61ba7d2b4d8a2196b01ccb33b82b5",
+  "package_version": "0.33.7",
   "published_assets": {
-    "wp-codebox-cli-linux-x64.tar.gz": "sha256:8f63a453ac3ac5a96b49c467a1b94c1aaa92829ee5d57cac8ddf1f2b5be06fe6",
-    "wp-codebox-workspace-0.33.6.tgz": "sha256:da7dbc7c5249e84a521d4c3b06a10e81a0b83432933f1a0aee9677ba67d331cb",
-    "wp-codebox.zip": "sha256:2edb4394ffa54cc42d603506630bc9825bc5dce0b22261c6c04778640f5f7f56"
+    "wp-codebox-cli-linux-x64.tar.gz": "sha256:c0973033d6dd3adf87004e45d3fb8c0a495ea9dcf7d54a62c543e5926483dcd5",
+    "wp-codebox-workspace-0.33.7.tgz": "sha256:61bbab7b894d6bcc8b817e835a639d9fa99487bd5d263e4aa1a6ff238df08bb4",
+    "wp-codebox.zip": "sha256:363b409666c2478982f391a2b30e1d08be5dfc2aed36cc2da12f537de677ad02"
   },
   "run": "29350690551",
   "diagnostic_regression_run": "29307978522",
@@ -43,6 +43,8 @@
   "runner_workspace_apply_outcome": true,
   "writes_not_applied_fails_closed": true,
   "decoded_reviewer_transcript_write_ledger": true,
+  "explicit_publication_branch": true,
+  "seed_baseline_workspace_git_tools": true,
   "native_result_path": ".codebox/native-agent-task-result.json",
   "workflow_result_path": ".codebox/agent-task-workflow-result.json"
 }

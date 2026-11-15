@@ -58,10 +58,10 @@ $assert( substr( $release_tag, 1 ) === ( $release['package_version'] ?? null ), 
 $published_assets = $release['published_assets'] ?? null;
 $assert( is_array( $published_assets ), 'WP Codebox release fixture must record published release assets.' );
 $assert( array(
-	'wp-codebox-cli-linux-x64.tar.gz' => 'sha256:8f63a453ac3ac5a96b49c467a1b94c1aaa92829ee5d57cac8ddf1f2b5be06fe6',
-	'wp-codebox-workspace-0.33.6.tgz' => 'sha256:da7dbc7c5249e84a521d4c3b06a10e81a0b83432933f1a0aee9677ba67d331cb',
-	'wp-codebox.zip' => 'sha256:2edb4394ffa54cc42d603506630bc9825bc5dce0b22261c6c04778640f5f7f56',
-) === $published_assets, 'WP Codebox release fixture must retain the published v0.33.6 asset digests.' );
+	'wp-codebox-cli-linux-x64.tar.gz' => 'sha256:c0973033d6dd3adf87004e45d3fb8c0a495ea9dcf7d54a62c543e5926483dcd5',
+	'wp-codebox-workspace-0.33.7.tgz' => 'sha256:61bbab7b894d6bcc8b817e835a639d9fa99487bd5d263e4aa1a6ff238df08bb4',
+	'wp-codebox.zip' => 'sha256:363b409666c2478982f391a2b30e1d08be5dfc2aed36cc2da12f537de677ad02',
+) === $published_assets, 'WP Codebox release fixture must retain the published v0.33.7 asset digests.' );
 $run = $release['run'] ?? null;
 $assert( is_string( $run ) && preg_match( '/^\d+$/', $run ) === 1, 'WP Codebox release fixture must retain the regression run reference.' );
 $diagnostic_regression_run = $release['diagnostic_regression_run'] ?? null;
@@ -100,6 +100,8 @@ $assert( true === ( $release['canonical_repository_casing'] ?? null ), 'WP Codeb
 $assert( true === ( $release['runner_workspace_apply_outcome'] ?? null ), 'WP Codebox release fixture must record the explicit runner-workspace apply outcome.' );
 $assert( true === ( $release['writes_not_applied_fails_closed'] ?? null ), 'WP Codebox release fixture must fail closed when sandbox writes do not reach the host workspace.' );
 $assert( true === ( $release['decoded_reviewer_transcript_write_ledger'] ?? null ), 'WP Codebox release fixture must upload decoded tool observability and the write ledger in the reviewer transcript.' );
+$assert( true === ( $release['explicit_publication_branch'] ?? null ), 'WP Codebox release fixture must use an explicit runner_workspace.branch exactly as given.' );
+$assert( true === ( $release['seed_baseline_workspace_git_tools'] ?? null ), 'WP Codebox release fixture must provide workspace_git_status/diff against the seed baseline.' );
 $native_result_path = $release['native_result_path'] ?? null;
 $workflow_result_path = $release['workflow_result_path'] ?? null;
 $assert( '.codebox/native-agent-task-result.json' === $native_result_path, 'WP Codebox release fixture must declare the controlled native result path.' );
@@ -245,7 +247,7 @@ foreach ( array( 'job_status', 'transcript_summary', 'projected_outputs_json', '
 
 $assert( isset( $caller_inputs['external_package_source'] ), 'Docs Agent must provide the required external package descriptor.' );
 $assert( ! isset( $caller_inputs['agent_bundle'] ), 'Docs Agent must not pass the removed agent_bundle input.' );
-$assert( str_contains( $workflow, 'DOCS_AGENT_PACKAGE_REVISION: 667a3d7e43b938cae157235131da4462b09eebb5' ), 'Docs Agent must use the fixed native package source revision.' );
+$assert( str_contains( $workflow, 'DOCS_AGENT_PACKAGE_REVISION: 2f83a20d5abb24f46fea9630259c8886d7134823' ), 'Docs Agent must use the fixed native package source revision.' );
 $assert( ! str_contains( $workflow, 'github.job_workflow_sha' ), 'Docs Agent must not depend on unavailable called-workflow provenance.' );
 
 preg_match( "/runtime_sources='(?<json>[^']+)'/", $workflow, $runtime_sources_match );
@@ -395,18 +397,28 @@ $assert( '${{ needs.prepare.outputs.success_requires_pr == \'true\' }}' === ( $c
 $assert( array( 'job' => 'prepare', 'output' => 'success_requires_pr' ) === ( $caller_outputs['success_requires_pr'] ?? null ), 'Docs Agent must expose the selected publication policy to consumers.' );
 $assert( str_contains( $workflow, 'successRequiresPr:$successRequiresPr' ), 'Docs Agent recipe must retain the selected publication policy.' );
 $assert( str_contains( $workflow, '--arg validationDependencies "$INPUT_VALIDATION_DEPENDENCIES"' ), 'Docs Agent recipe must retain caller-owned validation dependencies.' );
-$assert( str_contains( $workflow, '{enabled:true,repo:$repo,clone_url:("https://github.com/" + $repo + ".git"),branch:$branch,branch_prefix:$branch,base:$baseRef,from:("origin/" + $baseRef)}' ), 'Docs Agent runner workspace publication must forward base_ref as base and preserve origin-qualified from.' );
-$runner_workspace_json = shell_exec( "jq -cn --arg repo 'Automattic/example' --arg branch 'docs-agent/docs-upkeep' --arg baseRef 'trunk' '{enabled:true,repo:\$repo,clone_url:(\"https://github.com/\" + \$repo + \".git\"),branch:\$branch,branch_prefix:\$branch,base:\$baseRef,from:(\"origin/\" + \$baseRef)}'" );
+$runner_workspace_expression = '{enabled:true,repo:$repo,clone_url:("https://github.com/" + $repo + ".git"),branch:$branch,base:$baseRef,from:("origin/" + $baseRef),title:$title,commit_message:$title,body:$body}';
+$assert( str_contains( $workflow, "'" . $runner_workspace_expression . "'" ), 'Docs Agent runner workspace publication must forward base_ref as base, preserve origin-qualified from, pass docs_branch as the exact branch, and set the PR title, commit message, and body.' );
+$assert( ! str_contains( $workflow, 'branch_prefix:$branch' ), 'Docs Agent must not pass docs_branch as a branch prefix; WP Codebox appended the workload id to it (wp-codebox#2591).' );
+$runner_workspace_json = shell_exec( "jq -cn --arg repo 'Automattic/example' --arg branch 'docs-agent/docs-upkeep' --arg baseRef 'trunk' --arg title 'docs(example): user docs maintenance' --arg body 'Body' " . escapeshellarg( $runner_workspace_expression ) );
 $runner_workspace      = json_decode( (string) $runner_workspace_json, true );
 $assert( array(
-	'enabled'       => true,
-	'repo'          => 'Automattic/example',
-	'clone_url'     => 'https://github.com/Automattic/example.git',
-	'branch'        => 'docs-agent/docs-upkeep',
-	'branch_prefix' => 'docs-agent/docs-upkeep',
-	'base'          => 'trunk',
-	'from'          => 'origin/trunk',
-) === $runner_workspace, 'Docs Agent must emit trunk as publication base and origin/trunk as runner workspace from.' );
+	'enabled'        => true,
+	'repo'           => 'Automattic/example',
+	'clone_url'      => 'https://github.com/Automattic/example.git',
+	'branch'         => 'docs-agent/docs-upkeep',
+	'base'           => 'trunk',
+	'from'           => 'origin/trunk',
+	'title'          => 'docs(example): user docs maintenance',
+	'commit_message' => 'docs(example): user docs maintenance',
+	'body'           => 'Body',
+) === $runner_workspace, 'Docs Agent must emit trunk as publication base, origin/trunk as runner workspace from, and the docs PR title and body.' );
+
+// The PR title says what the run did (docs-agent#190), never the generic workload label.
+$assert( 1 === preg_match( '/^      docs_scope:\n(?:        [^\n]*\n)*?        default: ""$/m', $workflow ), 'Docs Agent must expose an optional docs_scope input for the PR title.' );
+$assert( str_contains( $workflow, 'docs_scope="${INPUT_DOCS_SCOPE:-${GITHUB_REPOSITORY_NAME##*/}}"' ), 'Docs Agent must default the PR title scope to the repository name.' );
+$assert( str_contains( $workflow, 'pr_title="docs($docs_scope): $lane_title $RUN_KIND"' ), 'Docs Agent must title PRs docs(<scope>): <lane> docs <run_kind>.' );
+$assert( str_contains( $workflow, 'Generated documentation needs human review before merge.' ), 'Docs Agent PR bodies must ask for human review.' );
 
 preg_match( "/artifact_declarations='(?<json>\[.*?\])'\n/s", $workflow, $artifact_declarations_match );
 $assert( isset( $artifact_declarations_match['json'] ), 'Docs Agent must define typed artifact declarations.' );
