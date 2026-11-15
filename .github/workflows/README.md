@@ -1,6 +1,6 @@
 # Docs Agent Workflows
 
-`maintain-docs.yml` is the consumer-facing reusable workflow for scheduled upkeep. Consumer repositories pass product-level inputs such as `audience`, `require_pr`, `base_ref`, `docs_branch`, `writable_paths`, `context_repositories`, `bootstrap_contract`, `source_delta`, `validation_dependencies`, `verification_commands`, `drift_checks`, `prompt`, `run_agent`, and `dry_run`.
+`maintain-docs.yml` is the consumer-facing reusable workflow for scheduled upkeep. Consumer repositories pass product-level inputs such as `audience`, `require_pr`, `base_ref`, `docs_branch`, `writable_paths`, `context_repositories`, `bootstrap_contract`, `source_delta`, `validation_dependencies`, `verification_commands`, `drift_checks`, `prompt`, `run_agent`, `dry_run`, `max_turns`, and `time_budget_ms`.
 
 The consumer workflow supports separate lanes for technical docs, user docs, and live skills maintenance. Use `audience: skills` with skills/package writable paths instead of broad docs paths.
 
