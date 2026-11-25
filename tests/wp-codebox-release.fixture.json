@@ -1,12 +1,12 @@
 {
-  "tag": "v0.33.7",
-  "revision": "9764022156a61ba7d2b4d8a2196b01ccb33b82b5",
-  "producer_revision": "9764022156a61ba7d2b4d8a2196b01ccb33b82b5",
-  "package_version": "0.33.7",
+  "tag": "v0.34.0",
+  "revision": "9fce8a758b44109b86da22db68a1b6c801bdd6bb",
+  "producer_revision": "9fce8a758b44109b86da22db68a1b6c801bdd6bb",
+  "package_version": "0.34.0",
   "published_assets": {
-    "wp-codebox-cli-linux-x64.tar.gz": "sha256:c0973033d6dd3adf87004e45d3fb8c0a495ea9dcf7d54a62c543e5926483dcd5",
-    "wp-codebox-workspace-0.33.7.tgz": "sha256:61bbab7b894d6bcc8b817e835a639d9fa99487bd5d263e4aa1a6ff238df08bb4",
-    "wp-codebox.zip": "sha256:363b409666c2478982f391a2b30e1d08be5dfc2aed36cc2da12f537de677ad02"
+    "wp-codebox-cli-linux-x64.tar.gz": "sha256:a885d9e3384beeea7697c40c91f83518a7e89a6aaec23e4c9f09bbdb4c513c4a",
+    "wp-codebox-workspace-0.34.0.tgz": "sha256:287cb43ad832579178e513d0d7fa0fa0348b235e4a3d5c0f5afdb0f4f9e3fa9c",
+    "wp-codebox.zip": "sha256:4bb7fcc8eef152840a24330f115222fa14052fe1fc8094ddb9b2cc55e831aa34"
   },
   "run": "29350690551",
   "diagnostic_regression_run": "29307978522",

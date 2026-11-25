@@ -93,7 +93,13 @@ env:
         description: Version 1 JSON policy authorizing Docs Agent standalone native packages.
         required: true
       PUBLISH_TOKEN:
-        description: Optional token for checkout and publication. Defaults to the caller-scoped github.token. Pass a GitHub App installation token so the docs pull request opens as that app and triggers the repository's pull_request workflows, which GitHub suppresses for github.token.
+        description: Optional explicit token for checkout and publication. Takes precedence over PUBLISH_APP_ID/PUBLISH_APP_PRIVATE_KEY; when neither is set, WP Codebox uses the caller-scoped github.token, whose pull requests do not trigger pull_request workflows.
+        required: false
+      PUBLISH_APP_ID:
+        description: Optional GitHub App ID. With PUBLISH_APP_PRIVATE_KEY, WP Codebox mints an installation token for the target repository so the docs pull request opens as that app and triggers pull_request workflows.
+        required: false
+      PUBLISH_APP_PRIVATE_KEY:
+        description: Optional GitHub App private key; requires PUBLISH_APP_ID.
         required: false
     outputs:
       job_status:
@@ -389,10 +395,10 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
-    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@9764022156a61ba7d2b4d8a2196b01ccb33b82b5
+    uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@9fce8a758b44109b86da22db68a1b6c801bdd6bb
     with:
-      wp_codebox_release_ref: v0.33.7
-      wp_codebox_workflow_ref: 9764022156a61ba7d2b4d8a2196b01ccb33b82b5
+      wp_codebox_release_ref: v0.34.0
+      wp_codebox_workflow_ref: 9fce8a758b44109b86da22db68a1b6c801bdd6bb
       external_package_source: ${{ needs.prepare.outputs.external_package_source }}
       runtime_sources: ${{ needs.prepare.outputs.runtime_sources }}
       workload_id: docs-agent-${{ inputs.audience }}-${{ inputs.run_kind }}
@@ -419,5 +425,7 @@ jobs:
       time_budget_ms: ${{ inputs.time_budget_ms }}
     secrets:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      ACCESS_TOKEN: ${{ secrets.PUBLISH_TOKEN || github.token }}
+      ACCESS_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+      ACCESS_APP_ID: ${{ secrets.PUBLISH_APP_ID }}
+      ACCESS_APP_PRIVATE_KEY: ${{ secrets.PUBLISH_APP_PRIVATE_KEY }}
       EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.EXTERNAL_PACKAGE_SOURCE_POLICY }}
