@@ -73,10 +73,10 @@ $assert( str_contains( $maintain_docs_workflow, 'artifact_declarations<<EOF' ), 
 $assert( str_contains( $maintain_docs_workflow, 'The host generates and stages the completion report from caller inputs, Git, and filesystem checks' ), 'maintain-docs.yml must make host-owned completion generation explicit.' );
 $assert( ! str_contains( $maintain_docs_workflow, 'DOCS_AGENT_COMPLETION_REPORT' ), 'maintain-docs.yml must not request model-authored completion reports.' );
 
-$wp_codebox_producer_revision        = '9764022156a61ba7d2b4d8a2196b01ccb33b82b5';
+$wp_codebox_producer_revision        = '9fce8a758b44109b86da22db68a1b6c801bdd6bb';
 $generic_codebox_agent_task_workflow = 'uses: Automattic/wp-codebox/.github/workflows/run-agent-task.yml@' . $wp_codebox_producer_revision;
 $assert( str_contains( $maintain_docs_workflow, $generic_codebox_agent_task_workflow ), 'maintain-docs.yml must call the immutable generic Codebox agent-task workflow candidate.' );
-$assert( str_contains( $maintain_docs_workflow, 'wp_codebox_release_ref: v0.33.7' ), 'maintain-docs.yml must pass the matching WP Codebox release tag.' );
+$assert( str_contains( $maintain_docs_workflow, 'wp_codebox_release_ref: v0.34.0' ), 'maintain-docs.yml must pass the matching WP Codebox release tag.' );
 $assert( str_contains( $maintain_docs_workflow, 'wp_codebox_workflow_ref: ' . $wp_codebox_producer_revision ), 'maintain-docs.yml must execute helpers from the accepted producer revision.' );
 
 $assert( str_contains( $maintain_docs_workflow, '--arg writablePaths "$INPUT_WRITABLE_PATHS"' ), 'maintain-docs.yml must include writable paths in the portable recipe.' );
@@ -95,7 +95,13 @@ $assert( str_contains( $maintain_docs_workflow, '--artifact-path \'$completion_a
 $assert( str_contains( $maintain_docs_workflow, 'artifact:{name:"docs_agent_completion_report",type:"DocsAgentCompletionReport",path:$path}' ), 'The mandatory completion drift check must declare the generic WP Codebox command artifact shape.' );
 $assert( str_contains( $maintain_docs_workflow, 'output_projections:' ), 'maintain-docs.yml must project the bounded runner publication result.' );
 $assert( str_contains( $maintain_docs_workflow, 'OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}' ), 'maintain-docs.yml must explicitly forward OPENAI_API_KEY to the native runner.' );
-$assert( str_contains( $maintain_docs_workflow, 'ACCESS_TOKEN: ${{ secrets.PUBLISH_TOKEN || github.token }}' ), 'maintain-docs.yml must forward an optional PUBLISH_TOKEN and fall back to the caller-scoped GitHub token.' );
+$assert( str_contains( $maintain_docs_workflow, 'ACCESS_TOKEN: ${{ secrets.PUBLISH_TOKEN }}' ), 'maintain-docs.yml must forward only an explicit PUBLISH_TOKEN; WP Codebox owns the github.token fallback.' );
+$assert( ! str_contains( $maintain_docs_workflow, 'ACCESS_TOKEN: ${{ secrets.PUBLISH_TOKEN || github.token }}' ), 'maintain-docs.yml must not forward github.token as ACCESS_TOKEN, which would override minted app tokens.' );
+$assert( str_contains( $maintain_docs_workflow, 'ACCESS_APP_ID: ${{ secrets.PUBLISH_APP_ID }}' ), 'maintain-docs.yml must forward PUBLISH_APP_ID as ACCESS_APP_ID.' );
+$assert( str_contains( $maintain_docs_workflow, 'ACCESS_APP_PRIVATE_KEY: ${{ secrets.PUBLISH_APP_PRIVATE_KEY }}' ), 'maintain-docs.yml must forward PUBLISH_APP_PRIVATE_KEY as ACCESS_APP_PRIVATE_KEY.' );
+foreach ( array( 'PUBLISH_APP_ID', 'PUBLISH_APP_PRIVATE_KEY' ) as $app_secret ) {
+	$assert( preg_match( '/      ' . $app_secret . ':\n(?:        .*\n)*?        required: false/m', $maintain_docs_workflow ) === 1, "{$app_secret} must be an optional reusable-workflow secret." );
+}
 $assert( str_contains( $maintain_docs_workflow, 'EXTERNAL_PACKAGE_SOURCE_POLICY: ${{ secrets.EXTERNAL_PACKAGE_SOURCE_POLICY }}' ), 'maintain-docs.yml must explicitly forward the external package source policy.' );
 $assert( str_contains( $maintain_docs_workflow, 'runtime_sources: ${{ needs.prepare.outputs.runtime_sources }}' ), 'maintain-docs.yml must pass its complete native runtime closure to WP Codebox.' );
 
@@ -103,7 +109,7 @@ $workflow_readme = (string) file_get_contents( $root . '/.github/workflows/READM
 foreach ( array( 'Docs Agent Runner Recipe', 'portable recipe', 'Docs Agent owns the native package' ) as $migration_note_text ) {
 	$assert( str_contains( $workflow_readme, $migration_note_text ), "Workflow README missing agent runtime note: {$migration_note_text}" );
 }
-$assert( str_contains( $workflow_readme, 'v0.33.7' ), 'Workflow README must record the WP Codebox release tag.' );
+$assert( str_contains( $workflow_readme, 'v0.34.0' ), 'Workflow README must record the WP Codebox release tag.' );
 $assert( str_contains( $workflow_readme, 'Diagnostic messages that name runtime classes remain reviewable' ), 'Workflow README must document diagnostic-versus-source detection.' );
 $assert( str_contains( $workflow_readme, 'allowlisted review artifacts' ), 'Workflow README must document the WP Codebox upload allowlist.' );
 $assert( str_contains( $workflow_readme, 'normalized failed result' ), 'Workflow README must document normalized WP Codebox failures.' );

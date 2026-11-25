@@ -58,10 +58,10 @@ $assert( substr( $release_tag, 1 ) === ( $release['package_version'] ?? null ), 
 $published_assets = $release['published_assets'] ?? null;
 $assert( is_array( $published_assets ), 'WP Codebox release fixture must record published release assets.' );
 $assert( array(
-	'wp-codebox-cli-linux-x64.tar.gz' => 'sha256:c0973033d6dd3adf87004e45d3fb8c0a495ea9dcf7d54a62c543e5926483dcd5',
-	'wp-codebox-workspace-0.33.7.tgz' => 'sha256:61bbab7b894d6bcc8b817e835a639d9fa99487bd5d263e4aa1a6ff238df08bb4',
-	'wp-codebox.zip' => 'sha256:363b409666c2478982f391a2b30e1d08be5dfc2aed36cc2da12f537de677ad02',
-) === $published_assets, 'WP Codebox release fixture must retain the published v0.33.7 asset digests.' );
+	'wp-codebox-cli-linux-x64.tar.gz' => 'sha256:a885d9e3384beeea7697c40c91f83518a7e89a6aaec23e4c9f09bbdb4c513c4a',
+	'wp-codebox-workspace-0.34.0.tgz' => 'sha256:287cb43ad832579178e513d0d7fa0fa0348b235e4a3d5c0f5afdb0f4f9e3fa9c',
+	'wp-codebox.zip' => 'sha256:4bb7fcc8eef152840a24330f115222fa14052fe1fc8094ddb9b2cc55e831aa34',
+) === $published_assets, 'WP Codebox release fixture must retain the published v0.34.0 asset digests.' );
 $run = $release['run'] ?? null;
 $assert( is_string( $run ) && preg_match( '/^\d+$/', $run ) === 1, 'WP Codebox release fixture must retain the regression run reference.' );
 $diagnostic_regression_run = $release['diagnostic_regression_run'] ?? null;
@@ -211,7 +211,9 @@ foreach ( $contract['secrets'] ?? array() as $name => $secret ) {
 	}
 }
 
-$assert( '${{ secrets.PUBLISH_TOKEN || github.token }}' === ( $caller_secrets['ACCESS_TOKEN'] ?? null ), 'Docs Agent must forward ACCESS_TOKEN as the optional PUBLISH_TOKEN, falling back to the caller-scoped GitHub token.' );
+$assert( '${{ secrets.PUBLISH_TOKEN }}' === ( $caller_secrets['ACCESS_TOKEN'] ?? null ), 'Docs Agent must forward ACCESS_TOKEN as the optional PUBLISH_TOKEN only; WP Codebox falls back to the caller-scoped GitHub token.' );
+$assert( '${{ secrets.PUBLISH_APP_ID }}' === ( $caller_secrets['ACCESS_APP_ID'] ?? null ), 'Docs Agent must forward PUBLISH_APP_ID as ACCESS_APP_ID.' );
+$assert( '${{ secrets.PUBLISH_APP_PRIVATE_KEY }}' === ( $caller_secrets['ACCESS_APP_PRIVATE_KEY'] ?? null ), 'Docs Agent must forward PUBLISH_APP_PRIVATE_KEY as ACCESS_APP_PRIVATE_KEY.' );
 $assert( '${{ secrets.OPENAI_API_KEY }}' === ( $caller_secrets['OPENAI_API_KEY'] ?? null ), 'Docs Agent must explicitly forward OPENAI_API_KEY.' );
 $assert( '${{ secrets.EXTERNAL_PACKAGE_SOURCE_POLICY }}' === ( $caller_secrets['EXTERNAL_PACKAGE_SOURCE_POLICY'] ?? null ), 'Docs Agent must explicitly forward the external package policy secret.' );
 $assert( preg_match( '/secrets:\n      OPENAI_API_KEY:\n(?:        .*\n)*        required: false/m', $workflow ) === 1, 'Docs Agent must expose OPENAI_API_KEY as an optional reusable-workflow secret.' );
